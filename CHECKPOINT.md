@@ -39,8 +39,8 @@ Gate Zero **aprovado pelo PO em 2026-10-21** — execução autorizada a partir 
 
 ## Travas vivas
 
-- Ciclo roda em `develop` (ou `feat/*` a partir dela) — **nunca direto na `main`**
-  (branches canônicas F0.4; merge à main = release, F0.6).
+- Ciclo roda direto em `develop` — commits por UC assinados `(UC-XX.YY)`; **nunca na `main`**
+  (D-04; F0.4 adiciona o hook que bloqueia UC na branch errada; merge à main = release).
 - Push proibido sem pedido explícito + 3 evidências (árvore limpa, sem concorrência, sem
   divergência).
 - Árvore do DevTasks contém o trabalho do UC-00.01 não commitado — antes de iniciar UC

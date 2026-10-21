@@ -30,3 +30,5 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
 - **D-01**: Kanban = **3 colunas** (`Backlog | Em Progresso | Concluído`) — PRD RF-10/Apêndice A corrigidos.
 - **D-02**: Papéis = **3** (`owner | developer | viewer`) — PRD RF-05/§7/§9 corrigidos.
 - **D-03**: Gerência de estado do app = **Riverpod** (GetX descartado).
+- **D-04**: Branches = ciclo por UC com commits assinados direto em **`develop`**; `main` só via
+  release; hook F0.04 bloqueia commit `(UC-XX.YY)` fora de `develop` (2026-10-21).

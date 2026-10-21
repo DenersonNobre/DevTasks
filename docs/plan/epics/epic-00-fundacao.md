@@ -144,6 +144,10 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 
 **Descrição**: branches canônicas (`main`/`develop`), `.gitignore`/`.gitattributes` completos da stack, hooks locais (conventional commits, encoding, claim de UC) e shims `tools/bin/claims` apontando ao tooling global.
 
+> **D-04 (PO, 2026-10-21)**: granularidade de branch = **commits por UC assinados direto em `develop`**
+> (sem `feat/` por épico/UC); `main` só avança via release. O hook de F0.4 deve bloquear commit
+> assinado `(UC-XX.YY)` fora de `develop`.
+
 **DoR**: F0.1/F0.2 concluídas · binário global `claims` localizado (PATH ou `A:\.dotfiles\tools\bin\`).
 **DoD**: commit sem claim de `(UC-XX.YY)` é **bloqueado com exit 1**; hook instalado e comprovado por teste negativo.
 
