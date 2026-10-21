@@ -4,6 +4,7 @@
 > Fonte de escopo: `docs/product/PRD.md` · Domínio/invariantes: `docs/architecture/SPEC.md` ·
 > Engenharia/UI: `docs/architecture/DESIGN.md`.
 > Anatomia canônica: `~/.agents/templates/backlog_template.md` (paridade DAG ➜ arquivo 1:1, sem placeholder).
+> **Gate Zero aprovado** pelo PO em 2026-10-21 — execução liberada a partir da EPIC-00.
 
 ---
 
@@ -11,7 +12,7 @@
 
 | Épico | Arquivo | Dependências | Prioridade | Status |
 |:---|:---|:---|:---:|:---:|
-| **00 — Fundação** | [epic-00-fundacao.md](epics/epic-00-fundacao.md) | Nenhuma (independência máxima) | Crítica | ⏳ Pendente |
+| **00 — Fundação** | [epic-00-fundacao.md](epics/epic-00-fundacao.md) | Nenhuma (independência máxima) | Crítica | 🔄 Em execução |
 | **01 — Autenticação** | [epic-01-autenticacao.md](epics/epic-01-autenticacao.md) | EPIC-00 | Crítica | ⏳ Pendente |
 | **02 — Workspace & Membresias** | [epic-02-workspace.md](epics/epic-02-workspace.md) | EPIC-00, EPIC-01 | Alta | ⏳ Pendente |
 | **03 — Projetos** | [epic-03-projetos.md](epics/epic-03-projetos.md) | EPIC-02 | Alta | ⏳ Pendente |
@@ -113,7 +114,7 @@ flowchart TD
 
 | Épico | UCs | UCs concluídos | Status |
 |:---|:---:|:---:|:---:|
-| 00 — Fundação | 8 | 0/8 | ⏳ |
+| 00 — Fundação | 8 | 0/8 | 🔄 |
 | 01 — Autenticação | 4 | 0/4 | ⏳ |
 | 02 — Workspace & Membresias | 3 | 0/3 | ⏳ |
 | 03 — Projetos | 2 | 0/2 | ⏳ |
