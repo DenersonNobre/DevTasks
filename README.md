@@ -3,15 +3,17 @@
 SaaS de gestão de tarefas para equipes de desenvolvimento — projeto de portfólio full-stack em Dart:
 quadro Kanban, prazos/prioridades, colaboração assíncrona (comentários/atribuição) e dashboard de indicadores.
 
-> **Status**: quarteto em elaboração (`PRD` ✅ · `DESIGN` ✅ · `SPEC` ⏳ · `docs/plan/` ⏳) — **EPIC-00-FUNDACAO pendente**.
+> **Status**: quarteto (`PRD` ✅ · `DESIGN` ✅ · `SPEC` ✅ · `docs/plan/` ⏳) — **EPIC-00-FUNDACAO pendente**.
 > Nenhum código de negócio pode iniciar antes do DoD da EPIC-00 (Gate Zero).
+>
+> **Próximo passo**: `docs/plan/README.md` (DAG + DoR/DoD) + `docs/plan/epics/epic-00-fundacao.md` (F0.1–F0.8) e demais épicos da paridade 1:1 → aprovação do PO (Gate Zero) → execução da EPIC-00.
 
 ## Estrutura
 
 ```text
 docs/product/          PRD.md + wireframe (Designer.png)
-docs/architecture/     DESIGN.md (engenharia + UI) · SPEC.md (domínio — pendente)
-docs/plan/             índice mestre de épicos (pendente)
+docs/architecture/     DESIGN.md (engenharia + UI) · SPEC.md (domínio)
+docs/plan/             índice mestre de épicos (pendente — próxima unidade)
 solution/app/          Flutter (VSA: lib/modules/* + global/)
 solution/server/       Serverpod (scaffold atual a substituir na EPIC-00)
 solution/client/       gerado por `serverpod generate` (criado na EPIC-00)
@@ -31,4 +33,4 @@ Comandos serão gravados aqui no commit que implementar esses pilares.
 
 - **Escopo/produto**: `docs/product/PRD.md`
 - **Decisões de engenharia e design**: `docs/architecture/DESIGN.md`
-- **Domínio/invariantes**: `docs/architecture/SPEC.md` (pendente)
+- **Domínio/invariantes**: `docs/architecture/SPEC.md`
