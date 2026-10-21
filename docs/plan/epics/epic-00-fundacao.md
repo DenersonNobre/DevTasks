@@ -14,7 +14,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 
 | # | Feature | UCs/Histórias | Independência / Risco | Status |
 |:---|:---|:---:|:---|:---:|
-| F0.1 | Topologia de Diretórios & Isolamento de Artefatos | 1 | Raiz de tudo | ⏳ |
+| F0.1 | Topologia de Diretórios & Isolamento de Artefatos | 1 | Raiz de tudo | ✅ |
 | F0.2 | Toolchain, Build em 1 Comando & Idempotência | 1 | Depende de F0.1 | ⏳ |
 | F0.3 | Test Harness & Runner Não-Bloqueante | 1 | Depende de F0.2 | ⏳ |
 | F0.4 | Governança de Código, VCS, Hooks & Claims | 1 | **Risco**: poka-yoke de concorrência | ⏳ |
@@ -36,9 +36,9 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 - [ ] Topologia `solution/` registrada no DESIGN §9 (desvio consciente do `lib/` raiz).
 
 **DoD**:
-- [ ] `flutter pub get` no workspace raiz resolve `app`, `server` e `client` (lock único).
-- [ ] `flutter analyze` e `flutter test` verdes em todos os membros.
-- [ ] Saídas de build/geração fora do versionamento (`.gitignore`).
+- [x] `flutter pub get` no workspace raiz resolve `app` e `server` (lock único; `client` integra no UC-00.02 após geração).
+- [x] `flutter analyze` e `flutter test` verdes em todos os membros.
+- [x] Saídas de build/geração fora do versionamento (`.gitignore` com `/solution/client/`).
 
 #### User Story 0.1.1 — Corrigir resíduos de scaffold e fechar topologia
 
@@ -50,7 +50,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 * **Critérios de Aceitação**:
   ```gherkin
   Cenário: workspace resolve sem nomes de scaffold
-    Dado que o pubspec raiz declara os membros app, server e client
+    Dado que o pubspec raiz declara os membros app e server (client reservado para F0.2)
     Quando executo `flutter pub get` na raiz
     Então o lockfile é único e nenhum pacote se chama "frontend" ou "backend"
 

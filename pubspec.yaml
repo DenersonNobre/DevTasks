@@ -1,0 +1,10 @@
+name: devtasks
+description: "DevTasks — workspace raiz (membros: app, server)."
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+
+workspace:
+  - solution/app
+  - solution/server

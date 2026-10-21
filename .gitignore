@@ -15,6 +15,9 @@ passwords.yaml
 .env.*
 !.env.example
 
+# --- Client Serverpod (GERADO — UC-00.02/`serverpod generate`; nunca editar à mão) ---
+/solution/client/
+
 # --- IDEs / editors ---
 .idea/
 *.iml
