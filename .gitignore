@@ -30,10 +30,6 @@ __recovery/
 coverage/
 dist/
 
-# --- Estado efêmero de retomada (ciclo aberto; apagar ao fechar o ciclo) ---
-checkpoint.md
-resume.md
-
 # --- OS ---
 .DS_Store
 Thumbs.db

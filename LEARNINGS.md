@@ -15,4 +15,15 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
-(ainda sem entradas — primeira descoberta não-trivial vira a primeira entrada)
+## 2026-10-21 — Migração para o protocolo CHECKPOINT (oráculo) no ciclo Gate Zero
+
+- **Sintoma**: o projeto nascera com `checkpoint.md` minúsculo gitignored (`.gitignore` com
+  regras `checkpoint.md`/`resume.md`) — continuidade efêmera, sem poka-yoke.
+- **Causa raiz**: o oráculo aprovou o protocolo `CHECKPOINT.md` (caixa alta, ≤60 linhas,
+  ponteiro único de continuidade; `HANDOFF.md`/`RESUME.md` aposentados — INV-STATE-02/03
+  com enforcement no health §15 do oráculo).
+- **Fix**: `checkpoint.md` → `CHECKPOINT.md` versionado, reescrito como ponteiro (budget
+  37/60 linhas); regras `checkpoint.md`/`resume.md` removidas do `.gitignore` (o arquivo
+  agora tem de ser versionado; o scratch minúsculo é que continua descartável).
+- **Prevenção**: ao clonar/iniciar outro projeto, nascer direto no protocolo — não criar
+  checkpoint efêmero gitignored e depois migrar.
