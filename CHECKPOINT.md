@@ -23,8 +23,9 @@ Gate Zero **aprovado pelo PO em 2026-10-21** — execução autorizada a partir 
     (1) títulos `# frontend`/`# backend` nos READMEs dos membros → corrigir no mesmo commit;
     (2) Gherkin/DoD da F0.1 exigem `client` no workspace mas `client` nasce na F0.2 →
     **encaminhar ao PO** reconciliar o texto do épico.
-- `main`; **nenhum push** (remotes `origin` Gitea LAN + `github` GitHub público vazios —
-  push exige pedido explícito + 3 evidências).
+- **Branches**: `develop` = branch de trabalho do ciclo (`05bf4aa`); `main` = baseline
+  estável (`17b69f4`); **nenhum push** (remotes `origin` Gitea LAN + `github` GitHub
+  público vazios — push exige pedido explícito + 3 evidências).
 - Decisões do PO aplicadas e datadas: D-01/D-02/D-03 — trilha em DESIGN §12; CI = Gitea
   Actions primário + GitHub Actions em paridade desde o Day 1 (`d52954a`).
 
@@ -38,6 +39,8 @@ Gate Zero **aprovado pelo PO em 2026-10-21** — execução autorizada a partir 
 
 ## Travas vivas
 
+- Ciclo roda em `develop` (ou `feat/*` a partir dela) — **nunca direto na `main`**
+  (branches canônicas F0.4; merge à main = release, F0.6).
 - Push proibido sem pedido explícito + 3 evidências (árvore limpa, sem concorrência, sem
   divergência).
 - Árvore do DevTasks contém o trabalho do UC-00.01 não commitado — antes de iniciar UC
