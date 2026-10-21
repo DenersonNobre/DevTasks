@@ -86,6 +86,10 @@ flowchart TD
 
 - **Nomenclature**: UC no formato `UC-XX.YY` (XX = nº do épico); US `US-X.Y.Z`; tasks `TASK-NN` por UC.
 - **Commits**: Conventional Commits atômicos — um UC = um commit (código + testes + docs).
+  Formato canônico (D-04 + F0.4): `<type>(<scope>): <assunto imperativo em inglês> (UC-XX.YY)` —
+  ex.: `chore(topology): fix scaffold leftovers and adopt dart workspace (UC-00.01)`. Onde o
+  épico sugere um commit por TASK, prevalece 1 UC = 1 commit (assuntos das TASKs alimentam o
+  assunto único); assinatura `(UC-XX.YY)` é obrigatória (claim-gate do hook).
 - **Hand-off**: consolidação por UC em `docs/plan/state/UC-CURRENT.md`; laudos em `docs/plan/reviews/`.
 - **Claims**: estado vivo fora do repo (`<git-common-dir>/claims/`); schema versionado em `docs/plan/state/claims.schema.json` (criado na EPIC-00).
 - **Papéis de execução**: ciclo Coder ➔ Gate 3 (`review`) ➔ Gate 4 (`qa`) ➔ consolidação — `workflow_rules.md`.
