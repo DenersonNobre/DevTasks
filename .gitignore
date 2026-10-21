@@ -1,0 +1,35 @@
+# --- Dart / Flutter ---
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# --- Serverpod / segredos ---
+# Nunca versionar senhas de config (EPIC-00 cria os templates)
+passwords.yaml
+*.passwords.yaml
+.env
+.env.*
+!.env.example
+
+# --- IDEs / editors ---
+.idea/
+*.iml
+.vscode/
+__history/
+__recovery/
+*.suo
+*.user
+
+# --- Saídas de build / logs ---
+*.log
+*.tmp
+coverage/
+dist/
+
+# --- OS ---
+.DS_Store
+Thumbs.db

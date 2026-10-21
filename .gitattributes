@@ -1,0 +1,22 @@
+# Quebras de linha por tipo de arquivo (F0.4 — evita falhas silenciosas entre SO)
+* text=auto
+
+# Scripts Windows exigem CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Scripts shell e código/texto em LF
+*.sh text eol=lf
+*.dart text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.sql text eol=lf
+
+# Recursos binários
+*.png binary
+*.jpg binary
+*.ico binary
+*.ttf binary
