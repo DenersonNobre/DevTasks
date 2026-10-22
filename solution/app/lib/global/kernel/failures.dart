@@ -104,5 +104,8 @@ class InfraFailure extends BaseFailure {
 
   const InfraFailure(String message, [this.cause])
       : super(code: 'ERR_INFRA_FAILURE', message: message);
+
+  @override
+  String toString() => cause != null ? '$code: $message (causa: $cause)' : super.toString();
 }
 

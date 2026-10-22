@@ -1,10 +1,11 @@
 # tools/test.ps1
-# Runner de testes headless e não-bloqueante em 1 comando (F0.3 / UC-00.03)
+# Runner de testes headless e não-bloqueante em 1 comando (F0.3 / UC-00.03 / NC-08)
 [CmdletBinding()]
 param(
     [switch]$Coverage,
-    [ValidateSet("all", "app", "server")]
+    [ValidateSet("all", "app", "server", "governance")]
     [string]$Target = "all",
+    [switch]$Governance,
     [switch]$FailFast,
     [switch]$SimulateFailure,
     [bool]$NoPub = $true
@@ -14,6 +15,10 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..")
 Set-Location $RepoRoot
+
+# Suprime telemetria e avisos de rede durante execuções automáticas
+$env:FLUTTER_SUPPRESS_ANALYTICS = "true"
+$env:CI = "true"
 
 Write-Host "==> [DevTasks] Disparando Runner de Testes (Headless)..."
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -40,13 +45,22 @@ foreach ($t in $targets) {
     if ($NoPub -and (Test-Path "$RepoRoot/pubspec.lock")) {
         $argsList += "--no-pub"
     }
-    if ($Coverage) {
-        $argsList += "--coverage"
-    }
 
     Push-Location $t.Path
     try {
-        & flutter @argsList
+        if ($t.Name -eq "server") {
+            if ($Coverage) {
+                & dart test --coverage=coverage
+            } else {
+                & dart test
+            }
+        } else {
+            if ($Coverage) {
+                & flutter test @argsList --coverage
+            } else {
+                & flutter test @argsList
+            }
+        }
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne 0) {
             $hasFailure = $true
@@ -69,6 +83,36 @@ foreach ($t in $targets) {
     }
 }
 
+# Suíte de Governança e Infraestrutura (NC-08)
+if ($Governance -or $Target -eq "governance") {
+    Write-Host "`n--> Executando Suíte de Governança, CI, Docker e Claims..."
+    $govSuites = @(
+        "tools/tests/test_build_scripts.ps1",
+        "tools/tests/test_test_runner.ps1",
+        "tools/tests/test_git_governance.ps1",
+        "tools/tests/test_ci_pipeline.ps1",
+        "tools/tests/test_doc_governance.ps1",
+        "docker/tests/test_docker_manifests.ps1"
+    )
+
+    foreach ($suite in $govSuites) {
+        $fullPath = Join-Path $RepoRoot $suite
+        if (Test-Path $fullPath) {
+            Write-Host "  * Rodando: $suite..."
+            $output = & pwsh -NoProfile -NonInteractive -File $fullPath 2>&1
+            $code = $LASTEXITCODE
+            if ($code -ne 0) {
+                $hasFailure = $true
+                $failedMembers += $suite
+                Write-Error "[GOVERNANCE-FAIL] Falha em $suite (exit code $code):`n$output"
+                if ($FailFast) { break }
+            } else {
+                Write-Host "    [OK] $suite passou."
+            }
+        }
+    }
+}
+
 $elapsed = $stopwatch.Elapsed.TotalSeconds
 Write-Host ("`n==> [DevTasks] Execução concluída em {0:N2}s" -f $elapsed)
 
@@ -77,7 +121,7 @@ if ($elapsed -gt 60) {
 }
 
 if ($hasFailure) {
-    Write-Error "[TEST-SUITE-FAIL] Falha em membros: $($failedMembers -join ', ')."
+    Write-Error "[TEST-SUITE-FAIL] Falha em membros/suítes: $($failedMembers -join ', ')."
     exit 1
 }
 

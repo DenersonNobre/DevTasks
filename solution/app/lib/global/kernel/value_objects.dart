@@ -114,11 +114,18 @@ class DateOnly implements Comparable<DateOnly> {
       return Failure(ValidationFailure('$fieldName contém valores fora do intervalo válido.', fieldName));
     }
 
+    final parsedDate = DateTime.utc(y, m, d);
+    if (parsedDate.year != y || parsedDate.month != m || parsedDate.day != d) {
+      return Failure(ValidationFailure('$fieldName representa uma data de calendário inexistente.', fieldName));
+    }
+
     return Success(DateOnly(y, m, d));
   }
 
   bool isBefore(DateOnly other) => compareTo(other) < 0;
   bool isAfter(DateOnly other) => compareTo(other) > 0;
+
+  DateTime toDateTime() => DateTime.utc(year, month, day);
 
   bool isToday(IClock clock) {
     final t = DateOnly.fromDateTime(clock.today());

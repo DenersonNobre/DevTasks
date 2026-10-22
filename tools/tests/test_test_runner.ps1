@@ -14,8 +14,9 @@ if (-not (Test-Path $TestScript)) {
 }
 
 Write-Host "=== TEST 2: Suíte verde em um comando (exit 0) ==="
+$psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh" } else { "powershell.exe" }
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $TestScript
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $TestScript
 $elapsed = $stopwatch.Elapsed.TotalSeconds
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/test.ps1 failed with exit code $LASTEXITCODE"
@@ -26,14 +27,14 @@ if ($elapsed -gt 60) {
 Write-Host "Pass: Test runner completed successfully in $elapsed s (<= 60s)"
 
 Write-Host "=== TEST 3: Falha propagada (nunca verde falso) ==="
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $TestScript -SimulateFailure
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $TestScript -SimulateFailure
 if ($LASTEXITCODE -eq 0) {
     throw "FAIL: Expected failure exit code when a test fails, but got 0 (false green!)"
 }
 Write-Host "Pass: Failure correctly propagated with exit code $LASTEXITCODE"
 
 Write-Host "=== TEST 4: Coleta de cobertura (-Coverage) ==="
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $TestScript -Coverage
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $TestScript -Coverage
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/test.ps1 -Coverage failed with exit code $LASTEXITCODE"
 }

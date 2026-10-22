@@ -3,7 +3,7 @@
 // "backend").
 
 import 'package:devtasks_server/devtasks_server.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   test('devtasks_server exposes the server identity', () {

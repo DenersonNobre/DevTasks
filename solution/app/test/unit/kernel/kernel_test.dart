@@ -33,6 +33,14 @@ void main() {
 
       final flatMapped = result.flatMap((val) => Success('num: $val'));
       expect(flatMapped.valueOrNull, equals('num: 42'));
+
+      final mappedFail = result.mapFailure((f) => ValidationFailure('err'));
+      expect(mappedFail.valueOrNull, equals(42));
+
+      expect(result.toString(), equals('Success(42)'));
+      expect(result, equals(Success<int, IFailure>(42)));
+      expect(result.hashCode, equals(Success<int, IFailure>(42).hashCode));
+      expect(result == const Success<int, IFailure>(99), isFalse);
     });
 
     test('Failure encapsula erro tipado e não executa map', () {
@@ -53,12 +61,27 @@ void main() {
       final mapped = result.map((val) => val * 2);
       expect(mapped.isFailure, isTrue);
       expect(mapped.failureOrNull?.code, equals('ERR_VALIDATION'));
+
+      final flatMapped = result.flatMap((val) => Success('num: $val'));
+      expect(flatMapped.isFailure, isTrue);
+
+      final mappedFail = result.mapFailure((f) => InfraFailure(f.message));
+      expect(mappedFail.failureOrNull?.code, equals('ERR_INFRA_FAILURE'));
+
+      expect(result.toString(), contains('Failure('));
+      expect(result, equals(Failure<int, IFailure>(failure)));
+      expect(result.hashCode, equals(Failure<int, IFailure>(failure).hashCode));
+      expect(result == const Failure<int, IFailure>(NotAuthenticatedFailure()), isFalse);
     });
   });
 
   group('Taxonomia de Falhas (SPEC §6)', () {
     test('todas as falhas de negócio reportam códigos canônicos da SPEC', () {
-      expect(ValidationFailure('inv').code, equals('ERR_VALIDATION'));
+      final vf = ValidationFailure('inv', 'email');
+      expect(vf.code, equals('ERR_VALIDATION'));
+      expect(vf.field, equals('email'));
+      expect(vf.toString(), contains('(email): inv'));
+
       expect(NotAuthenticatedFailure().code, equals('ERR_NOT_AUTHENTICATED'));
       expect(InvalidCredentialsFailure().code, equals('ERR_INVALID_CREDENTIALS'));
       expect(EmailAlreadyTakenFailure().code, equals('ERR_EMAIL_ALREADY_TAKEN'));
@@ -68,7 +91,11 @@ void main() {
       expect(InvalidAssigneeFailure().code, equals('ERR_INVALID_ASSIGNEE'));
       expect(MemberAlreadyExistsFailure().code, equals('ERR_MEMBER_ALREADY_EXISTS'));
       expect(ConcurrentModificationFailure().code, equals('ERR_CONCURRENT_MODIFICATION'));
-      expect(InfraFailure('db down').code, equals('ERR_INFRA_FAILURE'));
+
+      final inf = InfraFailure('db down', 'timeout');
+      expect(inf.code, equals('ERR_INFRA_FAILURE'));
+      expect(inf.cause, equals('timeout'));
+      expect(inf.toString(), contains('db down (causa: timeout)'));
     });
   });
 
@@ -77,6 +104,9 @@ void main() {
       final valid = NonEmptyString.create(' Tarefa importante ');
       expect(valid.isSuccess, isTrue);
       expect(valid.valueOrNull?.value, equals('Tarefa importante'));
+      expect(valid.valueOrNull.toString(), equals('Tarefa importante'));
+      expect(valid.valueOrNull.hashCode, equals(NonEmptyString.create('Tarefa importante').valueOrNull.hashCode));
+      expect(valid.valueOrNull == NonEmptyString.create('Outra').valueOrNull, isFalse);
 
       final empty = NonEmptyString.create('   ');
       expect(empty.isFailure, isTrue);
@@ -102,6 +132,11 @@ void main() {
       expect(p1.value, equals(20));
       expect(t1.value, equals(30));
       expect(c1.value, equals(40));
+
+      expect(w1.toString(), contains('WorkspaceId(10)'));
+      expect(p1.toString(), contains('ProjectId(20)'));
+      expect(t1.toString(), contains('TaskId(30)'));
+      expect(c1.toString(), contains('CommentId(40)'));
     });
 
     test('DateOnly opera estritamente sem hora nem ruído de timezone', () {
@@ -113,9 +148,29 @@ void main() {
       expect(date.month, equals(10));
       expect(date.day, equals(25));
       expect(date.toString(), equals('2026-10-25'));
+      expect(date.hashCode, equals(DateOnly(2026, 10, 25).hashCode));
+      expect(date == DateOnly(2026, 10, 25), isTrue);
+      expect(date == DateOnly(2026, 10, 26), isFalse);
+
+      final dt = DateTime(2026, 10, 25, 23, 59);
+      final fromDt = DateOnly.fromDateTime(dt);
+      expect(fromDt, equals(date));
 
       final invalidRes = DateOnly.parse('invalid-date');
       expect(invalidRes.isFailure, isTrue);
+
+      final nonExistentDate = DateOnly.parse('2026-02-31');
+      expect(nonExistentDate.isFailure, isTrue);
+      expect(nonExistentDate.failureOrNull?.code, equals('ERR_VALIDATION'));
+
+      final nonExistentDateApril = DateOnly.parse('2026-04-31');
+      expect(nonExistentDateApril.isFailure, isTrue);
+
+      final dateBefore = DateOnly(2026, 10, 24);
+      final dateAfter = DateOnly(2026, 10, 26);
+      expect(date.isAfter(dateBefore), isTrue);
+      expect(date.isBefore(dateAfter), isTrue);
+      expect(date.toDateTime(), equals(DateTime.utc(2026, 10, 25)));
 
       final clockToday = FakeClock(DateTime(2026, 10, 25, 14, 30));
       final clockPast = FakeClock(DateTime(2026, 10, 26, 8, 00));
@@ -130,14 +185,17 @@ void main() {
   group('IClock / SystemClock', () {
     test('SystemClock retorna data e hora atual sem falhas', () {
       final clock = SystemClock();
+      final before = DateTime.now().subtract(const Duration(seconds: 1));
       final now = clock.now();
-      final today = clock.today();
+      final after = DateTime.now().add(const Duration(seconds: 1));
 
-      expect(now.year, greaterThanOrEqualTo(2026));
+      expect(now.isAfter(before), isTrue);
+      expect(now.isBefore(after), isTrue);
+
+      final today = clock.today();
       expect(today.hour, equals(0));
       expect(today.minute, equals(0));
       expect(today.second, equals(0));
     });
   });
 }
-

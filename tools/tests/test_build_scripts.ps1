@@ -53,6 +53,9 @@ if (-not (Test-Path "solution/app/lib/main.dart") -or -not (Test-Path "solution/
     throw "FAIL: Clean deleted source files!"
 }
 
+# Restaura o workspace para as suítes de teste subsequentes
+& flutter pub get | Out-Null
+
 Write-Host "`n>>> ALL UC-00.02 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<"
 exit 0
 

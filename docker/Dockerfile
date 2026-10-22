@@ -1,5 +1,5 @@
 # docker/Dockerfile
-# Multi-stage build para DevTasks Server (Serverpod) - F0.5 / UC-00.05
+# Multi-stage build para DevTasks Server - F0.5 / UC-00.05
 
 # ==========================================
 # Estágio 1: Builder (SDK Dart completo)
@@ -8,28 +8,18 @@ FROM dart:3.13.5 AS builder
 
 WORKDIR /app
 
-# Copia configurações do workspace para cache otimizado de camadas
-COPY pubspec.yaml pubspec.lock ./
+# Configura workspace isolado para compilação do membro server sem acoplamento com o app Flutter
 COPY solution/server/pubspec.yaml ./solution/server/
-COPY solution/app/pubspec.yaml ./solution/app/
+RUN printf "name: devtasks_build\nenvironment:\n  sdk: ^3.13.5\nworkspace:\n  - solution/server\n" > pubspec.yaml
 
-# Resolução de dependências offline/online
+WORKDIR /app/solution/server
 RUN dart pub get
 
 # Copia código-fonte do servidor
-COPY solution/server/ ./solution/server/
+COPY solution/server/ ./
 
-WORKDIR /app/solution/server
-
-# Compila o executável do servidor Serverpod em modo AOT nativo
-RUN if [ -f "bin/main.dart" ]; then \
-      dart compile exe bin/main.dart -o bin/server; \
-    elif [ -f "lib/main.dart" ]; then \
-      dart compile exe lib/main.dart -o bin/server; \
-    else \
-      echo "void main() { print('DevTasks Server Stub'); }" > bin/server.dart && \
-      dart compile exe bin/server.dart -o bin/server; \
-    fi
+# Garante o diretório de destino bin/ e compila o executável nativo AOT
+RUN mkdir -p bin && dart compile exe lib/main.dart -o bin/server
 
 # ==========================================
 # Estágio 2: Runtime Slim (Imagem de produção)

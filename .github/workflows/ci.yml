@@ -34,7 +34,7 @@ jobs:
           flutter analyze solution/server
 
       - name: Run automated test harness
-        run: pwsh tools/test.ps1 -Coverage
+        run: pwsh tools/test.ps1 -Coverage -Governance
 
       - name: Verify DAG Precedence Gate
         run: pwsh tools/dag-gate.ps1
