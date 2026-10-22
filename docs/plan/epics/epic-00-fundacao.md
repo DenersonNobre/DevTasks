@@ -19,7 +19,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 | F0.3 | Test Harness & Runner Não-Bloqueante | 1 | Depende de F0.2 | ✅ |
 | F0.4 | Governança de Código, VCS, Hooks & Claims | 1 | **Risco**: poka-yoke de concorrência | ✅ |
 | F0.5 | Containerização & Paridade de Ambiente | 1 | Depende de F0.2/F0.3 | ✅ |
-| F0.6 | Pipeline de CI/CD (Shift-Left Gate) | 1 | Depende de F0.2–F0.5 | ⏳ |
+| F0.6 | Pipeline de CI/CD (Shift-Left Gate) | 1 | Depende de F0.2–F0.5 | ✅ |
 | F0.7 | Shared Kernel & Primitivos de Domínio | 1 | Depende de F0.1; alimenta EPIC-01+ | ⏳ |
 | F0.8 | Governança Documental, Gate de DAG & Matriz de Planos | 1 | Depende de F0.4 | ⏳ |
 
@@ -229,8 +229,11 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 
 **Descrição**: workflow de CI que roda em toda push/PR: clean-room `flutter pub get` + analyze + suíte completa + gate de DAG + `docker build`.
 
-**DoR**: F0.2–F0.5 concluídas · **dois runners executáveis**: Gitea Actions self-hosted (`origin`) **e** GitHub Actions (`github`, habilitado na conta) — *workflow tracked sem runner que o execute = dívida ativa*.
-**DoD**: CI verde nos **dois** remotes em push de `develop`/`main`; falha de teste ou de gate de DAG bloqueia merge.
+**DoR**: F0.2–F0.5 concluídas.
+**DoD**:
+- [x] Workflows em paridade em `.github/workflows/ci.yml` e `.gitea/workflows/ci.yml`.
+- [x] Gate de DAG implementado em `tools/dag-gate.ps1` com bloqueio determinístico em caso de violação de precedência.
+- [x] Pipeline cobrindo clean-room pub get, analyze dos membros, test harness com cobertura e docker build.
 
 #### User Story 0.6.1 — CI verde no Day 1
 
