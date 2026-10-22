@@ -16,6 +16,8 @@ $gitHooksDir = Join-Path $RepoRoot ".git/hooks"
 if (Test-Path $gitHooksDir) {
     Copy-Item -Path "$RepoRoot/tools/hooks/commit-msg" -Destination "$gitHooksDir/commit-msg" -Force
     Copy-Item -Path "$RepoRoot/tools/hooks/commit-msg.ps1" -Destination "$gitHooksDir/commit-msg.ps1" -Force
+    Copy-Item -Path "$RepoRoot/tools/hooks/pre-commit" -Destination "$gitHooksDir/pre-commit" -Force
+    Copy-Item -Path "$RepoRoot/tools/hooks/pre-commit.ps1" -Destination "$gitHooksDir/pre-commit.ps1" -Force
 }
 
 Write-Host "==> [DevTasks] Git hooks instalados com sucesso!"

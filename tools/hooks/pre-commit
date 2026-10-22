@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# Git hook: pre-commit (F0.4 / UC-00.04 / NC-13)
+DIR="$(cd "$(dirname "$0")" && pwd)"
+if command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -ExecutionPolicy Bypass -NoProfile -File "$DIR/pre-commit.ps1"
+elif command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -File "$DIR/pre-commit.ps1"
+else
+    echo "Error: PowerShell not found for pre-commit hook" >&2
+    exit 1
+fi
