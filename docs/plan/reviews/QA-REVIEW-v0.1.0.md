@@ -1,5 +1,7 @@
-# Auditoria — Fase 1 (EPIC-00 · Fundação)
+# QA-REVIEW v0.1.0 — Auditoria da Fase 1 (EPIC-00 · Fundação)
 
+> **Artefato**: laudo de QA (Gate 4) da release `v0.1.0` — nome canônico `docs/plan/reviews/QA-REVIEW-vX.Y.Z.md`
+> (oracle `architecture-guidelines` §0 · contrato `/qa`).
 > **Data**: 2026-10-22 · **Branch auditada**: `develop` @ `75e40f7` (estado móvel — avançou durante a
 > auditoria) · **Baseline**: `main` @ `17b69f4`
 > **Método**: duas lentes independentes sobre o mesmo snapshot —
