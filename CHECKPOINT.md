@@ -18,19 +18,20 @@ Gate Zero aprovado pelo PO em 2026-10-21 — execução autorizada a partir da f
 - UC-00.03 consolidado no commit `152fb08` (F0.3 ✅).
 - UC-00.04 consolidado no commit `577deed` (F0.4 ✅).
 - UC-00.05 consolidado no commit `b020392` (F0.5 ✅).
-- **UC-00.06 PRONTO PARA CONSOLIDAÇÃO** (Gates 3 e 4 ✅):
-  - Green e QA verificados: `tools/tests/test_ci_pipeline.ps1` passou com exit 0 em todos os testes.
-  - Workflows `.github/workflows/ci.yml` e `.gitea/workflows/ci.yml` implementados em paridade Day 1.
-  - Gate de DAG mecânico `tools/dag-gate.ps1` ativo e validado (bloqueio determinístico de precedência).
-  - Laudo Gate 4 (QA): Verde sem pendências (`>>> ALL UC-00.06 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<`).
+- UC-00.06 consolidado no commit `1dbe8ee` (F0.6 ✅).
+- **UC-00.07 PRONTO PARA CONSOLIDAÇÃO** (Gates 3 e 4 ✅):
+  - Shared Kernel implementado em `solution/app/lib/global/kernel/` com DIP 100% (zero imports de infra).
+  - Primitivos `IResult<T, F>`, taxonomia `IFailure` (SPEC §6), VOs e porta `IClock`.
+  - Suíte de testes unitários `kernel_test.dart` verde (`+7: All tests passed!`) e analyze limpo.
+  - Laudo Gate 4 (QA): Verde sem pendências (`>>> ALL KERNEL TESTS PASSED & DIP 100% VERIFIED <<<`).
 - **Branches**: `develop` = branch de trabalho do ciclo; `main` = baseline estável; nenhum push pendente.
 - Decisões do PO aplicadas e datadas: D-01/D-02/D-03/D-04 — trilha em DESIGN §12.
 
-## Próximo passo (consolidar UC-00.06 e iniciar UC-00.07)
+## Próximo passo (consolidar UC-00.07 e iniciar UC-00.08)
 
-1. Consolidação: stage por path explícito e commit canônico `(UC-00.06)`.
-2. Transição para `UC-00.07` (F0.7 — Shared Kernel & Primitivos Universais de Domínio).
-3. Seguir UC a UC da EPIC-00 (F0.7 ➜ F0.8) pelo mesmo ciclo com TDD e evidências.
+1. Consolidação: stage por path explícito e commit canônico `(UC-00.07)`.
+2. Transição para `UC-00.08` (F0.8 — Governança Documental & Matriz de Planos: fechamento de EPIC-00).
+3. Seguir UC a UC da EPIC-00 (F0.8) pelo mesmo ciclo com TDD e evidências.
 
 ## Travas vivas
 

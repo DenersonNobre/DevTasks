@@ -20,7 +20,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 | F0.4 | Governança de Código, VCS, Hooks & Claims | 1 | **Risco**: poka-yoke de concorrência | ✅ |
 | F0.5 | Containerização & Paridade de Ambiente | 1 | Depende de F0.2/F0.3 | ✅ |
 | F0.6 | Pipeline de CI/CD (Shift-Left Gate) | 1 | Depende de F0.2–F0.5 | ✅ |
-| F0.7 | Shared Kernel & Primitivos de Domínio | 1 | Depende de F0.1; alimenta EPIC-01+ | ⏳ |
+| F0.7 | Shared Kernel & Primitivos de Domínio | 1 | Depende de F0.1; alimenta EPIC-01+ | ✅ |
 | F0.8 | Governança Documental, Gate de DAG & Matriz de Planos | 1 | Depende de F0.4 | ⏳ |
 
 ---
@@ -269,7 +269,10 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 **Descrição**: `Result<T>` tipado, VOs base (UserId, WorkspaceId, Money-like NãoExiste aqui, DateOnly/ISO-8601, NonEmptyString), `Clock` port e contratos de borda — a base que EPIC-01+ consomem.
 
 **DoR**: SPEC §5/§6 revisadas (portas e taxonomia de falhas prontas).
-**DoD**: unit tests do kernel verde; **zero** imports de infra no domínio (DIP verificado por análise).
+**DoD**:
+- [x] unit tests do kernel verde (`kernel_test.dart`).
+- [x] **zero** imports de infra no domínio (DIP verificado por análise estática).
+- [x] `IResult<T, F>`, taxonomia `IFailure` e VOs base implementados.
 
 #### User Story 0.7.1 — Primitivos de domínio reutilizáveis
 
