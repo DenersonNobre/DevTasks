@@ -15,7 +15,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 | # | Feature | UCs/Histórias | Independência / Risco | Status |
 |:---|:---|:---:|:---|:---:|
 | F0.1 | Topologia de Diretórios & Isolamento de Artefatos | 1 | Raiz de tudo | ✅ |
-| F0.2 | Toolchain, Build em 1 Comando & Idempotência | 1 | Depende de F0.1 | ⏳ |
+| F0.2 | Toolchain, Build em 1 Comando & Idempotência | 1 | Depende de F0.1 | ✅ |
 | F0.3 | Test Harness & Runner Não-Bloqueante | 1 | Depende de F0.2 | ⏳ |
 | F0.4 | Governança de Código, VCS, Hooks & Claims | 1 | **Risco**: poka-yoke de concorrência | ⏳ |
 | F0.5 | Containerização & Paridade de Ambiente | 1 | Depende de F0.2/F0.3 | ⏳ |
@@ -75,7 +75,9 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 **Descrição**: validação de ambiente (Flutter/Dart/Docker), build em 1 comando com exit code correto, `clean` idempotente e geração do client Serverpod (`serverpod generate`).
 
 **DoR**: F0.1 concluída · SDKs com versão mínima conhecida (Flutter 3.47.x / Dart 3.13.x).
-**DoD**: `tools/build.ps1` (ou equivalente) sai 0 em sucesso e ≠0 em falha; `clean` remove tudo sem tocar em fonte.
+**DoD**:
+- [x] `tools/build.ps1` sai 0 em sucesso e ≠0 em falha (preflight, fail-fast, build).
+- [x] `tools/clean.ps1` remove tudo de build/cache idempotentemente sem tocar em fonte.
 
 #### User Story 0.2.1 — Build determinístico em um comando
 
@@ -320,3 +322,4 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
   - `tools/gate-dag.ps1` [NEW]
   - `docs/plan/state/UC-CURRENT.md`, `docs/plan/state/claims.schema.json`, `docs/plan/state/CLAIMS.md` [NEW]
   - `README.md`, `CHANGELOG.md`, `LICENSE` [MODIFY/NEW]
+
