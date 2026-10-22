@@ -207,3 +207,55 @@ Não executados (por mandato read-only): tools/tests/*.ps1, docker/tests/*.ps1, 
 tools/clean.ps1; build Docker não reproduzido (docker CLI ausente no host).
 Portanto NC-06 (causa do job Docker), F0.2 c2 e F0.3 c2 são [INFERÊNCIA] com fonte citada.
 ```
+
+---
+
+## 11. Remediação — verificação independente (2026-10-22)
+
+> **Método**: verificação por medição própria (não a declaração do autor). Remediação do outro agente:
+> `80ad212`, `10a8f33`, `80d97fa`, `b48f2fa`. Complementos desta rodada: `0e7c21d` (gates NFR-03/04),
+> `0076041` (artefato + fail-fast real), `9c3be33` (hook de encoding), `61a0eaf` (health testável +
+> resíduos), `99cf7e7` (DoD do épico).
+
+### 11.1 Fechados — com evidência medida
+
+| NC | Evidência da verificação |
+|:--|:---|
+| NC-01/02/06 | CI GitHub: runs `39806942077` e `39807538902` → `success` nos **dois** jobs (Docker build passa) |
+| NC-04 | `startServer`/`handleRequest` extraídos; `solution/server/test/health_endpoint_test.dart` prova `/health` 200 JSON e 404 — **Red** comprovado (`Method not found: 'startServer'`) |
+| NC-05 | `claims.ps1` com `FileMode::CreateNew` (O_CREATE\|O_EXCL), posse e `exit 2` em conflito |
+| NC-07 | `.dockerignore` na **raiz** do contexto (19 linhas) |
+| NC-08 | `tools/test.ps1 -Governance` roda 7 suítes (5 de `tools/tests/` + `docker/tests/` + a nova de encoding) |
+| NC-09 | `test_build_scripts.ps1` TEST 3 executa `build.ps1` com **PATH sem Flutter** → `exit 1` + `[FAIL-FAST]` (substitui o `-SimulateMissingFlutter` tautológico) |
+| NC-10 | `tools/build.ps1` compila e **assere** `solution/builds/devtasks-server.exe` (6,14 MB) |
+| NC-12 | matriz `8/8 ✅` / total `8/26 🔄` |
+| NC-13 | `pre-commit` instalado (`tools/hooks/`) com 4 provas negativas (U+FFFD, CJK, BOM-only, limpo) |
+| NC-14 | gate de cobertura **que falha**: global 95,36% (≥70%) e domínio/kernel 95,36% (≥90%); prova negativa com mínimo 99,9% → exit 1 |
+| NC-16 | `DateOnly` valida calendário real (round-trip `DateTime.utc`) |
+| NC-19 | `pg_isready -U ${POSTGRES_USER:-devtasks} -d ${POSTGRES_DB:-devtasks}` (parametrizado) |
+| NC-23 | `heartbeat` implementado no shim |
+
+### 11.2 Correção de registro (erro **deste** auditor)
+
+**NC-28 (regressão de NFR-03) fica RETIRADO.** As medições de 226 s e 104 s que embasaram o achado foram
+feitas com **outro processo ativo na mesma máquina** (agente concorrente executando suíte/build). Medido
+isolado: `tools/test.ps1` = **15,9–18,2 s** (dentro do teto). O defeito **real** era outro e menor — o
+orçamento media o run de governança junto e **só emitia warning** (nunca falhava) — corrigido em
+`0e7c21d`: core ≤ 60 s **falha**, governança opt-in ≤ 600 s, com prova negativa no `test_test_runner.ps1`.
+Registrado em `LEARNINGS.md` (inclui a armadilha medida: `flutter test` em pacote **Dart puro** = 129,8 s
+vs `dart test` = 24,1 s).
+
+### 11.3 Abertos remanescentes
+
+| NC | Estado | Evidência |
+|:--|:---|:---|
+| NC-15 | **aberto** | não existe gate de DIP (zero imports de infra no domínio) — verificação segue manual |
+| NC-17 | **aberto** | RNF-05/06/07 (tema base/WCAG) não entregues; `ThemeData`/`darkTheme` ausentes |
+| NC-22 | **aberto** | `epic-00:269` ainda traz o placeholder "Money-like **NãoExiste aqui**" |
+| NC-24 | **mitigado** | `core.hooksPath = tools/hooks` ✅; a cópia para `.git/hooks` segue como salvaguarda (pode defasar do versionado) |
+| NC-25 | **aberto** | `UC-CURRENT.md:46` ainda afirma "`CHECKPOINT.md` com 42 linhas" (real: 35) |
+| NC-26 | **aberto** | `main` local em `17b69f4` (não publicada) e **zero tags** — release não cortada |
+| NC-27 | **parcial** | DoR da F0.1 corrigido no épico; `LEARNINGS.md` agora registra o ciclo (3 entradas) |
+
+> **Nota de escopo**: NC-15/17/22/24/25/26 não estavam no recorte desta rodada de correção; ficam
+> registrados como pendência explícita, não como "esquecimento".
