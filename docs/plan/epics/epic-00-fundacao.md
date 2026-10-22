@@ -16,7 +16,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 |:---|:---|:---:|:---|:---:|
 | F0.1 | Topologia de Diretórios & Isolamento de Artefatos | 1 | Raiz de tudo | ✅ |
 | F0.2 | Toolchain, Build em 1 Comando & Idempotência | 1 | Depende de F0.1 | ✅ |
-| F0.3 | Test Harness & Runner Não-Bloqueante | 1 | Depende de F0.2 | ⏳ |
+| F0.3 | Test Harness & Runner Não-Bloqueante | 1 | Depende de F0.2 | ✅ |
 | F0.4 | Governança de Código, VCS, Hooks & Claims | 1 | **Risco**: poka-yoke de concorrência | ⏳ |
 | F0.5 | Containerização & Paridade de Ambiente | 1 | Depende de F0.2/F0.3 | ⏳ |
 | F0.6 | Pipeline de CI/CD (Shift-Left Gate) | 1 | Depende de F0.2–F0.5 | ⏳ |
@@ -112,7 +112,9 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 **Descrição**: runner headless de 1 comando cobrindo `solution/app` e `solution/server`, com smoke baseline, cobertura e gate de DAG acoplado (F0.8).
 
 **DoR**: F0.2 concluída.
-**DoD**: 1 comando → suíte completa verde em ≤ 60 s (NFR-03); saída capturável em CI (headless, sem prompt).
+**DoD**:
+- [x] 1 comando → suíte completa verde em ≤ 60 s (NFR-03); saída capturável em CI (headless, sem prompt).
+- [x] Coleta de cobertura e fail propagation comprovados (`tools/test.ps1`).
 
 #### User Story 0.3.1 — Runner de testes em um comando
 
