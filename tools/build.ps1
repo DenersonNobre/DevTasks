@@ -4,7 +4,8 @@
 param(
     [switch]$PreflightOnly,
     [switch]$SimulateMissingFlutter,
-    [switch]$SkipClientGen
+    [switch]$SkipClientGen,
+    [switch]$SkipCompile
 )
 
 $ErrorActionPreference = "Stop"
@@ -144,6 +145,37 @@ if (-not $SkipClientGen -and $serverpodCmd -and (Test-Path "solution/server/lib"
     } finally {
         Pop-Location
     }
+}
+
+# 6. Artefato de build (F0.2 / NC-10): compila o server e ASSERE o artefato esperado.
+if (-not $SkipCompile) {
+    Write-Host "`n==> [DevTasks] Compilando artefato do server (dart compile exe)..."
+    $buildDir = Join-Path $RepoRoot "solution/builds"
+    New-Item -ItemType Directory -Path $buildDir -Force | Out-Null
+    $artifact = Join-Path $buildDir "devtasks-server.exe"
+    if (Test-Path $artifact) { Remove-Item $artifact -Force }
+
+    Push-Location "solution/server"
+    try {
+        & dart compile exe lib/main.dart -o $artifact
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "[BUILD-FAIL] 'dart compile exe' falhou para o server."
+            exit $LASTEXITCODE
+        }
+    } finally {
+        Pop-Location
+    }
+
+    if (-not (Test-Path $artifact)) {
+        Write-Error "[BUILD-FAIL] Artefato esperado ausente: solution/builds/devtasks-server.exe"
+        exit 1
+    }
+    $artifactSize = (Get-Item $artifact).Length
+    if ($artifactSize -le 0) {
+        Write-Error "[BUILD-FAIL] Artefato gerado esta vazio: solution/builds/devtasks-server.exe"
+        exit 1
+    }
+    Write-Host "  [OK] Artefato: solution/builds/devtasks-server.exe ($([Math]::Round($artifactSize / 1MB, 2)) MB)"
 }
 
 Write-Host "`n==> [DevTasks] Build concluído com sucesso!"

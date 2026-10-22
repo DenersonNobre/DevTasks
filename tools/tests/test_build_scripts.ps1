@@ -24,19 +24,30 @@ if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/build.ps1 -PreflightOnly failed with exit code $LASTEXITCODE"
 }
 
-Write-Host "=== TEST 3: Fail-fast em ambiente quebrado ==="
-# Simula ausência do Flutter forçando a falha de preflight
-& $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -PreflightOnly -SimulateMissingFlutter
+Write-Host "=== TEST 3: Fail-fast REAL em ambiente sem Flutter no PATH (NC-09) ==="
+$scrubbedPath = "$env:SystemRoot\System32"
+$out = & $psExe -ExecutionPolicy Bypass -NoProfile -Command "`$env:PATH='$scrubbedPath'; & '$BuildScript' -PreflightOnly; exit `$LASTEXITCODE" 2>&1
 if ($LASTEXITCODE -eq 0) {
-    throw "FAIL: Expected failure when Flutter is missing, but got exit code 0"
+    throw "FAIL: build.ps1 nao falhou com PATH sem Flutter/Dart (fail-fast real nao comprovado)"
 }
-Write-Host "Pass: Fail-fast correctly triggered with exit code $LASTEXITCODE"
+if (($out | Out-String) -notmatch "FAIL-FAST") {
+    throw "FAIL: fail-fast sem a mensagem '[FAIL-FAST]' esperada"
+}
+Write-Host "Pass: fail-fast real disparado (exit $LASTEXITCODE) com PATH sem Flutter/Dart"
 
-Write-Host "=== TEST 4: Build idempotente completo ==="
+Write-Host "=== TEST 4: Build idempotente completo + artefato esperado (NC-10) ==="
 & $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/build.ps1 failed with exit code $LASTEXITCODE"
 }
+$artifact = Join-Path $RepoRoot "solution/builds/devtasks-server.exe"
+if (-not (Test-Path $artifact)) {
+    throw "FAIL: artefato esperado ausente apos o build: solution/builds/devtasks-server.exe"
+}
+if ((Get-Item $artifact).Length -le 0) {
+    throw "FAIL: artefato gerado esta vazio"
+}
+Write-Host "Pass: build produziu o artefato esperado ($([Math]::Round((Get-Item $artifact).Length / 1MB, 2)) MB)"
 
 Write-Host "=== TEST 5: Clean idempotente (2 execuções consecutivas) ==="
 & $psExe -ExecutionPolicy Bypass -NoProfile -File $CleanScript

@@ -28,6 +28,7 @@ __recovery/
 *.user
 
 # --- Saídas de build / logs ---
+/solution/builds/
 *.log
 *.tmp
 coverage/

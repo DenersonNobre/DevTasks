@@ -15,6 +15,7 @@ $directoriesToClean = @(
     "solution/app/.dart_tool",
     "solution/server/build",
     "solution/server/.dart_tool",
+    "solution/builds",
     ".dart_tool"
 )
 
