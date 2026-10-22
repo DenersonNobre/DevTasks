@@ -15,11 +15,23 @@ function Invoke-Hook {
     return $LASTEXITCODE
 }
 
-Write-Host "=== TEST 1: Hook de pre-commit existe e esta instalado ==="
+Write-Host "=== TEST 1: Hook versionado existe e o INSTALADOR o instala ==="
 if (-not (Test-Path $Hook)) { throw "RED EXPECTED: tools/hooks/pre-commit.ps1 does not exist yet." }
-if (-not (Test-Path (Join-Path $RepoRoot ".git/hooks/pre-commit"))) {
-    throw "FAIL: .git/hooks/pre-commit nao instalado (rode tools/install-hooks.ps1)."
+
+$installer = Join-Path $RepoRoot "tools/install-hooks.ps1"
+if (-not (Test-Path $installer)) { throw "FAIL: tools/install-hooks.ps1 ausente." }
+
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $installer | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "FAIL: tools/install-hooks.ps1 falhou (exit $LASTEXITCODE)." }
+
+$installedHook = Join-Path $RepoRoot ".git/hooks/pre-commit"
+if (-not (Test-Path $installedHook)) {
+    throw "FAIL: install-hooks.ps1 nao instalou .git/hooks/pre-commit."
 }
+if ((& git config core.hooksPath) -ne "tools/hooks") {
+    throw "FAIL: core.hooksPath nao aponta para tools/hooks."
+}
+Write-Host "Pass: hook instalado por tools/install-hooks.ps1 e core.hooksPath configurado."
 
 try {
     Write-Host "=== TEST 2: Arquivo limpo (UTF-8) passa ==="
