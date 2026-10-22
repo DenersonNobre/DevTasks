@@ -43,6 +43,24 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 - **Prevenção**: ao clonar/iniciar outro projeto, nascer direto no protocolo — não criar
   checkpoint efêmero gitignored e depois migrar.
 
+## 2026-10-22 — Gates de NFR-03/NFR-04 que não falhavam + medição contaminada por concorrência
+
+- **Sintoma**: (a) o runner avisava `[NFR-03] ... excedeu 60s` e **saía 0** (gate decorativo); (b) a
+  suíte completa parecia levar 226 s e depois 104 s, sugerindo regressão de performance; (c) não havia
+  gate de cobertura, apesar do NFR-04 (≥70% global / ≥90% domínio).
+- **Causa raiz**: (a) o check era `Write-Warning`, não `Write-Error` + `exit 1`; (b) as duas medições
+  foram feitas **com outro processo ativo na mesma máquina** (agente concorrente rodando suíte/build) —
+  isolado, o core leva **16–18 s**; (c) o `-Coverage` apenas imprimia o caminho do `lcov.info`.
+- **Fix**: orçamento com **teto separado** — core (app+server) ≤ 60 s **falha** o runner; governança
+  opt-in ≤ 600 s; gate de cobertura (global ≥ 70%, domínio ≥ 90%) que **falha**; provas negativas reais
+  no `test_test_runner.ps1` (teto impossível → exit 1) e no `test_build_scripts.ps1` (PATH sem Flutter).
+- **Armadilha de performance medida**: `flutter test` num pacote **Dart puro** (server) custa **129,8 s**;
+  `dart test` no mesmo pacote custa **24,1 s** (5× menos). O runner já usa `dart test` para o server —
+  não "uniformizar" para `flutter test`.
+- **Prevenção**: (i) gate que só emite warning **não é gate**; (ii) medir tempo de suíte **sem carga
+  concorrente** (um agente por vez) e registrar o método; (iii) orçamento por escopo (core × opt-in),
+  nunca um teto único que mistura suítes de naturezas diferentes.
+
 ## 2026-10-22 — Saneamento pós QA-Review v0.1.0: Docker build, claims atômicos e cobertura
 
 - **Sintoma**: Auditoria de QA (Gate 4) reprovou release v0.1.0 identificando falha de Docker build no CI (NC-01/NC-06), `.dockerignore` inerte por estar em subpasta (NC-07), healthcheck insatisfazível contra stub (NC-04), claims sem atomicidade nem código 2 de colisão (NC-05), cobertura do kernel abaixo de 70% (NC-14) e suites de governança órfãs (NC-08).
