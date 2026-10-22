@@ -76,7 +76,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 
 **DoR**: F0.1 concluída · SDKs com versão mínima conhecida (Flutter 3.47.x / Dart 3.13.x).
 **DoD**:
-- [x] `tools/build.ps1` sai 0 em sucesso e ≠0 em falha (preflight, fail-fast, build).
+- [x] `tools/build.ps1` sai 0 em sucesso e ≠0 em falha (preflight, fail-fast **real** sem Flutter no PATH) e **produz/assere o artefato esperado** (`solution/builds/devtasks-server.exe`).
 - [x] `tools/clean.ps1` remove tudo de build/cache idempotentemente sem tocar em fonte.
 
 #### User Story 0.2.1 — Build determinístico em um comando
@@ -113,8 +113,8 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 
 **DoR**: F0.2 concluída.
 **DoD**:
-- [x] 1 comando → suíte completa verde em ≤ 60 s (NFR-03); saída capturável em CI (headless, sem prompt).
-- [x] Coleta de cobertura e fail propagation comprovados (`tools/test.ps1`).
+- [x] 1 comando → suíte **core** (app+server) verde em ≤ 60 s (**gate que falha**, NFR-03); suíte de governança opt-in com teto próprio (600 s); saída capturável em CI (headless, sem prompt).
+- [x] Coleta de cobertura com **gate de threshold** (global ≥ 70%, domínio ≥ 90% — NFR-04) e fail propagation comprovados por teste **genuinamente falho** (`tools/test.ps1`).
 
 #### User Story 0.3.1 — Runner de testes em um comando
 
@@ -155,7 +155,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 **DoR**: F0.1/F0.2 concluídas · binário/shim `claims` implementado em `tools/bin/claims`.
 **DoD**:
 - [x] commit sem claim de `(UC-XX.YY)` é **bloqueado com exit 1**.
-- [x] hook `commit-msg` instalado e comprovado por teste negativo e D-04 (`develop` only).
+- [x] hooks `commit-msg` (Conventional Commits + claim + D-04) e `pre-commit` (**encoding**: UTF-8 estrito, U+FFFD, CJK, arquivo truncado) instalados e comprovados por provas negativas.
 - [x] shims de claims (`tools/bin/claims*`) implementados com schema versionado.
 
 #### User Story 0.4.1 — Hooks Git com poka-yoke de claims
