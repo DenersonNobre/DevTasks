@@ -7,7 +7,7 @@
 ## Contexto
 
 Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
-**EPIC-00 (FUNDAÇÃO) 100% CONCLUÍDA** em 2026-10-22.
+**EPIC-00 (FUNDAÇÃO) 100% CONCLUÍDA & SINCRONIZADA** em 2026-10-22.
 Execução autorizada para a cadeia funcional a partir da **EPIC-01 (Autenticação)**.
 
 ## Estado verificado (2026-10-22)
@@ -21,7 +21,9 @@ Execução autorizada para a cadeia funcional a partir da **EPIC-01 (Autenticaç
   - `UC-00.06` (F0.6 ✅): Workflows CI em paridade e gate de DAG (`1dbe8ee`).
   - `UC-00.07` (F0.7 ✅): Shared Kernel puro com DIP 100%, Result e taxonomia SPEC §6 (`670fda7`).
   - `UC-00.08` (F0.8 ✅): Gate documental, README executável e baseline de release (`7855382`).
-- **Remotes**: `github` sincronizado (`develop -> github/develop`); `origin` (Gitea LAN) offline/aguardando start.
+- **Remotes Sincronizados (Paridade Day 1)**:
+  - `github`: `develop` em `1450563` ✅
+  - `origin` (Gitea LAN): `develop` em `1450563` ✅
 - Decisões do PO aplicadas: D-01 (Kanban 3 col), D-02 (3 papéis), D-03 (Riverpod), D-04 (commits em develop).
 
 ## Próximo passo (iniciar EPIC-01 — Autenticação)
@@ -33,4 +35,5 @@ Execução autorizada para a cadeia funcional a partir da **EPIC-01 (Autenticaç
 
 - Ciclo roda direto em `develop` — commits por UC assinados `(UC-XX.YY)`; **nunca na `main`** (D-04).
 - Poka-yoke ativo: commit assinado exige claim ativo via `tools/bin/claims.cmd claim -slice UC-XX.YY`.
+- Push proibido sem pedido explícito + 3 evidências.
 - NFR-05 rate limit (10/min) revisar no Gate 2.5 da EPIC-01.
