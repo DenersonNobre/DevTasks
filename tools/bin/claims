@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# POSIX wrapper for claims
+DIR="$(cd "$(dirname "$0")" && pwd)"
+if command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -ExecutionPolicy Bypass -NoProfile -File "$DIR/claims.ps1" "$@"
+elif command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -File "$DIR/claims.ps1" "$@"
+else
+    echo "Error: PowerShell not found" >&2
+    exit 1
+fi

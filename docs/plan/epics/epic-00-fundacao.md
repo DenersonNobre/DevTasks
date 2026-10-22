@@ -17,7 +17,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 | F0.1 | Topologia de Diretórios & Isolamento de Artefatos | 1 | Raiz de tudo | ✅ |
 | F0.2 | Toolchain, Build em 1 Comando & Idempotência | 1 | Depende de F0.1 | ✅ |
 | F0.3 | Test Harness & Runner Não-Bloqueante | 1 | Depende de F0.2 | ✅ |
-| F0.4 | Governança de Código, VCS, Hooks & Claims | 1 | **Risco**: poka-yoke de concorrência | ⏳ |
+| F0.4 | Governança de Código, VCS, Hooks & Claims | 1 | **Risco**: poka-yoke de concorrência | ✅ |
 | F0.5 | Containerização & Paridade de Ambiente | 1 | Depende de F0.2/F0.3 | ⏳ |
 | F0.6 | Pipeline de CI/CD (Shift-Left Gate) | 1 | Depende de F0.2–F0.5 | ⏳ |
 | F0.7 | Shared Kernel & Primitivos de Domínio | 1 | Depende de F0.1; alimenta EPIC-01+ | ⏳ |
@@ -152,8 +152,11 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 > (sem `feat/` por épico/UC); `main` só avança via release. O hook de F0.4 deve bloquear commit
 > assinado `(UC-XX.YY)` fora de `develop`.
 
-**DoR**: F0.1/F0.2 concluídas · binário global `claims` localizado (PATH ou `A:\.dotfiles\tools\bin\`).
-**DoD**: commit sem claim de `(UC-XX.YY)` é **bloqueado com exit 1**; hook instalado e comprovado por teste negativo.
+**DoR**: F0.1/F0.2 concluídas · binário/shim `claims` implementado em `tools/bin/claims`.
+**DoD**:
+- [x] commit sem claim de `(UC-XX.YY)` é **bloqueado com exit 1**.
+- [x] hook `commit-msg` instalado e comprovado por teste negativo e D-04 (`develop` only).
+- [x] shims de claims (`tools/bin/claims*`) implementados com schema versionado.
 
 #### User Story 0.4.1 — Hooks Git com poka-yoke de claims
 

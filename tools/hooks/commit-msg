@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# Git hook: commit-msg (F0.4 / UC-00.04)
+DIR="$(cd "$(dirname "$0")" && pwd)"
+if command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -ExecutionPolicy Bypass -NoProfile -File "$DIR/commit-msg.ps1" "$1"
+elif command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -File "$DIR/commit-msg.ps1" "$1"
+else
+    echo "Error: PowerShell not found for commit-msg hook" >&2
+    exit 1
+fi
