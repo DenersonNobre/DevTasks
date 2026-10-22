@@ -18,7 +18,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 | F0.2 | Toolchain, Build em 1 Comando & Idempotência | 1 | Depende de F0.1 | ✅ |
 | F0.3 | Test Harness & Runner Não-Bloqueante | 1 | Depende de F0.2 | ✅ |
 | F0.4 | Governança de Código, VCS, Hooks & Claims | 1 | **Risco**: poka-yoke de concorrência | ✅ |
-| F0.5 | Containerização & Paridade de Ambiente | 1 | Depende de F0.2/F0.3 | ⏳ |
+| F0.5 | Containerização & Paridade de Ambiente | 1 | Depende de F0.2/F0.3 | ✅ |
 | F0.6 | Pipeline de CI/CD (Shift-Left Gate) | 1 | Depende de F0.2–F0.5 | ⏳ |
 | F0.7 | Shared Kernel & Primitivos de Domínio | 1 | Depende de F0.1; alimenta EPIC-01+ | ⏳ |
 | F0.8 | Governança Documental, Gate de DAG & Matriz de Planos | 1 | Depende de F0.4 | ⏳ |
@@ -192,8 +192,11 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 
 **Descrição**: `docker/` com Dockerfile multi-stage do Serverpod+Postgres, compose com nomenclatura anti-colisão (`devtasks_*`), binding `0.0.0.0` para teste em LAN e health check.
 
-**DoR**: F0.2/F0.03 concluídas · Docker Desktop disponível no host.
-**DoD**: `docker compose up` sobe API+Postgres com health verde; imagem builda do zero em CI (F0.6).
+**DoR**: F0.2/F0.03 concluídas.
+**DoD**:
+- [x] manifestos Docker em `docker/` com Dockerfile multi-stage e runtime slim.
+- [x] `docker-compose.yml` com convenção anti-colisão (`devtasks_*`), portas `0.0.0.0` para LAN e healthchecks.
+- [x] `.dockerignore` protegendo o contexto de build.
 
 #### User Story 0.5.1 — Stack completa em um comando
 

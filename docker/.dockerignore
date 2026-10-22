@@ -1,0 +1,16 @@
+.git
+.github
+.gitignore
+.gitattributes
+.idea
+.vscode
+.dart_tool/
+build/
+coverage/
+*.log
+*.tmp
+passwords.yaml
+.env.*
+!.env.example
+solution/app/
+docs/

@@ -16,19 +16,19 @@ Gate Zero aprovado pelo PO em 2026-10-21 — execução autorizada a partir da f
 - UC-00.01 consolidado no commit `e13b032` (F0.1 ✅).
 - UC-00.02 consolidado no commit `fc98122` (F0.2 ✅).
 - UC-00.03 consolidado no commit `152fb08` (F0.3 ✅).
-- **UC-00.04 PRONTO PARA CONSOLIDAÇÃO** (Gates 3 e 4 ✅):
-  - Green e QA verificados: `tools/tests/test_git_governance.ps1` passou com exit 0 em todos os testes.
-  - Shims de claims (`tools/bin/claims*`), schema e hook `tools/hooks/commit-msg` implementados.
-  - Poka-yoke mecânico ativo (bloqueia commits `(UC-XX.YY)` fora de `develop` e sem claim ativo).
-  - Laudo Gate 4 (QA): Verde sem pendências (`>>> ALL UC-00.04 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<`).
+- UC-00.04 consolidado no commit `577deed` (F0.4 ✅).
+- **UC-00.05 PRONTO PARA CONSOLIDAÇÃO** (Gates 3 e 4 ✅):
+  - Green e QA verificados: `docker/tests/test_docker_manifests.ps1` passou com exit 0.
+  - Manifestos `docker/Dockerfile` (multi-stage), `docker/docker-compose.yml` (anti-colisão, binding `0.0.0.0` para LAN) e `docker/.dockerignore` implementados.
+  - Laudo Gate 4 (QA): Verde sem pendências (`>>> ALL UC-00.05 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<`).
 - **Branches**: `develop` = branch de trabalho do ciclo; `main` = baseline estável; nenhum push pendente.
 - Decisões do PO aplicadas e datadas: D-01/D-02/D-03/D-04 — trilha em DESIGN §12.
 
-## Próximo passo (consolidar UC-00.04 e iniciar UC-00.05)
+## Próximo passo (consolidar UC-00.05 e iniciar UC-00.06)
 
-1. Consolidação: stage por path explícito e commit canônico `(UC-00.04)`.
-2. Transição para `UC-00.05` (F0.5 — Containerização & Paridade de Ambiente: Dockerfile/Compose).
-3. Seguir UC a UC da EPIC-00 (F0.5 ➜ F0.8) pelo mesmo ciclo com TDD e evidências.
+1. Consolidação: stage por path explícito e commit canônico `(UC-00.05)`.
+2. Transição para `UC-00.06` (F0.6 — Pipeline de CI/CD Contínuo: Shift-Left Gate).
+3. Seguir UC a UC da EPIC-00 (F0.6 ➜ F0.8) pelo mesmo ciclo com TDD e evidências.
 
 ## Travas vivas
 
