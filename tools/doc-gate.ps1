@@ -64,7 +64,8 @@ Elimine duplicações e mantenha apenas os ponteiros essenciais e o estado verif
 $dagGateScript = Join-Path $ScriptDir "dag-gate.ps1"
 if (Test-Path $dagGateScript) {
     Write-Host "`n--> Acoplando verificação com o Gate de DAG..."
-    & powershell.exe -ExecutionPolicy Bypass -NoProfile -File $dagGateScript -PlanFile $PlanFile
+    $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh" } else { "powershell.exe" }
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $dagGateScript -PlanFile $PlanFile
     if ($LASTEXITCODE -ne 0) {
         Write-Error "[DOC-GATE-FAIL] Falha no Gate de DAG."
         exit $LASTEXITCODE
