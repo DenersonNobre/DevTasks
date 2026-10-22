@@ -6,6 +6,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "../..")
 Set-Location $RepoRoot
 
+$psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh" } else { "powershell.exe" }
 $DocGateScript = Join-Path $RepoRoot "tools/doc-gate.ps1"
 $ClaimsDoc = Join-Path $RepoRoot "docs/plan/state/CLAIMS.md"
 $LicenseFile = Join-Path $RepoRoot "LICENSE"
@@ -26,7 +27,7 @@ if (-not (Test-Path $ChangelogFile)) {
 }
 
 Write-Host "`n=== TEST 2: Validação documental canônica atual (exit 0) ==="
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $DocGateScript
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $DocGateScript
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/doc-gate.ps1 falhou na verificação atual com exit code $LASTEXITCODE"
 }
@@ -46,7 +47,7 @@ Nenhuma
 
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    $gateOut = & powershell.exe -ExecutionPolicy Bypass -NoProfile -File $DocGateScript -HandoffFile $tempHandoff 2>&1 | Out-String
+    $gateOut = & $psExe -ExecutionPolicy Bypass -NoProfile -File $DocGateScript -HandoffFile $tempHandoff 2>&1 | Out-String
     $gateExit = $LASTEXITCODE
     $ErrorActionPreference = $prevEap
 
@@ -68,7 +69,7 @@ try {
 
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    $gateOut2 = & powershell.exe -ExecutionPolicy Bypass -NoProfile -File $DocGateScript -CheckpointFile $tempCheckpoint 2>&1 | Out-String
+    $gateOut2 = & $psExe -ExecutionPolicy Bypass -NoProfile -File $DocGateScript -CheckpointFile $tempCheckpoint 2>&1 | Out-String
     $gateExit2 = $LASTEXITCODE
     $ErrorActionPreference = $prevEap
 

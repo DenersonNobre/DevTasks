@@ -1,62 +1,64 @@
 # tools/hooks/commit-msg.ps1
-# Hook de validação de Conventional Commits, D-04 de branches e Poka-Yoke de Claims (F0.4)
-[CmdletBinding()]
+# Poka-yoke de validação da mensagem de commit (F0.4 / UC-00.04)
+# Valida: Conventional Commits + Tag canônica (UC-XX.YY) + Claim Ativo + Política D-04
 param(
     [Parameter(Position=0, Mandatory=$true)]
-    [string]$MsgFile,
+    [string]$CommitMsgFile,
 
     [Parameter(Position=1, Mandatory=$false)]
-    [string]$SimulatedBranch
+    [string]$CurrentBranch = ""
 )
 
 $ErrorActionPreference = "Stop"
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot = Resolve-Path (Join-Path $ScriptDir "../..")
-$ClaimsScript = Join-Path $RepoRoot "tools/bin/claims.ps1"
 
-if (-not (Test-Path $MsgFile)) {
-    Write-Error "[HOOK-ERROR] Arquivo de mensagem de commit não encontrado: $MsgFile"
+if (-not (Test-Path $CommitMsgFile)) {
+    Write-Error "[HOOK-ERROR] Arquivo de mensagem de commit não encontrado: $CommitMsgFile"
     exit 1
 }
 
-$rawMsg = (Get-Content -Path $MsgFile -Raw).Trim()
-# Primeira linha é o assunto do commit
-$subject = ($rawMsg -split "`r?`n")[0].Trim()
+$commitMsg = (Get-Content $CommitMsgFile -Raw).Trim()
+$firstLine = ($commitMsg -split "`r?`n")[0].Trim()
 
-# 1. Validação de Conventional Commits
-$conventionalPattern = "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\-\.\/]+\))?:\s+.+"
-if ($subject -notmatch $conventionalPattern) {
+# 1. Ignora commits de merge ou squash automáticos
+if ($firstLine -match "^Merge " -or $firstLine -match "^Revert ") {
+    exit 0
+}
+
+# 2. Validação de Conventional Commits
+$convCommitPattern = "^(feat|fix|refactor|docs|test|chore|perf|ci|build)(\([a-z0-9_\-\/]+\))?!?: .+"
+if ($firstLine -notmatch $convCommitPattern) {
     Write-Error @"
-[CONVENTIONAL COMMIT REJEITADO]
-A mensagem de commit não atende ao padrão Conventional Commits.
-Assunto: '$subject'
+[CONVENTIONAL COMMITS VIOLATION]
+A mensagem de commit não segue a convenção do projeto!
+Formato exigido: <type>(<scope>): <subject> [(UC-XX.YY)]
+Tipos válidos: feat, fix, refactor, docs, test, chore, perf, ci, build
 
-Formato exigido:
-  <type>(<scope>): <assunto imperativo em inglês> (UC-XX.YY)
+Exemplo com UC:
+  feat(auth): add user registration endpoint (UC-01.01)
 
-Tipos permitidos: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
-Exemplo:
-  chore(git): add claims shims and commit-msg hook (UC-00.04)
+Exemplo geral:
+  docs(readme): update setup instructions
 "@
     exit 1
 }
 
-# 2. Verificação de Caso de Uso e Poka-Yoke
-if ($subject -match "\((UC-\d{2}\.\d{2})\)") {
+# 3. Validação de Caso de Uso e Claim Gate
+$ucPattern = "\((UC-\d{2}\.\d{2})\)$"
+if ($firstLine -match $ucPattern) {
     $slice = $Matches[1]
+    $RepoRoot = Resolve-Path (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "../..")
+    $ClaimsScript = Join-Path $RepoRoot "tools/bin/claims.ps1"
 
-    # Obtenção da branch
-    $branch = $SimulatedBranch
-    if (-not $branch) {
-        $branch = (& git branch --show-current 2>$null).Trim()
+    # Regra D-04: Commits de UC DEVEM estar no branch develop
+    if (-not $CurrentBranch) {
+        $CurrentBranch = (& git rev-parse --abbrev-ref HEAD).Trim()
     }
 
-    # Regra D-04: Commits de Caso de Uso DEVEM ser feitos no branch 'develop'
-    if ($branch -ne "develop") {
+    if ($CurrentBranch -ne "develop") {
         Write-Error @"
-[POKA-YOKE D-04 VIOLATION]
-Commits de Caso de Uso assinados com '($slice)' só são permitidos no branch 'develop'.
-Branch atual: '$branch'
+[POLÍTICA D-04 VIOLADA]
+Tentativa de commitar UC '$slice' na branch '$CurrentBranch'.
+Acordo D-04: Commits de Caso de Uso (UC-XX.YY) DEVEM ser efetuados na branch 'develop'.
 
 Para cumprir a política D-04:
 1. Mude para o branch develop: git checkout develop
@@ -67,7 +69,8 @@ Para cumprir a política D-04:
     }
 
     # Regra de Claims: O slice DEVE possuir claim ativo
-    & powershell.exe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript check -slice $slice | Out-Null
+    $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh" } else { "powershell.exe" }
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript check -slice $slice | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Error @"
 [POKA-YOKE CLAIM GATE]
@@ -75,7 +78,7 @@ Nenhum claim ativo encontrado para o slice '$slice'.
 Commits com assinatura '(UC-XX.YY)' exigem claim prévio para garantir a disciplina de concorrência.
 
 Obtenha o claim antes de commitar:
-  powershell.exe -ExecutionPolicy Bypass -File tools/bin/claims.ps1 claim -slice $slice -owner <seu-papel>
+  tools/bin/claims.cmd claim -slice $slice -owner <seu-papel>
 Exemplo:
   tools/bin/claims.cmd claim -slice $slice -owner coder
 "@

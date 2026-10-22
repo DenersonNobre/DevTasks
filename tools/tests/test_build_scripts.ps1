@@ -6,6 +6,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "../..")
 Set-Location $RepoRoot
 
+$psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh" } else { "powershell.exe" }
 $BuildScript = Join-Path $RepoRoot "tools/build.ps1"
 $CleanScript = Join-Path $RepoRoot "tools/clean.ps1"
 
@@ -18,32 +19,32 @@ if (-not (Test-Path $CleanScript)) {
 }
 
 Write-Host "=== TEST 2: Preflight da toolchain (exit 0) ==="
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -PreflightOnly
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -PreflightOnly
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/build.ps1 -PreflightOnly failed with exit code $LASTEXITCODE"
 }
 
 Write-Host "=== TEST 3: Fail-fast em ambiente quebrado ==="
 # Simula ausência do Flutter forçando a falha de preflight
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -PreflightOnly -SimulateMissingFlutter
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -PreflightOnly -SimulateMissingFlutter
 if ($LASTEXITCODE -eq 0) {
     throw "FAIL: Expected failure when Flutter is missing, but got exit code 0"
 }
 Write-Host "Pass: Fail-fast correctly triggered with exit code $LASTEXITCODE"
 
 Write-Host "=== TEST 4: Build idempotente completo ==="
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $BuildScript
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/build.ps1 failed with exit code $LASTEXITCODE"
 }
 
 Write-Host "=== TEST 5: Clean idempotente (2 execuções consecutivas) ==="
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $CleanScript
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $CleanScript
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: First run of clean.ps1 failed with exit code $LASTEXITCODE"
 }
 
-& powershell.exe -ExecutionPolicy Bypass -NoProfile -File $CleanScript
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $CleanScript
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: Second run of clean.ps1 failed with exit code $LASTEXITCODE"
 }
@@ -58,4 +59,3 @@ if (-not (Test-Path "solution/app/lib/main.dart") -or -not (Test-Path "solution/
 
 Write-Host "`n>>> ALL UC-00.02 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<"
 exit 0
-
