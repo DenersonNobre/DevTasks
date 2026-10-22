@@ -3,34 +3,57 @@
 SaaS de gestão de tarefas para equipes de desenvolvimento — projeto de portfólio full-stack em Dart:
 quadro Kanban, prazos/prioridades, colaboração assíncrona (comentários/atribuição) e dashboard de indicadores.
 
-> **Status**: quarteto (`PRD` ✅ · `DESIGN` ✅ · `SPEC` ✅ · `docs/plan/` ⏳) — **EPIC-00-FUNDACAO pendente**.
-> Nenhum código de negócio pode iniciar antes do DoD da EPIC-00 (Gate Zero).
->
-> **Próximo passo**: `docs/plan/README.md` (DAG + DoR/DoD) + `docs/plan/epics/epic-00-fundacao.md` (F0.1–F0.8) e demais épicos da paridade 1:1 → aprovação do PO (Gate Zero) → execução da EPIC-00.
+> **Status**: **EPIC-00 (Fundação) ✅ Concluída** · Execução liberada para **EPIC-01 (Autenticação)**.
+> Todas as etapas seguem a esteira canônica de desenvolvimento com TDD Red-Before-Green e poka-yoke mecânico de claims.
 
-## Estrutura
+---
+
+## 1. Estrutura do Workspace (Monorepo)
 
 ```text
-docs/product/          PRD.md + wireframe (Designer.png)
-docs/architecture/     DESIGN.md (engenharia + UI) · SPEC.md (domínio)
-docs/plan/             índice mestre de épicos (pendente — próxima unidade)
-solution/app/          Flutter (VSA: lib/modules/* + global/)
-solution/server/       Serverpod (scaffold atual a substituir na EPIC-00)
-solution/client/       gerado por `serverpod generate` (criado na EPIC-00)
+├── docs/                      # Quarteto canônico de documentação viva
+│   ├── product/PRD.md         # Requisitos, personas e regras de negócio
+│   ├── architecture/DESIGN.md # Decisões técnicas e UI
+│   ├── architecture/SPEC.md   # Domínio puro, invariantes INV-01..09 e taxonomia
+│   └── plan/                  # DAG de épicos e tracking de estado vivo
+├── solution/
+│   ├── app/                   # Cliente Flutter (VSA: modules/* + global/kernel/)
+│   ├── server/                # Backend Serverpod + PostgreSQL
+│   └── client/                # Cliente tipado gerado por serverpod generate (F0.2+)
+├── docker/                    # Paridade de ambiente (Dockerfile multi-stage + compose)
+└── tools/                     # Toolchain de esteira, runners de teste e gates
 ```
 
-## Pré-requisitos
+---
 
-- Flutter/Dart SDK `^3.13.5`
-- Docker (paridade de ambiente — EPIC-00)
+## 2. Comandos Rápidos de Desenvolvimento
 
-## Build e Testes
+Todos os fluxos operacionais são executados em 1 comando determinístico:
 
-⏳ Definidos na `EPIC-00-FUNDACAO` (F0.2 build em 1 comando, F0.3 runner de testes em 1 comando).
-Comandos serão gravados aqui no commit que implementar esses pilares.
+| Operação | Comando | Descrição |
+|:---|:---|:---|
+| **Preflight** | `pwsh tools/build.ps1 -PreflightOnly` | Valida versões de SDK (Flutter ≥ 3.47, Dart ≥ 3.13) |
+| **Build** | `pwsh tools/build.ps1` | Resolução de dependências do workspace e análise estática |
+| **Clean** | `pwsh tools/clean.ps1` | Limpeza idempotente de caches/builds sem tocar em fontes |
+| **Testes** | `pwsh tools/test.ps1` | Execução headless de todos os testes unitários/smoke (≤ 60s) |
+| **Cobertura** | `pwsh tools/test.ps1 -Coverage` | Gera relatórios `lcov.info` nos membros do workspace |
+| **Gate de DAG** | `pwsh tools/dag-gate.ps1` | Valida precedência topológica estrita de épicos |
+| **Gate Documental**| `pwsh tools/doc-gate.ps1` | Valida hand-offs (`Gate 2.5:`), limites e integridade viva |
+| **Docker Local** | `docker compose -f docker/docker-compose.yml up -d` | Sobe PostgreSQL 16 e API Serverpod com healthchecks |
 
-## Documentação
+---
 
-- **Escopo/produto**: `docs/product/PRD.md`
-- **Decisões de engenharia e design**: `docs/architecture/DESIGN.md`
-- **Domínio/invariantes**: `docs/architecture/SPEC.md`
+## 3. Governança de Código & Claims
+
+- **Branch de Trabalho**: Ciclo por Caso de Uso direto em **`develop`** (D-04). A branch `main` é reservada para releases.
+- **Poka-Yoke de Claims**: Commits contendo `(UC-XX.YY)` exigem claim ativo prévio via:
+  ```bash
+  pwsh tools/bin/claims.ps1 claim -slice UC-XX.YY -owner <seu-papel>
+  ```
+- Mais detalhes em [`docs/plan/state/CLAIMS.md`](docs/plan/state/CLAIMS.md).
+
+---
+
+## 4. Licença
+
+Este projeto está licenciado sob os termos da licença [MIT](LICENSE).

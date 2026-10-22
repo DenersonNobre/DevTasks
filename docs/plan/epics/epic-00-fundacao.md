@@ -1,6 +1,6 @@
 # Epic 00 — Fundação (fundacao)
 
-> Status: ⏳ Pendente | Prioridade: Crítica | Dependências: Nenhuma (independência máxima)
+> Status: ✅ Concluída | Prioridade: Crítica | Dependências: Nenhuma (independência máxima)
 
 ## 1. Objetivo e Valor de Negócio
 
@@ -21,7 +21,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 | F0.5 | Containerização & Paridade de Ambiente | 1 | Depende de F0.2/F0.3 | ✅ |
 | F0.6 | Pipeline de CI/CD (Shift-Left Gate) | 1 | Depende de F0.2–F0.5 | ✅ |
 | F0.7 | Shared Kernel & Primitivos de Domínio | 1 | Depende de F0.1; alimenta EPIC-01+ | ✅ |
-| F0.8 | Governança Documental, Gate de DAG & Matriz de Planos | 1 | Depende de F0.4 | ⏳ |
+| F0.8 | Governança Documental, Gate de DAG & Matriz de Planos | 1 | Depende de F0.4 | ✅ |
 
 ---
 
@@ -307,7 +307,10 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 **Descrição**: README executável, LICENSE/CHANGELOG (não-bloqueável), gate de DAG automatizado, `docs/plan/state/` (hand-off + schema de claims) e integridade do quarteto.
 
 **DoR**: F0.4 concluída (hooks ativos).
-**DoD**: gate de DAG roda no runner e **falha** com épico ✅ impróprio (prova negativa registrada); docs de estado não contradizem o disco.
+**DoD**:
+- [x] gate de DAG (`tools/dag-gate.ps1`) e gate documental (`tools/doc-gate.ps1`) ativos.
+- [x] prova negativa de DAG e hand-off registradas.
+- [x] README executável, LICENSE, CHANGELOG e manual de claims em `docs/plan/state/CLAIMS.md`.
 
 #### User Story 0.8.1 — Gate de DAG e docs de estado
 

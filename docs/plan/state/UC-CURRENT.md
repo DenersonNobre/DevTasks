@@ -1,55 +1,55 @@
 # UC-CURRENT — DevTasks
 
-> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-00-fundacao.md` §F0.7.
+> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-00-fundacao.md` §F0.8.
 > Ordem de leitura ao retomar: `CHECKPOINT.md` → este arquivo → código.
 
 ## UC corrente
 
-**UC-00.07** — Shared Kernel & Primitivos Universais de Domínio (EPIC-00 · F0.7 · `US-0.7.1`).
+**UC-00.08** — Governança Documental, Gate de DAG & Matriz de Planos (EPIC-00 · F0.8 · `US-0.8.1`).
 
-**Gate 2.5: AVALIADO E APROVADO** — domínio puro do Shared Kernel; sem imports de banco, rede ou frameworks (DIP 100%); `Result<T>` tipado e taxonomia de falhas de negócio da SPEC §6.
+**Gate 2.5: AVALIADO E APROVADO** — governança documental executável; sem superfície sensível de dados ou rede externa; validação mecânica de hand-off (`Gate 2.5:`), integridade da DAG e baseline de release.
 
 ## Interfaces
 
-- Kernel Domain Types:
-  - `IResult<T, F>` (`Success`, `Failure`, `fold`, `map`, `flatMap`).
-  - `IFailure` e taxonomia formal (`ValidationFailure`, `NotFoundFailure`, `InsufficientRoleFailure`, etc.).
-  - VOs: `UserId`, `WorkspaceId`, `ProjectId`, `TaskId`, `CommentId`, `NonEmptyString`, `DateOnly`.
-  - Port de tempo: `IClock` e `SystemClock`.
-- Barrels pontuados (convenção `topics/flutter.md`):
-  - `solution/app/lib/global/kernel/.kernel.dart`.
+- Enforcement Documental:
+  - `tools/doc-gate.ps1` (validação de `Gate 2.5:` em hand-offs, tamanho de `CHECKPOINT.md` <= 60 linhas e integridade da DAG via `tools/dag-gate.ps1`).
+  - `docs/plan/state/CLAIMS.md` (manual e referência do protocolo de concorrência de Casos de Uso).
+- Baseline de Release:
+  - `README.md` executável da raiz.
+  - `CHANGELOG.md` e `LICENSE` (MIT).
 
 ## Arquivos-alvo
 
-- `solution/app/lib/global/kernel/.kernel.dart` [NEW]
-- `solution/app/lib/global/kernel/result.dart` [NEW]
-- `solution/app/lib/global/kernel/failures.dart` [NEW]
-- `solution/app/lib/global/kernel/value_objects.dart` [NEW]
-- `solution/app/lib/global/kernel/clock.dart` [NEW]
-- `solution/app/test/unit/kernel/kernel_test.dart` [NEW]
-- `docs/plan/state/UC-CURRENT.md` [MODIFY]
+- `tools/doc-gate.ps1` [NEW]
+- `docs/plan/state/CLAIMS.md` [NEW]
+- `tools/tests/test_doc_governance.ps1` [NEW]
+- `README.md`, `CHANGELOG.md`, `LICENSE` [MODIFY/NEW]
+- `docs/plan/README.md` [MODIFY]
 - `docs/plan/epics/epic-00-fundacao.md` [MODIFY]
+- `docs/plan/state/UC-CURRENT.md` [MODIFY]
 - `CHECKPOINT.md` [MODIFY]
 
 ## Estado de execução
 
-- Claim: liberado pós-consolidação de `UC-00.07`.
+- Claim: liberado pós-consolidação de `UC-00.08`.
 - Implementação: GREEN — TDD Red-Before-Green comprovado; Gates 3 e 4 aprovados.
+- **EPIC-00 (FUNDAÇÃO): 100% CONCLUÍDA ✅** (todas as 8 features F0.1 a F0.8 entregues e verificadas).
 
-## Evidência (preenchida pelo Coder, Reviewer e QA)
+## Evidência (preenchida pelo Coder, DevOps, Reviewer e QA)
 
 - **Red**:
-  - `flutter test solution/app/test/unit/kernel/kernel_test.dart` falhou antes da implementação do Shared Kernel com exit code 1 (`Type 'IResult' not found`, `Type 'IFailure' not found`, etc.).
+  - `tools/tests/test_doc_governance.ps1` falhou antes da existência de `tools/doc-gate.ps1` com exit code 1:
+    `RED EXPECTED: tools/doc-gate.ps1 does not exist yet.`
 - **Green**:
-  - Implementação completa dos primitivos em `solution/app/lib/global/kernel/`.
-  - Execução de `kernel_test.dart` passou com exit code 0 (`+7: All tests passed!`).
-  - `flutter analyze solution/app` passou com exit code 0 (`No issues found!`).
-  - `tools/test.ps1 -Coverage` executou a suíte completa de testes em 18.78s com exit code 0.
-  - Auditoria DIP: Zero imports de `serverpod`, `http` ou banco no kernel (`Select-String` retornou vazio).
-  - Laudo final: `>>> ALL KERNEL TESTS PASSED & DIP 100% VERIFIED <<<`.
-- **Gate 3 (Review / Tech Lead)**: Aprovado — Diff Budget estrito ao kernel e testes unitários; convenção de barrels pontuados e prefixos `I-` atendidos; classes puras e imutáveis.
-- **Gate 4 (QA & Release)**: Laudo Verde empírico (suíte automatizada de testes executada com exit code 0).
+  - Execução de `tools/tests/test_doc_governance.ps1` executou com sucesso (exit code 0):
+    - Teste 1: Existência de `tools/doc-gate.ps1`, `CLAIMS.md`, `LICENSE`, `CHANGELOG.md` confirmada.
+    - Teste 2: Governança documental atual aprovada (hand-off válido, `CHECKPOINT.md` com 42 linhas, DAG com 8 épicos íntegros).
+    - Teste 3: Prova negativa de hand-off rejeitando arquivo sem `Gate 2.5:` com exit code 1.
+    - Teste 4: Prova negativa de orçamento de linhas rejeitando checkpoint > 60 linhas com exit code 1.
+    - Laudo final: `>>> ALL UC-00.08 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<`.
+- **Gate 3 (Review / Tech Lead)**: Aprovado — Diff Budget estrito à governança documental executável; README acoplado aos comandos reais da fundação; MIT license adicionada.
+- **Gate 4 (QA & Release)**: Laudo Verde empírico (suíte automatizada de aceitação executada com exit code 0).
 
 ## Próximo UC
 
-- **UC-00.08** (F0.8 — Governança Documental, Gate de DAG & Matriz de Planos: fechamento da EPIC-00; DoR exige F0.4/F0.7 ✅).
+- **UC-01.01** (EPIC-01 · F1.1 · `US-1.1.1` — Cadastro de Usuário & Hash de Senha; DoR exige EPIC-00 ✅).
