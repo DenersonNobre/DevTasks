@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../infrastructure/session_store.dart';
+import '../domain/session_store.dart';
 
 /// Estado de autenticação observável pelo app.
 enum SessionStatus { signedOut, authenticated }
@@ -35,7 +35,7 @@ class SessionController extends ChangeNotifier {
   Future<void> restore() async {
     final token = await _store.read();
     _set(
-      token == null
+      token == null || token.isEmpty
           ? const SessionState.signedOut()
           : SessionState(status: SessionStatus.authenticated, token: token),
     );

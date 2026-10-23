@@ -37,9 +37,11 @@ Rate limit permanece **fora deste UC**.
 
 ## Interfaces
 
-- `SignInHandler(repository, verifier)` → `SignInOutcome` (`user+token?` | `failure`).
-- `SessionStore` (app): `read()/write(token)/clear()`.
-- `SessionController` (Riverpod): `restore()`, `signIn(token)`, `signOut()`.
+- `SignInHandler(repository, verifier)` → `SignInOutcome` (`user` | `failure`; **sem token** neste
+  slice — emissão de sessão é follow-up).
+- `SessionStore` (app, **porta em `domain/`**): `read()/write(token)/clear()`.
+- `SessionController` (**ChangeNotifier**, testável sem framework): `restore()`, `signIn(token)`,
+  `signOut()`. Provider **Riverpod (D-03)** é pendência declarada do slice de UI.
 
 ## Arquivos-alvo
 
@@ -57,7 +59,10 @@ Rate limit permanece **fora deste UC**.
 
 - Claim: **ativo** — `UC-01.02`, owner `coder` (paths `solution/app`, `solution/server`, hand-off).
 - Modelo do Coder: `opencode/deepseek-v4.1-flash-free`.
-- Implementação: **não iniciada**.
+- Implementação: **fatias 1–2 implementadas** (sign-in no server; sessão no app). Gate 3 rodada 1
+  **rejeitada** por evidência sobredeclarada/asserções ausentes; correções aplicadas (mensagem única
+  asserida, hash dummy asserido, teste de round-trip, `SignInService` testado, porta movida para
+  `domain/`); **rodada 2 pendente**.
 
 ## Evidência
 
@@ -83,10 +88,17 @@ Rate limit permanece **fora deste UC**.
 
 ## Pendências / coordenação
 
-- **`tools/**` está com o outro agente** (claim `UC-00.06`: R-01 + drift da CLI). Não editar; a suíte
-  de governança e o `build.ps1` só entram na verificação final, **após** o commit dele.
+- **`tools/**` está com o outro agente** (claim `UC-00.06`). Não editar.
+- **S1 (herdado do Gate 3)**: `SignInHandler.dummyHash` é um placeholder — o adapter real deve usar
+  hash **válido** de valor aleatório gerado no boot (senão vira oráculo de enumeração por exceção/timing).
+- **S3 (Gap 3 do Gate 3)**: `DESIGN.md` (D-ENG-04) manda a sessão do cliente ser gerida pelo
+  `SessionManager` do Serverpod; a abstração própria (`SessionStore`/`SessionController`) é desvio
+  consciente — registrar no DESIGN ou trocar pelo framework; **Riverpod (D-03)** ainda não plugado.
+- **S4**: `SignInDto.toString()` (gerado) serializa `password` em claro — mesma classe do gap do
+  `UC-01.01`; regex de e-mail agora tem **3ª cópia** (extração pendente).
+- **Herdadas do `UC-01.01`** (continuam válidas): persistência/`UNIQUE`/TOCTOU, adapter de hash,
+  teste de log, limite de nome, fonte única das regras, colisão `auth`, Reds não versionados, UI.
 - Rate limit (`SEC-02`) → `UC-01.04`; verificação de e-mail (`INV-SEC-01`) → pós-MVP.
-- Persistência real (DB) e hasher: follow-ups declarados (mesma dívida do `UC-01.01`).
 
 ## Próximo UC
 

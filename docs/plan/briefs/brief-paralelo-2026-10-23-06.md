@@ -48,3 +48,30 @@ Persistência (M1: `UNIQUE(email)` + `emailVerified` default + TOCTOU) · pacote
 ## Regras
 Claim por slice · stage por **path explícito** · sem push sem pedido do PO + 3 evidências · docs no
 mesmo commit · retorno com `[EVIDÊNCIA]` (Leitura → Verificação → Confirmação).
+
+---
+
+## 5. Retorno — Item A: Tema Base & Acessibilidade WCAG 2.1 AA (UC-01.05)
+
+### Entregas Concluídas (Commit `3042406`)
+1. **Tokens de Design Semânticos (`tokens.dart`)**:
+   - Mapeamento estrito das cores do `DESIGN.md` §2.1 (Claro) e §6 (Escuro).
+   - Constantes tipadas e documentadas com origem dos valores: `AppColors.primary`, `primaryDeep`, `primarySoft`, `navy`, `lightTextMain`, `lightTextMuted`, `lightBackground`, `lightSurface`, `lightBorder`, `darkBackground`, `darkSurface`, `darkNavy`, `darkTextMain`, `darkTextMuted`, `darkBorder`, além de status (`success`, `error`, `warning`, `info`).
+   - Escala de raios `AppRadii` (`sm 8px`, `md 12px`, `lg 16px`, `full 999px`) e grid de 4px `AppSpacing` (`space1..8`).
+2. **Cálculo Matemático de Contraste W3C (`contrast.dart`)**:
+   - Implementação de `relativeLuminance` e `contrastRatio` conforme a especificação oficial W3C WCAG 2.1.
+   - Helpers semânticos `meetsWcagAaNormalText(ratio >= 4.5)` e `meetsWcagAaLargeText(ratio >= 3.0)`.
+3. **Temas ThemeData Material 3 (`app_theme.dart`)**:
+   - `AppTheme.light()` e `AppTheme.dark()` com `ColorScheme` de alta fidelidade aos tokens.
+   - Tipografia configurada para família primária `Inter` com fallbacks `system-ui, sans-serif`.
+   - `CardThemeData`, `InputDecorationTheme` e `ElevatedButtonThemeData` padronizados segundo `DESIGN.md` §4.
+4. **Wiring no App (`solution/app/lib/main.dart`)**:
+   - `MaterialApp` configurado com `theme: AppTheme.light()`, `darkTheme: AppTheme.dark()` e `themeMode: ThemeMode.system`.
+5. **Suíte de Testes Unitários de Tema (`solution/app/test/unit/theme/`)**:
+   - `contrast_test.dart` (9 testes): Prova matemática de luminância W3C (branco 1.0, preto 0.0, ratio 21:1), conformidade WCAG AA de texto primário (>= 7:1), texto secundário/muted (>= 4.5:1), roxo primário em superfícies (>= 4.5:1) e botões/elementos gráficos (>= 3.0:1) em ambos os temas.
+   - `theme_test.dart` (3 testes): Resolução de `Brightness.light/dark`, Material 3 ativo, família `Inter` e integridade canônica dos tokens.
+
+### [EVIDÊNCIA]
+- `flutter test solution/app/test/unit/theme`: **12/12 testes verdes** (exit code 0).
+- `flutter analyze solution/app/lib/global/theme solution/app/lib/main.dart solution/app/test/unit/theme`: **0 issues** (limpo).
+- **Módulo `auth` preservado**: Nenhum arquivo em `solution/app/lib/modules/auth/**` ou `solution/server/**` foi tocado ou modificado.

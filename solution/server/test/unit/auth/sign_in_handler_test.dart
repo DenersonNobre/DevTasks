@@ -21,6 +21,7 @@ class _Credentials implements CredentialRepository {
 
 class _Verifier implements PasswordVerifier {
   int verifyCalls = 0;
+  final List<String> hashes = [];
 
   @override
   Future<bool> verify({
@@ -28,6 +29,7 @@ class _Verifier implements PasswordVerifier {
     required String passwordHash,
   }) async {
     verifyCalls++;
+    hashes.add(passwordHash);
     return password == 'F0rtress!Pass2026' && passwordHash == 'hash::valid';
   }
 }
@@ -81,6 +83,25 @@ void main() {
       expect(outcome.failure!.field, isNull);
       expect(verifier.verifyCalls, 1,
           reason: 'verificação precisa rodar também sem usuário (timing)');
+      expect(verifier.hashes.single, SignInHandler.dummyHash,
+          reason: 'sem usuário, a verificação usa o hash de descarte');
+    });
+
+    test('mensagem é IDÊNTICA para senha errada e e-mail inexistente', () async {
+      final wrongPassword = await SignInHandler(
+        _Credentials(hashes: {'bia@ex.com': 'hash::valid'}),
+        _Verifier(),
+      ).execute(_command(password: 'SenhaErrada1A'));
+      final noUser = await SignInHandler(_Credentials(), _Verifier())
+          .execute(_command(email: 'nao@existe.com'));
+
+      expect(wrongPassword.failure!.message, noUser.failure!.message);
+      expect(
+        wrongPassword.failure!.message,
+        SignInHandler.invalidCredentialsMessage,
+      );
+      expect(wrongPassword.failure!.field, isNull);
+      expect(noUser.failure!.field, isNull);
     });
 
     test('e-mail é normalizado antes da busca', () async {

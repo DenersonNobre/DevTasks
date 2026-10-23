@@ -43,7 +43,10 @@ class SignInHandler {
   static const String invalidCredentialsMessage = 'E-mail ou senha inválidos.';
 
   /// Hash de descarte: garante custo de verificação mesmo sem usuário (timing).
-  static const String _dummyHash = 'argon2id::dummy-not-a-real-hash';
+  ///
+  /// Formato placeholder — o adapter real deve usar um hash **válido** de valor
+  /// aleatório gerado no boot (ver pendência declarada no hand-off).
+  static const String dummyHash = 'argon2id::dummy-not-a-real-hash';
 
   static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
@@ -66,7 +69,7 @@ class SignInHandler {
     // vazar existência de conta por diferença de tempo (INV-SEC-04).
     final verified = await _verifier.verify(
       password: command.password,
-      passwordHash: record?.passwordHash ?? _dummyHash,
+      passwordHash: record?.passwordHash ?? dummyHash,
     );
 
     if (record == null || !verified) {

@@ -1,4 +1,4 @@
-import 'package:devtasks_app/modules/auth/infrastructure/session_store.dart';
+import 'package:devtasks_app/modules/auth/domain/session_store.dart';
 import 'package:devtasks_app/modules/auth/presentation/session_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -36,6 +36,14 @@ void main() {
       expect(controller.state.token, isNull);
     });
 
+    test('token vazio no store também não autentica', () async {
+      final controller = SessionController(_FakeSessionStore(''));
+
+      await controller.restore();
+
+      expect(controller.state.status, SessionStatus.signedOut);
+    });
+
     test('restaura sessão de um store com token (sobrevive a restart)',
         () async {
       // "restart" = novo controller lendo o mesmo store já preenchido.
@@ -46,6 +54,20 @@ void main() {
 
       expect(controller.state.status, SessionStatus.authenticated);
       expect(controller.state.token, 'token-opaco-abc');
+    });
+
+    test('round-trip: signIn(A) → novo controller(B) restaura o mesmo token',
+        () async {
+      final store = _FakeSessionStore();
+      final a = SessionController(store);
+      await a.signIn('token-round-trip');
+
+      // Simula restart: outro controller sobre o MESMO store.
+      final b = SessionController(store);
+      await b.restore();
+
+      expect(b.state.status, SessionStatus.authenticated);
+      expect(b.state.token, a.state.token);
     });
 
     test('signIn persiste o token no store', () async {
