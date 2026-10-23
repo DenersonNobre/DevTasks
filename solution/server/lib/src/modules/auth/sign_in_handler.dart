@@ -54,11 +54,12 @@ class SignInHandler {
   final PasswordVerifier _verifier;
 
   Future<SignInOutcome> execute(SignInCommand command) async {
-    final email = command.email.trim().toLowerCase();
-
-    if (!Email.isValid(email)) {
+    final emailResult = Email.parse(command.email);
+    if (emailResult.error != null) {
       return _validation('E-mail inválido.', 'email');
     }
+    final email = emailResult.email!.value;
+
     if (command.password.isEmpty) {
       return _validation('Senha é obrigatória.', 'password');
     }

@@ -15,16 +15,19 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
-## 2026-10-23 — Rate Limiting de Autenticação e Limitações de Transporte RPC do Serverpod (UC-01.04)
+## 2026-10-23 — Rate Limiting de Autenticação, Evicção LRU e Transporte RPC no Serverpod (UC-01.04)
 
-- **Sintoma**: Necessidade de proteger endpoints de autenticação (`signIn` e `signUp`) contra brute-force e exaustão de CPU criptográfica (Argon2id), mantendo conformidade de transporte com o Serverpod 3.4.13.
-- **Causa raiz**: No Serverpod 3.4.13, chamadas de método de endpoint RPC não suportam emissão do status code HTTP 429 (`HttpStatus.tooManyRequests`), pois o pipeline (`server.dart:204-237`) apenas despacha DTOs serializados em HTTP 200 ou mapeia exceções específicas para 400/401/403/404/413. Além disso, cabeçalhos de rede como `X-Forwarded-For` são inseguros contra spoofing se utilizados como chave de limitação sem proxy confiável.
+- **Sintoma**: Necessidade de proteger endpoints de autenticação (`signIn` e `signUp`) contra brute-force e exaustão de CPU criptográfica (Argon2id), evitando DoS de memória no limiter e mantendo compatibilidade com a geração tipada de código RPC do Serverpod 3.4.13.
+- **Causa raiz**:
+  1. Limiter com `removeWhere` em cap não continha chaves vivas e degradava para varredura $O(N)$ por requisição sob ataque.
+  2. No Serverpod 3.4.13, embora `Endpoint.sendAsRaw` (`server.dart:513`) e `Response` (`server.dart:536-537`) permitam emitir HTTP 429 cru, `sendAsRaw` é endpoint-wide e quebra a geração tipada de código de cliente (`solution/client`). O pipeline RPC padrão (`server.dart:513-537`) serializa DTOs sobre HTTP 200 (enquanto `server.dart:204-237` trata exclusivamente exceções não-tratadas).
+  3. Cabeçalhos de rede (`X-Forwarded-For`) são suscetíveis a spoofing de identidade sem proxy reverso confiável configurado.
 - **Fix**:
-  1. Implementado `InMemoryRateLimiter` com janela fixa de 60s, teto de 10 tentativas por chave `<op>:<ip>`, relógio injetado (`DateTime Function()`) sem sleep e evicção automática de memória (`INV-SEC-12/13`).
-  2. Rate limiter posicionado **antes** de qualquer computação de senha no `SignInService` e `SignUpService`, garantindo zero custo computacional do hasher/verifier na 11ª tentativa.
-  3. Desvio de transporte documentado: resposta de rate limit encapsulada de forma tipada em `SignInResultDto`/`SignUpResultDto` com `errorCode = 'ERR_RATE_LIMITED'`.
-  4. Extraídos Value Objects de domínio no server (`Email` e `Password`) espelhando as regras do app (DRY) e reutilizados nos handlers e na validação de fronteira sem duplicar regex.
-- **Prevenção**: Rate limit aplicado sempre na fronteira antes do hashing (`INV-SEC-12`), uso direto do socket IP da conexão para mitigar spoofing (`INV-SEC-14`) e testes com relógio injetado sem `sleep`.
+  1. `InMemoryRateLimiter` refatorado com `LinkedHashMap` como cache LRU $O(1)$ com cap duro `maxTrackedKeys = 500`, janela de 60s, teto de 10 tentativas e relógio injetado obrigatório (`now: DateTime Function()`) sem default implícito (`INV-SEC-02`/`INV-SEC-14`).
+  2. Rate limiter avaliado **antes** de qualquer computação criptográfica (`INV-SEC-13`), com política fail-closed para IP não identificado (chave sentinela `'unknown'`).
+  3. Decisão de transporte tipada: mantido o contrato RPC de DTO com `errorCode = 'ERR_RATE_LIMITED'`, garantindo tipagem forte no app Flutter e isolamento contra quebra de geração de código.
+  4. Extraídos Value Objects de domínio no server (`Email` e validador de complexidade `Password`) eliminando duplicações residuais de regex (DRY).
+- **Prevenção**: Throttling obrigatório antes de operações criptográficas (`INV-SEC-13`), evicção estrita $O(1)$ em limiters de memória para proteção de heap (`INV-SEC-14`) e uso direto do socket da conexão TCP (`INV-SEC-15`).
 
 ## 2026-10-23 — Mitigação de TOCTOU na persistência com SQLSTATE 23505 e Hasher Argon2id (UC-01.01)
 

@@ -88,7 +88,7 @@ Ordem de commits (a mensagem do 2º leva `(UC-01.04)`, com claim ativo):
 ## 6. Retorno — preencher nesta seção
 
 ## Retorno — UC-01.04
-Gate 2.5: INVOKED — INV-SEC-12 (pre-crypto throttling), INV-SEC-13 (ephemeral in-memory IP/LGPD), INV-SEC-14 (untrusted X-Forwarded-For avoidance), INV-SEC-15 (opaque uniform rate limit response)
+Gate 2.5: INVOKED — INV-SEC-02 (rate limit > 10 req/min por IP), INV-SEC-13 (pre-crypto throttling), INV-SEC-14 (ephemeral in-memory IP state/LGPD), INV-SEC-15 (untrusted X-Forwarded-For avoidance)
 
 ### Arquivos
 - `solution/server/lib/src/modules/auth/rate_limiter.dart` [NEW]
@@ -102,25 +102,43 @@ Gate 2.5: INVOKED — INV-SEC-12 (pre-crypto throttling), INV-SEC-13 (ephemeral 
 - `solution/server/test/unit/auth/rate_limiter_test.dart` [NEW]
 - `solution/server/test/unit/auth/domain_vo_test.dart` [NEW]
 
+### [EVIDÊNCIA] Correções do Gate 3
+- **B1 Memória (Cap Duro & LRU O(1))**:
+  - `InMemoryRateLimiter` utiliza `LinkedHashMap` como cache LRU com cap duro `maxTrackedKeys = 500`.
+  - Ao atingir o cap, desalija a chave menos recentemente usada (`_entries.keys.first`) em tempo estrito $O(1)$, eliminando qualquer varredura $O(N)$ em caminho quente.
+  - Relógio injetado obrigatório `now: DateTime Function()` sem fallback implícito de relógio de sistema.
+  - Teste novo: `B1: teto duro de memória com evicção LRU O(1) mantém entradas <= maxTrackedKeys` inserindo $N > \text{cap}$ chaves vivas comprovando que `limiter.trackedKeysCount <= cap` e que a chave mais antiga é evictada em $O(1)$.
+- **B2 429 vs Serverpod (Evidência Real e Justificativa de Design)**:
+  - No Serverpod 3.4.13, o mecanismo de emissão de status HTTP cru existe via `Endpoint.sendAsRaw` (`lib/src/server/server.dart:513`) e `if (value is Response) return value;` (`:536-537`), permitindo retornar `Response(HttpStatus.tooManyRequests)`.
+  - **Razão concreta da escolha por DTO**: `sendAsRaw` opera no nível do endpoint inteiro (`endpoint.sendAsRaw`), desabilitando a serialização RPC tipada e quebrando a geração de código pelo `serverpod generate` para o cliente Flutter (`solution/client`).
+  - O range `server.dart:204-237` trata exclusivamente do mapeamento de **exceções** (400/401/403/404/413); a serialização DTO $\rightarrow$ HTTP 200 reside em `server.dart:513-537`.
+  - Mantido o retorno tipado `errorCode = 'ERR_RATE_LIMITED'` com HTTP 200 nos DTOs (`SignInResultDto` e `SignUpResultDto`), e o cliente do app deve inspecionar `success: false`.
+- **B3 IDs Alinhados com a SPEC.md §3.1**:
+  - Throttling antes de hash/verify: `INV-SEC-13` (substituindo a referência incorreta a `INV-SEC-12`).
+  - IP em memória efêmera: `INV-SEC-14`.
+  - Anti-spoofing de headers: `INV-SEC-15`.
+  - Rate limit por IP: `INV-SEC-02`.
+
 ### [EVIDÊNCIA] Rate limit
 - Red: `dart test solution/server/test/unit/auth/rate_limiter_test.dart` → Falhou com Expected: <9> Actual: <10> e Expected: 'ERR_RATE_LIMITED' Actual: 'ERR_INVALID_CREDENTIALS' (commit `aa4e1bc`).
-- Green: `dart test solution/server/test/unit/auth/rate_limiter_test.dart` → 6/6 passed (0 falhas). Suíte completa de auth: 62/62 passed.
+- Green: `dart test solution/server/test/unit/auth/rate_limiter_test.dart` → 9/9 passed (0 falhas). Suíte completa de auth: 65/65 passed.
 - Prova de "sem custo de senha":
-  - Em login: 11ª tentativa bloqueada por rate limit mantém `verifier.verifyCalls == 10` (custo computacional zero para o PasswordVerifier).
-  - Em signup: 11ª tentativa bloqueada por rate limit mantém `hasher.hashCalls == 10` (custo computacional zero para o PasswordHasher).
+  - Em login: 11ª tentativa bloqueada por rate limit mantém `verifier.verifyCalls == 10` (custo computacional zero para o PasswordVerifier, `INV-SEC-13`).
+  - Em signup: 11ª tentativa bloqueada por rate limit mantém `hasher.hashCalls == 10` (custo computacional zero para o PasswordHasher, `INV-SEC-13`).
 
 ### [EVIDÊNCIA] Validação de fronteira
 - E-mail malformado ou senha fora da política de complexidade (12..128, maiúscula/minúscula/dígito via VOs canônicos Email e Password) devolve `ERR_VALIDATION` com `field` correspondente e `hasher.hashCalls == 0`.
 
+### Não-bloqueantes aplicados
+1. **Fail-closed**: `SignInService` e `SignUpService` tratam `clientIp == null` ou vazio submetendo à cota compartilhada da chave sentinela `'unknown'` (coberto por teste unitário).
+2. **`_extractClientIp` com diagnóstico sem logar IP**: Captura falhas de socket logando apenas mensagem de erro de baixo nível sem expor o IP (`INV-SEC-14`), com teste de fallback `'local'`.
+3. **DRY residual**: `sign_in_handler.dart` consome `Email.parse` unificado, eliminando normalizações repetidas.
+4. **`Password` no server**: Documentado explicitamente como validador estático da política de complexidade (`abstract final class Password`).
+5. **Whitespace**: `git diff --check` auditado e limpo (0 blank lines at EOF).
+
 ### Desvios e limitações declaradas
-- 429 vs Serverpod:
-  - No Serverpod 3.4.13 (`package:serverpod/src/server/server.dart:204-237`), o pipeline de dispatch de métodos RPC de Endpoint serializa DTOs sobre HTTP 200 e mapeia exceções exclusivamente para 400 (`SerializableException`/`HeaderException`), 401/403 (`NotAuthorizedException`), 404 (`EndpointNotFoundException`) e 413 (`MaxBodySizeExceeded`). O framework não possui mecanismo para propagar status code HTTP 429 em chamadas de método de endpoint RPC sem violar o ciclo de vida do Serverpod.
-  - O desvio é resolvido de forma tipada e segura devolvendo `errorCode: 'ERR_RATE_LIMITED'` com HTTP 200 no DTO (`SignInResultDto` e `SignUpResultDto`).
-- Chave de IP:
-  - Origem real: `session.request?.connectionInfo.remote.address.toString()`. Acesso direto ao socket IP real da conexão de rede via `Relic` HTTP stack.
-  - Limitação: Cabeçalhos `X-Forwarded-For` e `Forwarded` não são usados como chave primária para prevenir IP spoofing (`INV-SEC-14`). Em ambientes sem proxy reverso confiável ou chamadas internas/testes, o fallback é `'local'`.
-- Multi-instância:
-  - `InMemoryRateLimiter` mantém o mapa efêmero na memória do processo local. Em deployments multi-instância (horizontal scaling), o contador não é compartilhado entre réplicas (necessário Redis/Valkey em fatia futura).
+- Limitação de IP em NAT / Proxies Transparentes / Rotação IPv6: Múltiplos usuários atrás do mesmo IP compartilham a mesma cota de 10 tentativas/minuto; atacantes com rotação de IPs distribuídos exigem defesas adicionais em borda (WAF/Cloudflare).
+- Multi-instância: `InMemoryRateLimiter` opera na memória volátil de processo local. Em deployments multi-réplica, o balde não é compartilhado (necessário Redis/Valkey em fatia futura).
 
 ### Follow-ups
 - Persistência distribuída de rate limiter (Redis/Valkey) para deployments multi-réplica.

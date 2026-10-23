@@ -15,7 +15,8 @@ class AuthEndpoint extends Endpoint {
         _signInService = signInService,
         _rateLimiter = rateLimiter ?? _defaultRateLimiter;
 
-  static final RateLimiter _defaultRateLimiter = InMemoryRateLimiter();
+  static final RateLimiter _defaultRateLimiter =
+      InMemoryRateLimiter(now: DateTime.now);
 
   final SignUpService? _signUpService;
   final SignInService? _signInService;
@@ -29,13 +30,19 @@ class AuthEndpoint extends Endpoint {
       (_signInService ?? SignInService(null, _rateLimiter))
           .signIn(dto, clientIp: _extractClientIp(session));
 
+  /// Extrai o IP do socket da conexão de forma estrita, sem confiar em headers
+  /// arbitrários do cliente para mitigar spoofing (INV-SEC-15).
   static String _extractClientIp(Session session) {
     try {
       final address = session.request?.connectionInfo.remote.address;
       if (address != null) {
         return address.toString();
       }
-    } catch (_) {}
+    } catch (e) {
+      // Diagnóstico seguro de falha de socket sem registrar o endereço IP (INV-SEC-14).
+      session.log('Falha ao obter remote address da conexão: $e',
+          level: LogLevel.debug);
+    }
     return 'local';
   }
 }

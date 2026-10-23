@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 /// Contrato e modelo de resultado do Rate Limiter (UC-01.04).
 sealed class RateLimitOutcome {
   const RateLimitOutcome();
@@ -37,68 +39,77 @@ class _RateLimitEntry {
   int count;
 }
 
-/// Implementação em memória com janela fixa e relógio injetado (INV-SEC-12/13).
+/// Implementação em memória com janela fixa, evicção LRU O(1) e relógio injetado (INV-SEC-02/13/14).
 ///
 /// Parâmetros canônicos:
-/// - [maxAttempts]: 10 tentativas
-/// - [window]: 60 segundos
-/// - [now]: relógio injetado (DateTime Function()) para testabilidade determinística sem sleep.
+/// - [maxAttempts]: 10 tentativas por janela.
+/// - [window]: 60 segundos.
+/// - [maxTrackedKeys]: teto duro de memória (default 500 chaves).
+/// - [now]: relógio injetado obrigatório (DateTime Function()) sem dependência implícita de relógio de sistema.
 ///
-/// Privacidade e memória (INV-SEC-13):
-/// O estado é mantido unicamente em memória volátil de processo, sem persistência
-/// em disco nem logs de PII/IP, com evicção periódica de chaves expiradas.
+/// Política de contenção de memória (INV-SEC-14 / Bloqueante 1):
+/// Utiliza [LinkedHashMap] como cache LRU. Ao atingir [maxTrackedKeys], desalija a chave
+/// menos recentemente usada (oldest key da cabeça do mapa) em tempo O(1), prevenindo
+/// exaustão de heap (DoS via criação massiva de chaves) e sem qualquer varredura O(N) no caminho quente.
 class InMemoryRateLimiter implements RateLimiter {
   InMemoryRateLimiter({
+    required this.now,
     this.maxAttempts = 10,
     this.window = const Duration(seconds: 60),
-    DateTime Function()? now,
-  }) : _now = now ?? DateTime.now;
+    this.maxTrackedKeys = 500,
+  });
 
   final int maxAttempts;
   final Duration window;
-  final DateTime Function() _now;
+  final int maxTrackedKeys;
+  final DateTime Function() now;
 
-  final Map<String, _RateLimitEntry> _entries = {};
-  static const int _maxTrackedKeys = 500;
+  final LinkedHashMap<String, _RateLimitEntry> _entries =
+      LinkedHashMap<String, _RateLimitEntry>();
+
+  /// Quantidade atual de chaves rastreadas em memória (inspeção de governança / testes).
+  int get trackedKeysCount => _entries.length;
 
   @override
   RateLimitOutcome check(String key) {
-    final now = _now();
+    final currentTime = now();
 
-    if (_entries.length > _maxTrackedKeys) {
-      _cleanupExpired(now);
+    final existing = _entries.remove(key);
+
+    if (existing != null) {
+      final elapsed = currentTime.difference(existing.windowStart);
+
+      if (elapsed >= window) {
+        // Janela expirada: reinicia contagem para a chave e coloca no fim (MRU)
+        existing.windowStart = currentTime;
+        existing.count = 1;
+        _entries[key] = existing;
+        return RateLimitAllowed(remainingAttempts: maxAttempts - 1);
+      }
+
+      // Reinsere a entrada existente no fim para renovar recência (MRU)
+      _entries[key] = existing;
+
+      if (existing.count >= maxAttempts) {
+        final remainingMs = window.inMilliseconds - elapsed.inMilliseconds;
+        final retryAfterSeconds = (remainingMs / 1000).ceil();
+        return RateLimited(
+          retryAfterSeconds: retryAfterSeconds > 0 ? retryAfterSeconds : 1,
+        );
+      }
+
+      existing.count++;
+      final remaining = maxAttempts - existing.count;
+      return RateLimitAllowed(remainingAttempts: remaining >= 0 ? remaining : 0);
     }
 
-    final entry = _entries[key];
-
-    if (entry == null) {
-      _entries[key] = _RateLimitEntry(windowStart: now, count: 1);
-      return RateLimitAllowed(remainingAttempts: maxAttempts - 1);
+    // Chave nova: se atingiu o teto duro, desalija a menos recentemente usada (LRU head) em O(1)
+    if (_entries.length >= maxTrackedKeys) {
+      final oldestKey = _entries.keys.first;
+      _entries.remove(oldestKey);
     }
 
-    final elapsed = now.difference(entry.windowStart);
-
-    if (elapsed >= window) {
-      // Janela expirada: reseta contagem e atualiza o início da janela
-      entry.windowStart = now;
-      entry.count = 1;
-      return RateLimitAllowed(remainingAttempts: maxAttempts - 1);
-    }
-
-    if (entry.count >= maxAttempts) {
-      final remainingMs = window.inMilliseconds - elapsed.inMilliseconds;
-      final retryAfterSeconds = (remainingMs / 1000).ceil();
-      return RateLimited(
-        retryAfterSeconds: retryAfterSeconds > 0 ? retryAfterSeconds : 1,
-      );
-    }
-
-    entry.count++;
-    final remaining = maxAttempts - entry.count;
-    return RateLimitAllowed(remainingAttempts: remaining >= 0 ? remaining : 0);
-  }
-
-  void _cleanupExpired(DateTime now) {
-    _entries.removeWhere((_, entry) => now.difference(entry.windowStart) >= window);
+    _entries[key] = _RateLimitEntry(windowStart: currentTime, count: 1);
+    return RateLimitAllowed(remainingAttempts: maxAttempts - 1);
   }
 }

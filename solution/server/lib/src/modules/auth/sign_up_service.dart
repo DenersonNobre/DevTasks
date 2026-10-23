@@ -11,9 +11,12 @@ class SignUpService {
   final RateLimiter? _limiter;
 
   Future<SignUpResultDto> signUp(SignUpDto dto, {String? clientIp}) async {
-    // 1. Rate limit roda ANTES de qualquer computação de senha/hash (INV-SEC-12)
-    if (_limiter != null && clientIp != null && clientIp.isNotEmpty) {
-      final rateOutcome = _limiter.check('signup:$clientIp');
+    // 1. Rate limit roda ANTES de qualquer computação de senha/hash (INV-SEC-13)
+    // Política fail-closed: se clientIp for nulo/vazio, chave sentinela 'unknown' é contabilizada.
+    if (_limiter != null) {
+      final effectiveIp =
+          (clientIp != null && clientIp.isNotEmpty) ? clientIp : 'unknown';
+      final rateOutcome = _limiter.check('signup:$effectiveIp');
       if (!rateOutcome.isAllowed) {
         return SignUpResultDto(
           success: false,

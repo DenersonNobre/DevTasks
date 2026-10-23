@@ -1,21 +1,17 @@
-/// Value Object de validação de política de senha no servidor (UC-01.04 / INV-SEC-08 / DRY).
+/// Validador estático da política de complexidade de senha no servidor (UC-01.04 / INV-SEC-08 / DRY).
 ///
 /// Política de complexidade canônica:
 /// - Tamanho: entre 12 e 128 caracteres.
 /// - Letra minúscula obrigatória.
 /// - Letra maiúscula obrigatória.
 /// - Dígito decimal obrigatório.
-final class Password {
-  const Password._(this.value);
-
+abstract final class Password {
   static const int minLength = 12;
   static const int maxLength = 128;
 
   static final RegExp _hasLower = RegExp('[a-z]');
   static final RegExp _hasUpper = RegExp('[A-Z]');
   static final RegExp _hasDigit = RegExp('[0-9]');
-
-  final String value;
 
   /// Valida [password] contra a política de complexidade.
   /// Retorna `null` se válida, ou a mensagem de violação.
@@ -37,8 +33,4 @@ final class Password {
     }
     return null;
   }
-
-  @override
-  String toString() => 'Password(***)';
 }
-

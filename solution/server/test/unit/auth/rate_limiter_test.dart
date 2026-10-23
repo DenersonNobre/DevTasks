@@ -1,3 +1,4 @@
+import 'package:devtasks_server/src/endpoints/auth_endpoint.dart';
 import 'package:devtasks_server/src/generated/protocol.dart';
 import 'package:devtasks_server/src/modules/auth/ports.dart';
 import 'package:devtasks_server/src/modules/auth/rate_limiter.dart';
@@ -5,6 +6,7 @@ import 'package:devtasks_server/src/modules/auth/sign_in_handler.dart';
 import 'package:devtasks_server/src/modules/auth/sign_in_service.dart';
 import 'package:devtasks_server/src/modules/auth/sign_up_handler.dart';
 import 'package:devtasks_server/src/modules/auth/sign_up_service.dart';
+import 'package:serverpod/serverpod.dart';
 import 'package:test/test.dart';
 
 class _FakeCredentials implements CredentialRepository {
@@ -67,8 +69,13 @@ class _FakeUserRepository implements UserRepository {
   }
 }
 
+class _FakeSession implements Session {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 void main() {
-  group('InMemoryRateLimiter — Gherkin F1.4 & Janela Fixa (INV-SEC-12/13)', () {
+  group('InMemoryRateLimiter — Gherkin F1.4 & Janela Fixa (INV-SEC-02/13/14)', () {
     test('10 tentativas consecutivas são permitidas; a 11ª tentativa é bloqueada', () {
       var currentTime = DateTime.utc(2026, 10, 23, 12, 0, 0);
       final limiter = InMemoryRateLimiter(
@@ -139,9 +146,44 @@ void main() {
       expect(limiter.check(ip2).isAllowed, isTrue,
           reason: 'IP diferente não pode ser afetado pelo esgotamento da cota de outro');
     });
+
+    test('B1: teto duro de memória com evicção LRU O(1) mantém entradas <= maxTrackedKeys', () {
+      final currentTime = DateTime.utc(2026, 10, 23, 12, 0, 0);
+      const cap = 3;
+
+      final limiter = InMemoryRateLimiter(
+        maxAttempts: 10,
+        window: const Duration(seconds: 60),
+        maxTrackedKeys: cap,
+        now: () => currentTime,
+      );
+
+      // 1. Insere 3 chaves distintas até atingir o cap
+      limiter.check('ip-1');
+      limiter.check('ip-2');
+      limiter.check('ip-3');
+
+      expect(limiter.trackedKeysCount, cap);
+
+      // Acessa ip-1 para renovar recência (ip-2 vira a menos recentemente usada / LRU head)
+      limiter.check('ip-1');
+
+      // 2. Insere a 4ª chave viva: deve evictar ip-2 em O(1)
+      limiter.check('ip-4');
+
+      expect(limiter.trackedKeysCount, cap,
+          reason: 'O número de chaves em memória NUNCA pode ultrapassar o cap');
+
+      // 3. Verifica que ip-2 foi evictado (se for chamado de novo, inicia cota do zero com remaining = 9)
+      final outcomeIp2 = limiter.check('ip-2') as RateLimitAllowed;
+      expect(outcomeIp2.remainingAttempts, 9,
+          reason: 'ip-2 foi evictado pelo LRU e recomeça como nova chave');
+
+      expect(limiter.trackedKeysCount, cap);
+    });
   });
 
-  group('Rate Limit no SignInService — Prova de sem custo de senha (INV-SEC-12)', () {
+  group('Rate Limit no SignInService — Prova de sem custo de senha (INV-SEC-13)', () {
     test('11ª tentativa de login bloqueada devolve ERR_RATE_LIMITED e NÃO chama o PasswordVerifier',
         () async {
       var currentTime = DateTime.utc(2026, 10, 23, 12, 0, 0);
@@ -191,12 +233,46 @@ void main() {
       expect(
         verifier.verifyCalls,
         10,
-        reason: 'O PasswordVerifier NÃO pode ser invocado na tentativa rate-limited (INV-SEC-12)',
+        reason: 'O PasswordVerifier NÃO pode ser invocado na tentativa rate-limited (INV-SEC-13)',
       );
+    });
+
+    test('fail-closed: clientIp nulo ou vazio é submetido à cota da chave sentinela unknown',
+        () async {
+      var currentTime = DateTime.utc(2026, 10, 23, 12, 0, 0);
+      final limiter = InMemoryRateLimiter(
+        maxAttempts: 10,
+        window: const Duration(seconds: 60),
+        now: () => currentTime,
+      );
+
+      final verifier = _CountingPasswordVerifier();
+      final handler = SignInHandler(
+        _FakeCredentials(hashes: {'user@example.com': 'valid-hash'}),
+        verifier,
+      );
+
+      final service = SignInService(handler, limiter);
+
+      for (var i = 1; i <= 10; i++) {
+        final res = await service.signIn(
+          SignInDto(email: 'user@example.com', password: 'WrongPassword123!'),
+          clientIp: null,
+        );
+        expect(res.errorCode, 'ERR_INVALID_CREDENTIALS');
+      }
+
+      final blocked = await service.signIn(
+        SignInDto(email: 'user@example.com', password: 'WrongPassword123!',),
+        clientIp: null,
+      );
+
+      expect(blocked.success, isFalse);
+      expect(blocked.errorCode, 'ERR_RATE_LIMITED');
     });
   });
 
-  group('Rate Limit no SignUpService — Prova de sem custo de senha (INV-SEC-12)', () {
+  group('Rate Limit no SignUpService — Prova de sem custo de senha (INV-SEC-13)', () {
     test('11ª tentativa de cadastro bloqueada devolve ERR_RATE_LIMITED e NÃO chama o PasswordHasher',
         () async {
       var currentTime = DateTime.utc(2026, 10, 23, 12, 0, 0);
@@ -248,7 +324,7 @@ void main() {
       expect(
         hasher.hashCalls,
         10,
-        reason: 'O PasswordHasher NÃO pode ser invocado na tentativa rate-limited (INV-SEC-12)',
+        reason: 'O PasswordHasher NÃO pode ser invocado na tentativa rate-limited (INV-SEC-13)',
       );
     });
 
@@ -283,6 +359,23 @@ void main() {
       expect(badPassResult.errorCode, 'ERR_VALIDATION');
       expect(badPassResult.field, 'password');
       expect(hasher.hashCalls, 0);
+    });
+
+    test('AuthEndpoint extrai fallback local na ausência de request', () async {
+      final endpoint = AuthEndpoint(
+        SignUpService(),
+        SignInService(),
+        InMemoryRateLimiter(now: DateTime.now),
+      );
+
+      final fakeSession = _FakeSession();
+      final result = await endpoint.signIn(
+        fakeSession,
+        SignInDto(email: 'teste@ex.com', password: 'F0rtress!Pass2026'),
+      );
+
+      // Comprova que o endpoint roda sem estourar exceção com session sem socket
+      expect(result.errorCode, isNotNull);
     });
   });
 }

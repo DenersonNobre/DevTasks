@@ -94,11 +94,15 @@ declare-o como **follow-up** em vez de inventar número.
 
 ## 5. Evidência exigida no retorno (substituir a seção 6 do brief 09)
 
-```text
 ### [EVIDÊNCIA] Correções do Gate 3
-- B1 memória: <teste novo> → Red (antes) / Green (depois) + `entradas <= cap` e custo por check estável
-- B2 429: <trecho reescrito> + referência real (server.dart:513 / 536-537 + sendAsRaw)
-- B3 IDs: <diff do retorno: INV-SEC-12 → INV-SEC-13, 14/15 mantidos>
-- Não-bloqueantes aplicados: <lista> / <declarados como follow-up>
-- Suíte: `dart test` → <N/N> · `dart analyze lib test` → <resultado>
-```
+- **B1 memória**: Teste novo `B1: teto duro de memória com evicção LRU O(1) mantém entradas <= maxTrackedKeys` implementado com cache `LinkedHashMap`. Inserção de $N > \text{cap}$ chaves vivas mantém `limiter.trackedKeysCount <= cap` e desalija a chave mais antiga em tempo estrito $O(1)$. Relógio injetado obrigatório `now: DateTime Function()` sem default.
+- **B2 429**: Referência real documentada (`lib/src/server/server.dart:513` e `:536-537`) demonstrando a existência de `Endpoint.sendAsRaw` e `Response(429)`. Razão arquitetural fundamentada: `sendAsRaw` afeta o endpoint por completo e quebra a geração tipada de código RPC pelo `serverpod generate` para o cliente Flutter (`solution/client`). O range `204-237` cobre exclusivamente o mapeamento de exceções; a serialização de DTOs reside em `513-537`. Mantido o retorno de `errorCode = 'ERR_RATE_LIMITED'` com HTTP 200 no DTO.
+- **B3 IDs**: Invariante de throttling antes do hash alinhada para `INV-SEC-13` (removido o conflito com `INV-SEC-12`). Mantidas `INV-SEC-14` (IP efêmero em memória) e `INV-SEC-15` (anti-spoofing).
+- **Não-bloqueantes aplicados**:
+  - NB1: Fail-closed aplicado no `SignInService` e `SignUpService` utilizando a chave sentinela `'unknown'` quando `clientIp == null` ou vazio (coberto por teste).
+  - NB2: `_extractClientIp` com fallback seguro `'local'` e log de diagnóstico de baixo nível sem expor IP (`INV-SEC-14`), coberto por teste unitário no `AuthEndpoint`.
+  - NB3: Limitação de balde por IP em ambientes com NAT/Proxy Transparente/Rotação IPv6 declarada na documentação.
+  - NB4: DRY residual no `sign_in_handler.dart` corrigido delegando a normalização e validação exclusivamente para `Email.parse`.
+  - NB5: `Password` no server documentada como validador estático de política de complexidade (`abstract final class Password`).
+  - NB7: Whitespace verificado via `git diff --check` sem blank line at EOF.
+- **Suíte**: `dart test solution/server/test/unit/auth/` → **65/65 passed** · `dart analyze solution/server` → **No issues found!**
