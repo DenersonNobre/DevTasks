@@ -48,9 +48,10 @@ header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a
 - Claim: **ativo** — `UC-01.03`, owner `coder` (paths `solution/app`, `solution/server`, hand-off).
 - Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (os 2 coder anteriores estouraram passos →
   implementação conduzida pelo orquestrador, gates independentes).
-- Implementação: **fatias 1–2 implementadas**. Gate 3: rodada 1 **rejeitou** (guard morto em produção;
-  token no body; hand-off stale) → corrigido (`81ecc7f`); rodada 2 **rejeitou** (hand-off desatualizado +
-  falta de Red do teste novo) → corrigido com prova por mutação (`9c0a943`); **rodada 3 em curso**.
+- Implementação: **fatias 1–2 implementadas e aprovadas**. Gate 3: rodada 1 **rejeitou** (guard morto
+  em produção; token no body; hand-off stale) → `81ecc7f`; rodada 2 **rejeitou** (hand-off + Red do teste
+  novo) → `9c0a943`; rodada 3 **rejeitou** (2 linhas residuais) → `bf5af53`; **rodada 4 APROVOU**;
+  **Gate 4 APROVADO** (confiança Alta, zero divergências).
 
 ## Evidência
 

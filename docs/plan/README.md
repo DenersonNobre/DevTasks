@@ -122,11 +122,11 @@ flowchart TD
 | Épico | UCs | UCs concluídos | Status |
 |:---|:---:|:---:|:---:|
 | 00 — Fundação | 8 | 8/8 | ✅ |
-| 01 — Autenticação | 6 | 4/6 | 🔄 |
+| 01 — Autenticação | 6 | 5/6 | 🔄 |
 | 02 — Workspace & Membresias | 3 | 0/3 | ⏳ |
 | 03 — Projetos | 2 | 0/2 | ⏳ |
 | 04 — Tarefas & Kanban | 3 | 0/3 | ⏳ |
 | 05 — Comentários | 2 | 0/2 | ⏳ |
 | 06 — Dashboard | 1 | 0/1 | ⏳ |
 | 07 — Deploy & Medição | 3 | 0/3 | ⏳ |
-| **Total** | **28** | **12/28** | 🔄 |
+| **Total** | **28** | **13/28** | 🔄 |

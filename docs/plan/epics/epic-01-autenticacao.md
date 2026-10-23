@@ -20,7 +20,7 @@ sensível (workflow_rules §Gate 2.5).
 | F1.0 | Wiring do stack Serverpod | 1 | Infra habilitante (dívida do UC-00.02) | ✅ |
 | F1.1 | Cadastro de usuário | 1 | Alto: INV-08, Gate 2.5 | ✅ |
 | F1.2 | Login & sessão persistente | 1 | Alto: NFR-05, credenciais | ✅ |
-| F1.3 | Logout & guarda de rotas privadas | 1 | Depende de F1.2 | ⏳ |
+| F1.3 | Logout & guarda de rotas privadas | 1 | Depende de F1.2 | ✅ |
 | F1.4 | Hardening de auth (rate limit + validação) | 1 | **Gate 2.5 obrigatório** | ⏳ |
 | F1.5 | Tema base & acessibilidade (D-06) | 1 | RNF-05/06/07 reatribuídos da EPIC-00 | ✅ |
 

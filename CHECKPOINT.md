@@ -26,23 +26,25 @@ Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
   **asserido** (anti-timing) · `auth.signIn` + DTOs (token `null`, declarado) · app: `SessionStore`
   (porta em `domain/`) + `SessionController` com **prova de restart (round-trip)**;
   **29 testes** no server, **20** de auth no app; Gates 3 (2 rodadas) e 4 aprovados.
-- **Follow-ups declarados** (não fingidos): persistência com `UNIQUE(email)` + **TOCTOU** +
-  `emailVerified` default · adapter de hash (dummy placeholder vira hash válido) · **token/sessão
-  emitida** · UI `/login` + **Riverpod (D-03)** · teste de log (INV-SEC-05) · limite de nome (SPEC) ·
-  fonte única das regras (3ª cópia do regex) · colisão `auth` · Reds não versionados.
+- **`UC-01.03` (F1.3 — logout & guarda de rotas) ✅ CONSOLIDADO** (`eab2197`, `81ecc7f`, `9c0a943`,
+  `bf5af53`): `SessionGuard` (token nulo/vazio sem consultar; inválido → `ERR_NOT_AUTHENTICATED`) +
+  `MeEndpoint` (guard **vivo** por padrão; token **fora do body**) + `RouteGuard` (privada sem sessão →
+  login; após `signOut` volta a redirecionar); **37 testes** no server, **24** de auth no app; Gate 3
+  (4 rodadas) e Gate 4 **aprovados**.
+- **Decisão de hash (PO, 2026-10-23)**: **`pointycastle` Argon2id** (OWASP + `Random.secure`) —
+  implementação no brief 08 (adapter + `dummyHash` válido).
 - **R-01 RESOLVIDO** pelo outro agente (governança **268 s**, 9/9 suítes) — resta um achado de
   **fronteira**: core com `-Coverage` mediu **60,98 s** (0,98 acima do teto) sob carga; sem `-Coverage`
   fica em 18–21 s. Dono: harness (brief 05/06).
 - **Em execução pelo outro agente**: `UC-01.05` (tema/WCAG, `3042406`) e evidências de Red.
 - Claim `UC-01.02`: liberado na consolidação.
 
-## Próximo passo (`UC-01.03` — Logout & Guarda de Rotas Privadas)
+## Próximo passo (`UC-01.04` — Hardening de autenticação)
 
-1. Claim + hand-off: **Gate 2.5 já cobre** a superfície de auth (sessão/rotas) — incrementar com
-   `INV-SEC-06` (token header-only) e `ERR_NOT_AUTHENTICATED` → 401 em **toda** rota privada (contrato, não UI).
-2. TDD: guard no servidor (middleware/endpoint) + guard do roteador no app usando o
-   `SessionController` existente; logout limpa o store.
-3. Seguir para `UC-01.04` (rate limit/hardening) e então os follow-ups de persistência/hash.
+1. Claim + hand-off: **Gate 2.5** com foco em rate limit (`INV-SEC-07`: 10 req/min por IP, **antes** do
+   hash) e validação de DTOs na fronteira (`ERR_VALIDATION`); fake de clock/contador para determinismo.
+2. TDD: middleware/limiter + testes de 11ª requisição → 429 sem consumir CPU de hash.
+3. Follow-ups em paralelo (brief 08): persistência (typed outcome + SQLSTATE 23505) e adapter Argon2id.
 
 ## Travas vivas
 

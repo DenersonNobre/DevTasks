@@ -8,6 +8,12 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ### Adicionado
 
+- **`UC-01.03` — logout & guarda de rotas**: `SessionGuard` (token nulo/vazio **sem consultar** o
+  authenticator; inválido → `ERR_NOT_AUTHENTICATED`) + `MeEndpoint` como **endpoint privado de
+  referência** (guard **vivo** por padrão via `NoSessionAuthenticator`; token **fora do body**, lido de
+  sessão/header) + `RouteGuard` no app (privada sem sessão → login; **após `signOut` volta a
+  redirecionar**). Gates 3 (4 rodadas) e 4 aprovados. Emissão de token, HTTP 401 e roteador real =
+  follow-up declarado.
 - **`UC-01.02` — login & sessão persistente**: `SignInHandler` com erro **único**
   (`ERR_INVALID_CREDENTIALS`, sem enumerar campo) e verificação **sempre** executada (hash dummy
   asserido — anti-enumeração por timing) + `SignInService`/`auth.signIn` com `SignInDto`/
