@@ -22,10 +22,11 @@ $elapsed = $stopwatch.Elapsed.TotalSeconds
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/test.ps1 failed with exit code $LASTEXITCODE"
 }
-if ($elapsed -gt 60) {
+if ($env:DEVTASKS_NESTED_RUN -ne "1" -and $elapsed -gt 60) {
     throw "FAIL: tools/test.ps1 exceeded limit (NFR-03: 60s). Took: $elapsed s"
 }
-Write-Host "Pass: Test runner completed successfully in $elapsed s (<= 60s)"
+$budgetNote = if ($env:DEVTASKS_NESTED_RUN -eq "1") { "(run aninhado: teto medido no run externo)" } else { "(<= 60s)" }
+Write-Host "Pass: Test runner completed successfully in $elapsed s $budgetNote"
 
 Write-Host "=== TEST 3: Falha propagada por teste GENUINAMENTE falho (nunca verde falso) ==="
 $probeTest = Join-Path $RepoRoot "solution/server/test/zz_fail_probe_test.dart"
@@ -84,9 +85,16 @@ Write-Host "=== TEST 6: Orcamento NFR-03 MORDE quando excedido ==="
 try {
     (Get-Content $TestScript -Raw) -replace '\$coreElapsed -gt 60', '$coreElapsed -gt 0.001' |
         Set-Content -Path $probeRunner -Encoding utf8
-    & $psExe -ExecutionPolicy Bypass -NoProfile -File $probeRunner -Target app
-    if ($LASTEXITCODE -eq 0) {
-        throw "FAIL: orcamento NFR-03 nao falhou com teto impossivel (0.001s)"
+    # A prova negativa precisa medir o teto: roda como run EXTERNO (sem a marca aninhada).
+    $savedNested = $env:DEVTASKS_NESTED_RUN
+    $env:DEVTASKS_NESTED_RUN = $null
+    try {
+        & $psExe -ExecutionPolicy Bypass -NoProfile -File $probeRunner -Target app
+        if ($LASTEXITCODE -eq 0) {
+            throw "FAIL: orcamento NFR-03 nao falhou com teto impossivel (0.001s)"
+        }
+    } finally {
+        $env:DEVTASKS_NESTED_RUN = $savedNested
     }
     Write-Host "Pass: orcamento NFR-03 reprovou execucao acima do teto (exit $LASTEXITCODE)"
 } finally {

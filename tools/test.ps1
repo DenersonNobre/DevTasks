@@ -149,6 +149,10 @@ if ($Coverage) {
 # Suíte de Governança e Infraestrutura (NC-08)
 if ($Governance -or $Target -eq "governance") {
     Write-Host "`n--> Executando Suíte de Governança, CI, Docker e Claims..."
+    # R-01: os suites aninhados re-executam a suíte core; marcar o run como aninhado
+    # evita que a medição sob carga (dupla execução + agente concorrente) estufe o teto.
+    $previousNested = $env:DEVTASKS_NESTED_RUN
+    $env:DEVTASKS_NESTED_RUN = "1"
     $govSuites = @(
         "tools/tests/test_build_scripts.ps1",
         "tools/tests/test_test_runner.ps1",
@@ -177,6 +181,7 @@ if ($Governance -or $Target -eq "governance") {
             }
         }
     }
+    $env:DEVTASKS_NESTED_RUN = $previousNested
 }
 
 $elapsed = $stopwatch.Elapsed.TotalSeconds
@@ -184,7 +189,12 @@ $govElapsed = [Math]::Round($elapsed - $coreElapsed, 2)
 Write-Host ("`n==> [DevTasks] Core (app+server) em {0:N2}s | Governanca em {1:N2}s | Total {2:N2}s" -f $coreElapsed, $govElapsed, $elapsed)
 
 # NFR-03: o teto de 60s vale para a suite CORE; a suite de governanca (opt-in) tem teto proprio.
-if ($coreElapsed -gt 60) {
+# NFR-03: o teto de 60s vale para a suite CORE, medido no run EXTERNO.
+# Runs aninhados (suites de governança) são disparados por este mesmo runner e não
+# medem o teto — sob carga a medição aninhada infla (R-01) e não representa a entrega.
+if ($env:DEVTASKS_NESTED_RUN -eq "1") {
+    Write-Host "  [NFR-03] Run aninhado: orçamento medido apenas no run externo."
+} elseif ($coreElapsed -gt 60) {
     $hasFailure = $true
     Write-Error "[NFR-03] Suite core (app+server) levou $([Math]::Round($coreElapsed,2))s - teto de 60s excedido."
 }
