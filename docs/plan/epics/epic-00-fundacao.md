@@ -155,7 +155,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 **DoR**: F0.1/F0.2 concluídas · binário/shim `claims` implementado em `tools/bin/claims`.
 **DoD**:
 - [x] commit sem claim de `(UC-XX.YY)` é **bloqueado com exit 1**.
-- [x] hooks `commit-msg` (Conventional Commits + claim + D-04) e `pre-commit` (**encoding**: UTF-8 estrito, U+FFFD, CJK, arquivo truncado) instalados e comprovados por provas negativas.
+- [x] hooks `commit-msg` (Conventional Commits + claim + D-04) e `pre-commit` (**encoding**: UTF-8 estrito, U+FFFD, CJK, arquivo truncado) instalados com **fonte única via `core.hooksPath`** e comprovados por provas negativas.
 - [x] shims de claims (`tools/bin/claims*`) implementados com schema versionado.
 
 #### User Story 0.4.1 — Hooks Git com poka-yoke de claims

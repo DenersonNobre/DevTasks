@@ -16,6 +16,12 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
   `dart:ui`, `package:flutter/`, `http`, `sqflite`, `serverpod`, …) no kernel de domínio, com
   **3 provas negativas** versionadas (`tools/tests/test_dip_gate.ps1`); ligado à suíte de governança.
 
+### Alterado
+
+- **Hooks Git com fonte única (`core.hooksPath`, NC-24)**: `tools/install-hooks.ps1` deixa de copiar
+  para `.git/hooks` por padrão (cópia somente com `-LegacyCopyFallback`) e **remove** cópias legadas; o
+  teste de encoding passou a exigir `hooksPath` efetivo e **ausência** de cópia em `.git/hooks`.
+
 ## [0.1.0] - 2026-10-22
 
 ### Adicionado

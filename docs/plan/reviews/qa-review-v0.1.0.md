@@ -252,7 +252,7 @@ vs `dart test` = 24,1 s).
 | NC-15 | **fechado** | `tools/dip-gate.ps1` enforça pureza do kernel/domínio (exit 1 em violação) com 3 provas negativas reais — `tools/tests/test_dip_gate.ps1` |
 | NC-17 | **aberto** | RNF-05/06/07 (tema base/WCAG) não entregues; `ThemeData`/`darkTheme` ausentes |
 | NC-22 | **aberto** | `epic-00:269` ainda traz o placeholder "Money-like **NãoExiste aqui**" |
-| NC-24 | **mitigado** | `core.hooksPath = tools/hooks` ✅; a cópia para `.git/hooks` segue como salvaguarda (pode defasar do versionado) |
+| NC-24 | **fechado** | `core.hooksPath` é fonte única; `install-hooks.ps1` remove cópias legadas (cópia só com `-LegacyCopyFallback`) |
 | NC-25 | **aberto** | `UC-CURRENT.md:46` ainda afirma "`CHECKPOINT.md` com 42 linhas" (real: 35) |
 | NC-26 | **aberto** | `main` local em `17b69f4` (não publicada) e **zero tags** — release não cortada |
 | NC-27 | **parcial** | DoR da F0.1 corrigido no épico; `LEARNINGS.md` agora registra o ciclo (3 entradas) |
