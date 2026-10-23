@@ -26,6 +26,18 @@ class GuardOutcome {
   bool get isAuthorized => user != null;
 }
 
+/// Autenticador padrão enquanto a emissão de token não existe (follow-up).
+///
+/// Nenhum token é válido ⇒ endpoints privados respondem `ERR_NOT_AUTHENTICATED`
+/// (comportamento correto: exigir sessão). O adaptador real (token opaco do
+/// framework/IDP) substitui esta classe na composition root.
+class NoSessionAuthenticator implements SessionAuthenticator {
+  const NoSessionAuthenticator();
+
+  @override
+  Future<AuthenticatedUser?> authenticate(String token) async => null;
+}
+
 /// Guard de sessão para endpoints privados.
 ///
 /// Padrão de referência: todo endpoint privado (EPIC-02+) exige sessão válida

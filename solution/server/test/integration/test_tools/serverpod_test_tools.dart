@@ -19,7 +19,6 @@ import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i5;
 import 'package:devtasks_server/src/generated/sign_in_result_dto.dart' as _i6;
 import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i7;
 import 'package:devtasks_server/src/generated/me_result_dto.dart' as _i8;
-import 'package:devtasks_server/src/generated/me_dto.dart' as _i9;
 import 'package:devtasks_server/src/generated/protocol.dart';
 import 'package:devtasks_server/src/generated/endpoints.dart';
 export 'package:serverpod_test/serverpod_test_public_exports.dart';
@@ -240,10 +239,7 @@ class _MeEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<_i8.MeResultDto> me(
-    _i1.TestSessionBuilder sessionBuilder,
-    _i9.MeDto dto,
-  ) async {
+  _i3.Future<_i8.MeResultDto> me(_i1.TestSessionBuilder sessionBuilder) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
           (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
@@ -255,7 +251,7 @@ class _MeEndpoint {
           createSessionCallback: (_) => _localUniqueSession,
           endpointPath: 'me',
           methodName: 'me',
-          parameters: _i1.testObjectToJson({'dto': dto}),
+          parameters: _i1.testObjectToJson({}),
           serializationManager: _serializationManager,
         );
         var _localReturnValue =

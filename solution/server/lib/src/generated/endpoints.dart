@@ -16,8 +16,7 @@ import '../endpoints/auth_endpoint.dart' as _i2;
 import '../endpoints/me_endpoint.dart' as _i3;
 import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i4;
 import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i5;
-import 'package:devtasks_server/src/generated/me_dto.dart' as _i6;
-import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i7;
+import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i6;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -84,24 +83,15 @@ class Endpoints extends _i1.EndpointDispatch {
       methodConnectors: {
         'me': _i1.MethodConnector(
           name: 'me',
-          params: {
-            'dto': _i1.ParameterDescription(
-              name: 'dto',
-              type: _i1.getType<_i6.MeDto>(),
-              nullable: false,
-            ),
-          },
+          params: {},
           call:
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['me'] as _i3.MeEndpoint).me(
-                session,
-                params['dto'],
-              ),
+              ) async => (endpoints['me'] as _i3.MeEndpoint).me(session),
         ),
       },
     );
-    modules['serverpod_auth'] = _i7.Endpoints()..initializeEndpoints(server);
+    modules['serverpod_auth'] = _i6.Endpoints()..initializeEndpoints(server);
   }
 }

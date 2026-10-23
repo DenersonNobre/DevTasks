@@ -18,9 +18,8 @@ import 'package:devtasks_client/src/protocol/sign_up_dto.dart' as _i4;
 import 'package:devtasks_client/src/protocol/sign_in_result_dto.dart' as _i5;
 import 'package:devtasks_client/src/protocol/sign_in_dto.dart' as _i6;
 import 'package:devtasks_client/src/protocol/me_result_dto.dart' as _i7;
-import 'package:devtasks_client/src/protocol/me_dto.dart' as _i8;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i9;
-import 'protocol.dart' as _i10;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i8;
+import 'protocol.dart' as _i9;
 
 /// Endpoint de autenticação (cadastro e login).
 /// {@category Endpoint}
@@ -46,6 +45,10 @@ class EndpointAuth extends _i1.EndpointRef {
 }
 
 /// Endpoint privado de referência: exige sessão válida (guard de F1.3).
+///
+/// O token é lido da **sessão/header** (nunca do corpo — INV-SEC-06). Enquanto a
+/// emissão de token não existe (follow-up), a leitura devolve `null` e o guard
+/// responde `ERR_NOT_AUTHENTICATED` — comportamento correto e **vivo** em produção.
 /// {@category Endpoint}
 class EndpointMe extends _i1.EndpointRef {
   EndpointMe(_i1.EndpointCaller caller) : super(caller);
@@ -53,20 +56,20 @@ class EndpointMe extends _i1.EndpointRef {
   @override
   String get name => 'me';
 
-  _i2.Future<_i7.MeResultDto> me(_i8.MeDto dto) =>
+  _i2.Future<_i7.MeResultDto> me() =>
       caller.callServerEndpoint<_i7.MeResultDto>(
         'me',
         'me',
-        {'dto': dto},
+        {},
       );
 }
 
 class Modules {
   Modules(Client client) {
-    auth = _i9.Caller(client);
+    auth = _i8.Caller(client);
   }
 
-  late final _i9.Caller auth;
+  late final _i8.Caller auth;
 }
 
 class Client extends _i1.ServerpodClientShared {
@@ -89,7 +92,7 @@ class Client extends _i1.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i10.Protocol(),
+         _i9.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,

@@ -47,7 +47,9 @@ header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a
 - Claim: **ativo** — `UC-01.03`, owner `coder` (paths `solution/app`, `solution/server`, hand-off).
 - Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (os 2 coder anteriores estouraram passos →
   implementação conduzida pelo orquestrador, gates independentes).
-- Implementação: **não iniciada**.
+- Implementação: **fatias 1–2 implementadas**. Gate 3 rodada 1 **rejeitou** (guard era código morto
+  em produção; token no body; hand-off stale) → corrigido: authenticator padrão vivo, token **fora do
+  body** (lido da sessão/header), `MeService` testado; **rodada 2 pendente**.
 
 ## Evidência
 
@@ -63,9 +65,16 @@ header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a
 - **Green**: **4 testes** — rota privada sem sessão → `redirectToLogin`; autenticada → `allow`;
   pública → `allow`; **após `signOut` volta a redirecionar** (logout integrado ao `SessionController`).
 
-- **Suítes**: server **33 testes** · app auth **24** · `analyze` limpo nos dois · `serverpod generate`
+- **Suítes**: server **37 testes** · app auth **24** · `analyze` limpo nos dois · `serverpod generate`
   (CLI 3.4.13) exit 0.
-- **Declarado**: roteador real (go_router) e mapeamento HTTP 401 pertencem à fachada/UI (follow-up).
+- **Guard vivo em produção**: `MeEndpoint()` (construção do dispatch gerado) monta
+  `MeService(SessionGuard(NoSessionAuthenticator()))` → responde **`ERR_NOT_AUTHENTICATED`** (não
+  `ERR_INFRA_FAILURE`). O adaptador real (token opaco/IDP) substitui o `NoSessionAuthenticator` na
+  composition root quando a emissão de token existir (follow-up declarado).
+- **INV-SEC-06**: o token **não** trafega no body — `MeDto` foi removido; o endpoint lê da sessão/header
+  (leitura real = follow-up, hoje devolve `null`).
+- **Declarado**: roteador real (go_router), mapeamento HTTP 401 e emissão de token pertencem à
+  fachada/UI (follow-up).
 
 ## Pendências / coordenação
 
