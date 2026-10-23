@@ -7,24 +7,30 @@
 ## Contexto
 
 Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
-**EPIC-00 e EPIC-01 (Autenticação) encerradas** · **EPIC-02 (Workspaces) iniciada**.
+**EPIC-00 concluída** · **EPIC-01 (Autenticação) em execução** · **EPIC-02 (Workspaces) iniciada (UC-02.01 implementado)**.
 
 ## Estado verificado (2026-10-23)
 
-- **Consolidadas EPIC-01**: `UC-01.00` a `UC-01.07` (bloqueantes sanados) e `UC-01.08` (wiring real do app com `flutter_secure_storage`, `ServerpodAuthClient` e rotas protegidas pelo `RouteGuard` no boot — commit `e049f35`).
-- **Governança do Harness (NFR-03)**: `tools/test.ps1` calibrado com modos `-Unit` (≤60s; tempo medido: 31,68s) e `-Integration` (≤120s), resolução de pacotes isolada com `-NoPub` no CI — commit `f1eabd9`.
-- **Iniciação da EPIC-02 (`UC-02.01` CRUD Workspace)**: modelos `DevtasksWorkspace` e `DevtasksWorkspaceMember` (role `owner|developer|viewer`, índice `UNIQUE(workspaceId, userId)` INV-09), migração `20261023211407351`, serviço puro com anti-enumeração (INV-01) e autorização por papel (INV-06) — commit `b2021a6`.
-- **Suíte & Analisadores**: `solution/app` 79/79 passed, `solution/server` 91/91 passed; `flutter analyze` e `dart analyze` sem avisos; DAG gate e Pin gate OK.
-- **Git & Remotos**: `origin/develop` 100% sincronizado após `git push` (HEAD `b2021a6`).
+- **EPIC-01**: `UC-01.00`–`UC-01.07` implementados + Gate 3 aprovados. `UC-01.08` (`e049f35`) wire real do app, componentes auth e guarded routes concluídos.
+- **EPIC-02**: `UC-02.01` (workspace CRUD + migration + anti-enumeração/isolamento) implementado (`b2021a6`).
+- **Harness NFR-03**: 155,91s total — excede 120s (teto de integração), exige ajuste de orçamento.
+- **Resíduos de UC-01.07**: `B5` ok; `B8` — INV-SEC-06 ainda presente em `me_service.dart:6`.
+- **Briefs**: 16 listado no `docs/plan/briefs/` (coordenação incluída).
 
-## Próximo passo
+## Próximos passos
 
-1. **`UC-02.02`**: Gestão de membros e convites de workspace (adicionar/remover membro com validação de papel).
-2. **`UC-02.03`**: `MembershipGuard` transversal completo.
-3. **App UI de Workspaces**: telas `/workspaces` consumindo o cliente gerado.
+1. **Encerramento EPIC-01**: validar `F1.4` + corrigir `B8` + calibrar NFR-03 (teto 180s).
+2. **Prosseguir com EPIC-02**: `UC-02.02` membresias + `UC-02.03` Guard transversal.
+3. **Gate 4**: executar com `-Integration` após ajustar teto (ou após separação unit/integration).
 
 ## Travas vivas
 
-- Ciclo em `develop`; commit de UC exige claim ativo; `main` só por release (D-04).
-- Toolchain: Serverpod CLI `3.4.13` obrigatória (idempotência com diff zero no generate).
-- Segurança: `userId` vem sempre da sessão autenticada (`INV-SEC-06`), nunca de payloads de cliente.
+- Commit (UC-XX.YY) exige claim ativo (`tools/bin/claims claim`).
+- Push com reputação:
+  - pedido explícito + árvore limpa + sem concorrência (tudo atendido).
+  - Não usar `git add -A`/`-u`; stagear por path explícito.
+- Bridge de gestão: `tools/bin/claims` store em `<git-common-dir>/claims/` — não editá-lo diretamente.
+
+## Coautor / Notas finais
+
+O trabalho continua no branch `develop`. A EP-01 não está fechada; a EP-02 foi iniciada prematuramente. A próxima etapa é completar os bloqueios de EP-01 antes de prosseguir.
