@@ -108,6 +108,95 @@ try {
     Write-Host "Pass: Claim created with -Paths and validated against canonical schema."
     & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript release -slice $testSlice | Out-Null
 
+    Write-Host "`n=== TEST 8: Suporte ao override de diretório por CLAIMS_DIR ==="
+    $customClaimsDir = Join-Path ([System.IO.Path]::GetTempPath()) ("devtasks_claims_" + [System.Guid]::NewGuid().ToString("N"))
+    try {
+        $env:CLAIMS_DIR = $customClaimsDir
+        $customSlice = "UC-99.97"
+        & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript claim -slice $customSlice -owner "env-tester"
+        if ($LASTEXITCODE -ne 0) {
+            throw "FAIL: Failed to create claim with CLAIMS_DIR set."
+        }
+
+        $customClaimFile = Join-Path $customClaimsDir "$customSlice.json"
+        $standardClaimFile = Join-Path $RepoRoot ".git/claims/$customSlice.json"
+
+        if (-not (Test-Path $customClaimFile)) {
+            throw "FAIL: Expected claim to be written into CLAIMS_DIR ($customClaimsDir), but file was not found."
+        }
+        if (Test-Path $standardClaimFile) {
+            throw "FAIL: Claim should NOT have been written to standard .git/claims when CLAIMS_DIR is set."
+        }
+
+        & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript check -slice $customSlice
+        if ($LASTEXITCODE -ne 0) {
+            throw "FAIL: claims check failed to locate claim inside CLAIMS_DIR."
+        }
+        Write-Host "Pass: CLAIMS_DIR environment variable correctly overrides storage directory."
+    } finally {
+        $env:CLAIMS_DIR = $null
+        if (Test-Path $customClaimsDir) {
+            Remove-Item -Path $customClaimsDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    Write-Host "`n=== TEST 9: Ação claims reap (-DryRun, -Force e prova negativa de ativos) ==="
+    $activeSlice = "UC-99.96"
+    $expiredSlice = "UC-99.95"
+
+    # 1. Garante estado limpo
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript release -slice $activeSlice | Out-Null
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript release -slice $expiredSlice | Out-Null
+
+    # 2. Cria claim ativo (fresco)
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript claim -slice $activeSlice -owner "active-runner" -ttl 60
+    if ($LASTEXITCODE -ne 0) {
+        throw "FAIL: Failed to create active claim $activeSlice"
+    }
+
+    # 3. Cria claim expirado diretamente
+    $expiredFile = Join-Path $RepoRoot ".git/claims/$expiredSlice.json"
+    $expiredData = @{
+        schema = "claims/v1"
+        slice = $expiredSlice
+        owner = "ghost-runner"
+        pid = 99999
+        claimed_at = "2026-01-01T00:00:00.000Z"
+        expires_at = "2026-01-01T01:00:00.000Z"
+        ttl_minutes = 60
+        status = "active"
+    }
+    [System.IO.File]::WriteAllText($expiredFile, ($expiredData | ConvertTo-Json), [System.Text.Encoding]::UTF8)
+
+    # 4. Executa reap com -DryRun: NÃO deve remover arquivos
+    $dryRunOutput = & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript reap -DryRun 2>&1 | Out-String
+    if (-not (Test-Path $expiredFile)) {
+        throw "FAIL: reap -DryRun deleted expired claim file! DryRun must be read-only."
+    }
+    if ($dryRunOutput -notmatch $expiredSlice) {
+        throw "FAIL: reap -DryRun output did not mention expired slice ${expiredSlice}: $dryRunOutput"
+    }
+    Write-Host "Pass: reap -DryRun listed expired slice without deleting."
+
+    # 5. Executa reap com -Force: DEVE remover apenas o expirado
+    $activeFile = Join-Path $RepoRoot ".git/claims/$activeSlice.json"
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript reap -Force | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "FAIL: claims reap -Force failed."
+    }
+
+    if (Test-Path $expiredFile) {
+        throw "FAIL: claims reap -Force did not remove expired claim file $expiredFile."
+    }
+    # PROVA NEGATIVA: O claim ativo NÃO PODE ter sido removido!
+    if (-not (Test-Path $activeFile)) {
+        throw "FAIL: PROVA NEGATIVA VIOLADA: claims reap -Force removeu indevidamente o claim ativo $activeSlice!"
+    }
+    Write-Host "Pass: claims reap -Force removed expired claim and preserved active claim (prova negativa verde)."
+
+    # Limpeza
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript release -slice $activeSlice | Out-Null
+
 } finally {
     if (Test-Path $tempMsgFile) {
         Remove-Item $tempMsgFile -Force -ErrorAction SilentlyContinue

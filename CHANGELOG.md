@@ -18,6 +18,9 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - **Suporte a `-Paths` no gerenciador de claims (`tools/bin/claims.ps1`)**: persistência e parse do
   array de arquivos associados ao slice no schema canônico `claims/v1`, com normalização de argumentos
   e suite de testes em `tools/tests/test_git_governance.ps1`.
+- **Override por `CLAIMS_DIR` e comando `claims reap` (`tools/bin/claims.ps1`)**: suporte à variável de
+  ambiente `CLAIMS_DIR` para isolamento de diretório de claims e ação `reap` (`-DryRun` / `-Force`)
+  para coleta e purga segura de claims expirados com prova negativa de preservação de claims ativos.
 
 ### Alterado
 

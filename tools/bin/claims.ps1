@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position=0, Mandatory=$true)]
-    [ValidateSet("claim", "release", "check", "list", "heartbeat")]
+    [ValidateSet("claim", "release", "check", "list", "heartbeat", "reap")]
     [string]$Action,
 
     [Parameter(Mandatory=$false)]
@@ -16,13 +16,28 @@ param(
     [int]$Ttl = 90,
 
     [Parameter(Mandatory=$false, ValueFromRemainingArguments=$true)]
-    [string[]]$Paths = @()
+    [string[]]$Paths = @(),
+
+    [Parameter(Mandatory=$false)]
+    [switch]$DryRun,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "../..")
-$ClaimsDir = Join-Path $RepoRoot ".git/claims"
+
+$ClaimsDir = if ($env:CLAIMS_DIR -and $env:CLAIMS_DIR.Trim() -ne "") {
+    if ([System.IO.Path]::IsPathRooted($env:CLAIMS_DIR)) {
+        $env:CLAIMS_DIR
+    } else {
+        Join-Path $RepoRoot $env:CLAIMS_DIR
+    }
+} else {
+    Join-Path $RepoRoot ".git/claims"
+}
 
 if (-not (Test-Path $ClaimsDir)) {
     New-Item -ItemType Directory -Path $ClaimsDir -Force | Out-Null
@@ -281,6 +296,47 @@ switch ($Action) {
         if ($activeCount -eq 0) {
             Write-Host "  (nenhum claim ativo no momento)"
         }
+        exit 0
+    }
+
+    "reap" {
+        $files = Get-ChildItem -Path $ClaimsDir -Filter "*.json" -ErrorAction SilentlyContinue
+        $reapedCount = 0
+        $activeCount = 0
+        $orphanedFiles = @()
+
+        foreach ($f in $files) {
+            $parsed = Parse-Claim $f.FullName
+            if ($null -eq $parsed) {
+                $orphanedFiles += @{ File = $f; Slice = $f.BaseName; Reason = "corrompido/inválido" }
+            } elseif (-not $parsed.IsActive) {
+                $orphanedFiles += @{ File = $f; Slice = $parsed.Slice; Reason = "expirado em $($parsed.Expires.ToString('HH:mm:ss')) UTC" }
+            } else {
+                $activeCount++
+            }
+        }
+
+        if ($DryRun -or (-not $Force)) {
+            if ($orphanedFiles.Count -eq 0) {
+                Write-Host "==> [Claims reap] Nenhum claim órfão ou expirado para limpar."
+            } else {
+                Write-Host "==> [Claims reap (DryRun)] $($orphanedFiles.Count) claim(s) expirado(s)/órfão(s) encontrado(s):"
+                foreach ($item in $orphanedFiles) {
+                    Write-Host "  - $($item.Slice) ($($item.Reason)) -> $($item.File.FullName)"
+                }
+                Write-Host "Execute com -Force para remover os arquivos."
+            }
+            exit 0
+        }
+
+        # Com -Force: remove apenas os órfãos/expirados
+        foreach ($item in $orphanedFiles) {
+            Remove-Item -Path $item.File.FullName -Force -ErrorAction SilentlyContinue
+            Write-Host "==> [Claims reap] Removido claim expirado: $($item.Slice)"
+            $reapedCount++
+        }
+
+        Write-Host "==> [Claims reap] Concluído: $reapedCount claim(s) removido(s), $activeCount ativo(s) preservado(s)."
         exit 0
     }
 }
