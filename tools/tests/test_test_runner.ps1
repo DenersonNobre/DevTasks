@@ -83,7 +83,7 @@ try {
 
 Write-Host "=== TEST 6: Orcamento NFR-03 MORDE quando excedido ==="
 try {
-    (Get-Content $TestScript -Raw) -replace '\$coreElapsed -gt 60', '$coreElapsed -gt 0.001' |
+    (Get-Content $TestScript -Raw) -replace '\$coreElapsed -gt \$coreBudget', '$coreElapsed -gt 0.001' |
         Set-Content -Path $probeRunner -Encoding utf8
     # A prova negativa precisa medir o teto: roda como run EXTERNO (sem a marca aninhada).
     $savedNested = $env:DEVTASKS_NESTED_RUN
