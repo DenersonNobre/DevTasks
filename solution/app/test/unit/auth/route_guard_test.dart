@@ -1,6 +1,6 @@
 import 'package:devtasks_app/global/router/route_guard.dart';
 import 'package:devtasks_app/modules/auth/domain/session_store.dart';
-import 'package:devtasks_app/modules/auth/presentation/session_controller.dart';
+import 'package:devtasks_app/global/session/session_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -49,21 +49,54 @@ coberta pela decisão **D-03** (gerência de estado local, sem superfície de re
 ## Estado de execução
 
 - Claim: **ativo** — `UC-01.06`, owner `coder` (paths `solution/app`, hand-off).
-- **Implementação: não iniciada** — segurando para não disputar o `pubspec.lock` do workspace com o
-  brief 08 do outro agente (que adicionará `pointycastle` no server). Liberar quando ele fechar.
+- **Implementação: concluída** (fatia única; sem depender de outro agente).
 - D-07 registrada em `DESIGN` §12/§12.1 + `AGENTS.md` + F1.6 (commit `fcac2ba`) **antes** do código.
-- Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (os anteriores estouraram passos; orquestrador
-  conduz a implementação e os Gates 3/4 auditam).
+- `SessionController` **movido** para `global/session/` (D-07 regra 4) com providers em
+  `session_providers.dart`; imports de `route_guard` e dos 2 testes atualizados.
+- Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (orquestrador conduziu a implementação;
+  Gates 3/4 auditam em contexto limpo).
+
+## Entregue (arquivos)
+
+- `modules/auth/domain/auth_client.dart` — porta + `AuthSession` (token fora de `toString`).
+- `modules/auth/infrastructure/auth_client_provider.dart` — composição (adaptador real = follow-up).
+- `modules/auth/presentation/auth_form_status.dart` — `idle|loading|error|completed`.
+- `modules/auth/presentation/login/{login_state,login_view_model,login_view}.dart`.
+- `modules/auth/presentation/register/{register_state,register_view_model,register_view}.dart`.
+- `global/session/{session_controller,session_providers}.dart` · `global/router/app_routes.dart` ·
+  `global/shell/private_area_view.dart` · `main.dart` (ProviderScope + rotas).
+- `test/support/{fake_auth_client,in_memory_session_store}.dart` ·
+  `test/unit/auth/{login,register}_view_model_test.dart` · `test/widget/auth_screens_test.dart`.
 
 ## Evidência
 
-- Red/Green: a preencher.
+```text
+[EVIDÊNCIA]
+- Leitura: login_view_model.dart:28-60 → valida com VOs (Email/Password), chama a porta e persiste
+  a sessão via SessionController; nenhum BuildContext/I/O no VM (D-07).
+- Verificação: flutter analyze solution/app/lib solution/app/test → "No issues found!" (2 items, 8.5 s)
+- Confirmação: flutter test (app completo) → 62/62 passed; nos arquivos da fatia → 42/42 passed.
+- Prova negativa (mutação controlada): remover a persistência da sessão no login + early-return no
+  submit do cadastro → 5 falhas reais (ex.: `Expected: 'tok-123'  Actual: <null>`), restaurado → verde.
+```
+
+## Desvios e follow-ups declarados
+
+- **Adaptador real** `AuthClient` (cliente gerado + URL do server) e **adaptador** `SessionStore`
+  (armazenamento local) não existem: os providers lançam `UnimplementedError` até a borda injetá-los.
+  Motivo: o servidor ainda **não emite token** (follow-up já registrado na EPIC-01).
+- **`signUp` não emite sessão** (contrato `SignUpResultDto`): cadastro conclui com `userId` e volta
+  para `/login`; auto-login pós-cadastro fica para quando o token existir.
+- **Roteador**: `MaterialApp.routes` nomeadas (sem `go_router`); o `RouteGuard` segue como contrato
+  puro testado — wiring no router é decisão futura.
+- **Rate limit** (`UC-01.04`, brief 09) é do outro agente; a UI mapeia `ERR_RATE_LIMITED` como erro de
+  formulário genérico (mensagem do servidor) quando ele entrar.
 
 ## Pendências / coordenação
 
-- **`solution/server/**` está com o outro agente** (brief 08: persistência + Argon2id). Não tocar.
-- Wiring real do `AuthClient` (URL do server + token) e router (go_router) = follow-ups declarados.
-- `UC-01.04` (rate limit) segue **bloqueado por colisão** com o brief 08 — abre depois.
+- **`solution/server/**` está com o outro agente** (brief 09 / `UC-01.04`). Não tocar.
+- Wiring real `AuthClient`/`SessionStore` + emissão de token = follow-ups declarados.
+- `UC-01.04` fecha a EPIC-01 (brief 09 em execução pelo `parallel-agent`).
 
 ## Próximo UC
 

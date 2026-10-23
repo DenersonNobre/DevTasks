@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../domain/session_store.dart';
+import '../../modules/auth/domain/session_store.dart';
 
 /// Estado de autenticação observável pelo app.
 enum SessionStatus { signedOut, authenticated }
@@ -16,6 +16,10 @@ class SessionState {
   final String? token;
 
   bool get isAuthenticated => status == SessionStatus.authenticated;
+
+  /// Token nunca é exposto em texto (INV-SEC-05).
+  @override
+  String toString() => 'SessionState(${status.name})';
 }
 
 /// Controla a sessão do app: restaura no boot e persiste no [SessionStore].

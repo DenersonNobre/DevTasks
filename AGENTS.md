@@ -16,6 +16,11 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
 - Identificadores em **inglês**; documentação (`docs/`, `LEARNINGS.md`) em **pt-BR**.
 - VSA no app: `lib/modules/<modulo>/{domain,infrastructure,presentation}` + kernel `global/`.
 - Domínio/Handlers sem imports de infra (DIP); Port só com o que a Feature usa (ISP).
+- **Barrels pontuados** (`.<dir>.dart` — ex.: `modules/auth/.domain.dart`, `global/session/.session.dart`)
+  com `show`/`hide` para reduzir imports. Regras: (a) um arquivo **nunca** importa o barrel que o
+  exporta (ciclo); (b) caminhos de `export` são relativos à **posição do barrel**, não da camada
+  (barrel na raiz do módulo → `domain/email.dart`); (c) barrels de camada só exportam o que a camada
+  de cima consome (VMs não entram no barrel de estados).
 - Falha de negócio esperada → `Result`/erro tipado capturado na fronteira; exceção só para falha impredizável.
 - Fonte de verdade do contrato client↔server: modelos Serverpod (`serverpod generate`), não OpenAPI manual.
 

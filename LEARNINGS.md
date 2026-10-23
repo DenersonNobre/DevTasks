@@ -118,3 +118,10 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
   4. Suíte de governança integrada via `tools/test.ps1 -Governance` e acoplada aos workflows de CI (`.github` e `.gitea`).
   5. `DateOnly` corrigido com validação de calendário e cobertura do domínio puro elevada para 94,04%.
 - **Prevenção**: Alinhar o contexto Docker com `.dockerignore` na raiz, executar `tools/test.ps1 -Governance` como pré-flight obrigatório e manter a matriz §7 sempre sincronizada.
+
+## 2026-10-23 — Barrel pontuado (`.<dir>.dart`): caminho do `export` é relativo ao BARREL
+
+- **Sintoma**: `flutter analyze` acusou dezenas de `undefined_identifier`/`non_type_as_type_argument` em todos os arquivos que importavam os barrels novos, apesar de os arquivos existirem no disco.
+- **Causa raiz**: os barrels foram criados na **raiz do módulo** (`modules/auth/.domain.dart`) mas os `export` usavam caminhos da **camada** (`'email.dart'`), que resolvem a partir do diretório do barrel -> `modules/auth/email.dart` (inexistente). O analyzer denuncia no próprio barrel (`Target of URI doesn't exist`); no consumidor o sintoma aparece como símbolo indefinido.
+- **Fix**: `export 'domain/email.dart' ...` (relativo à posição do barrel). Validação barata: `dart analyze <barrel>` mostra `uri_does_not_exist` antes de rodar a suíte.
+- **Prevenção**: barrel nunca exporta o arquivo que o importa (ciclo) e barrel de camada não exporta ViewModels que o importam; rodar `dart analyze` no barrel ao criá-lo.

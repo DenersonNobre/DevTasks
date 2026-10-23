@@ -1,4 +1,4 @@
-import 'package:devtasks_app/modules/auth/presentation/session_controller.dart';
+import 'package:devtasks_app/global/session/.session.dart';
 
 /// Decisão de navegação para uma rota.
 enum RouteDecision { allow, redirectToLogin }
