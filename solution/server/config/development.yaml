@@ -1,0 +1,36 @@
+# Configuração do servidor no ambiente local de desenvolvimento.
+# Portas padrão do Serverpod: 8080 (API), 8081 (Insights), 8082 (web/health).
+apiServer:
+  port: 8080
+  publicHost: localhost
+  publicPort: 8080
+  publicScheme: http
+
+# Insights (8081) fica desligado: é ferramenta de depuração e exigiria
+# `serviceSecret` em toda máquina de desenvolvimento.
+webServer:
+  port: 8082
+  publicHost: localhost
+  publicPort: 8082
+  publicScheme: http
+
+# PostgreSQL local: `docker compose -f docker/docker-compose.yml up postgres`.
+# A senha vem de `config/passwords.yaml` (não versionado) ou de
+# `SERVERPOD_DATABASE_PASSWORD`.
+database:
+  host: localhost
+  port: 5432
+  name: devtasks
+  user: devtasks
+
+redis:
+  enabled: false
+  host: localhost
+  port: 6379
+
+maxRequestSize: 524288
+
+sessionLogs:
+  persistentEnabled: true
+  consoleEnabled: true
+  consoleLogFormat: text

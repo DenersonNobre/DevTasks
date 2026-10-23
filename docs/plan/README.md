@@ -13,7 +13,7 @@
 | Épico | Arquivo | Dependências | Prioridade | Status |
 |:---|:---|:---|:---:|:---:|
 | **00 — Fundação** | [epic-00-fundacao.md](epics/epic-00-fundacao.md) | Nenhuma (independência máxima) | Crítica | ✅ Concluída |
-| **01 — Autenticação** | [epic-01-autenticacao.md](epics/epic-01-autenticacao.md) | EPIC-00 | Crítica | ⏳ Pendente |
+| **01 — Autenticação** | [epic-01-autenticacao.md](epics/epic-01-autenticacao.md) | EPIC-00 | Crítica | 🔄 Em execução |
 | **02 — Workspace & Membresias** | [epic-02-workspace.md](epics/epic-02-workspace.md) | EPIC-00, EPIC-01 | Alta | ⏳ Pendente |
 | **03 — Projetos** | [epic-03-projetos.md](epics/epic-03-projetos.md) | EPIC-02 | Alta | ⏳ Pendente |
 | **04 — Tarefas & Kanban** | [epic-04-tarefas-kanban.md](epics/epic-04-tarefas-kanban.md) | EPIC-03 | Crítica | ⏳ Pendente |
@@ -119,11 +119,11 @@ flowchart TD
 | Épico | UCs | UCs concluídos | Status |
 |:---|:---:|:---:|:---:|
 | 00 — Fundação | 8 | 8/8 | ✅ |
-| 01 — Autenticação | 4 | 0/4 | ⏳ |
+| 01 — Autenticação | 5 | 1/5 | 🔄 |
 | 02 — Workspace & Membresias | 3 | 0/3 | ⏳ |
 | 03 — Projetos | 2 | 0/2 | ⏳ |
 | 04 — Tarefas & Kanban | 3 | 0/3 | ⏳ |
 | 05 — Comentários | 2 | 0/2 | ⏳ |
 | 06 — Dashboard | 1 | 0/1 | ⏳ |
 | 07 — Deploy & Medição | 3 | 0/3 | ⏳ |
-| **Total** | **26** | **8/26** | 🔄 |
+| **Total** | **27** | **9/27** | 🔄 |

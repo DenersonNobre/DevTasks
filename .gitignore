@@ -15,8 +15,9 @@ passwords.yaml
 .env.*
 !.env.example
 
-# --- Client Serverpod (GERADO — UC-00.02/`serverpod generate`; nunca editar à mão) ---
-/solution/client/
+# --- Client Serverpod (GERADO por `serverpod generate`; nunca editar à mão) ---
+# VERSIONADO de propósito: é membro do pub workspace (membro ausente quebra
+# `flutter pub get` em clone limpo) e é o contrato client↔server da app.
 
 # --- IDEs / editors ---
 .idea/

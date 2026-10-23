@@ -13,6 +13,57 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..")
 Set-Location $RepoRoot
 
+# Resolve o CLI `serverpod` sem depender de PATH do host: comando no PATH,
+# binário do pub cache (Windows/Linux/Puro) ou `dart pub global run`.
+function Resolve-ServerpodCli {
+    $cmd = Get-Command "serverpod" -ErrorAction SilentlyContinue
+    if ($cmd) {
+        return [pscustomobject]@{
+            Exe     = $cmd.Source
+            Prefix  = @()
+            Display = $cmd.Source
+        }
+    }
+
+    $candidates = @()
+    if ($env:LOCALAPPDATA) {
+        $candidates += (Join-Path $env:LOCALAPPDATA "Pub\Cache\bin\serverpod.bat")
+        $candidates += (Join-Path $env:LOCALAPPDATA "Pub\Cache\bin\serverpod")
+    }
+    if ($env:USERPROFILE) {
+        $candidates += (Join-Path $env:USERPROFILE ".pub-cache\bin\serverpod")
+    }
+    if ($env:HOME) {
+        $candidates += (Join-Path $env:HOME ".pub-cache\bin\serverpod")
+    }
+    if ($env:PUB_CACHE) {
+        $candidates += (Join-Path $env:PUB_CACHE "bin\serverpod")
+    }
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) {
+            return [pscustomobject]@{
+                Exe     = $candidate
+                Prefix  = @()
+                Display = $candidate
+            }
+        }
+    }
+
+    $dart = Get-Command "dart" -ErrorAction SilentlyContinue
+    if ($dart) {
+        $installed = & dart pub global list 2>$null | Select-String -Pattern "^serverpod_cli\s"
+        if ($installed) {
+            return [pscustomobject]@{
+                Exe     = $dart.Source
+                Prefix  = @("pub", "global", "run", "serverpod_cli:serverpod")
+                Display = "dart pub global run serverpod_cli:serverpod"
+            }
+        }
+    }
+
+    return $null
+}
+
 Write-Host "==> [DevTasks] Verificando Toolchain (Preflight)..."
 
 # 1. Verificação do Flutter
@@ -92,12 +143,14 @@ if ($dartVersionStr) {
 }
 
 # 3. Ferramentas Complementares
-$serverpodCmd = Get-Command "serverpod" -ErrorAction SilentlyContinue
-if ($serverpodCmd) {
-    Write-Host "  [OK] Serverpod CLI: $($serverpodCmd.Source)"
-} else {
-    Write-Host "  [INFO] Serverpod CLI não detectado globalmente."
+# O CLI Serverpod é obrigatório: sem ele o client (contrato client↔server) não é
+# gerado e o build entregaria um artefato sem contrato — gate mentiroso.
+$serverpod = Resolve-ServerpodCli
+if (-not $serverpod) {
+    Write-Error "[FAIL-FAST] Serverpod CLI ausente. Provisione com 'dart pub global activate serverpod_cli 3.4.13' e garanta o binário no PATH (ou no pub cache)."
+    exit 1
 }
+Write-Host "  [OK] Serverpod CLI: $($serverpod.Display)"
 
 $dockerCmd = Get-Command "docker" -ErrorAction SilentlyContinue
 if ($dockerCmd) {
@@ -132,19 +185,42 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-# 5. Geração de Client Serverpod (se disponível)
-if (-not $SkipClientGen -and $serverpodCmd -and (Test-Path "solution/server/lib")) {
-    Write-Host "==> [DevTasks] Gerando client Serverpod..."
+& flutter analyze solution/client
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "[BUILD-FAIL] 'flutter analyze solution/client' falhou."
+    exit $LASTEXITCODE
+}
+
+# 5. Geração do client Serverpod (TASK-02): o contrato gerado é entregue como
+# código versionado; gerar é passo obrigatório do build, não opcional.
+$clientEntry = Join-Path $RepoRoot "solution/client/lib/devtasks_client.dart"
+if ($SkipClientGen) {
+    if (-not (Test-Path $clientEntry)) {
+        Write-Error "[BUILD-FAIL] -SkipClientGen pedido, mas solution/client não está gerado (contrato ausente)."
+        exit 1
+    }
+    Write-Host "`n==> [DevTasks] Geração do client ignorada (-SkipClientGen); contrato existente validado."
+} else {
+    Write-Host "`n==> [DevTasks] Gerando client Serverpod (serverpod generate)..."
     Push-Location "solution/server"
     try {
-        & serverpod generate
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "[BUILD-FAIL] Falha em 'serverpod generate'."
-            exit $LASTEXITCODE
-        }
+        $prefix = $serverpod.Prefix
+        & $serverpod.Exe @prefix generate
+        $generateExitCode = $LASTEXITCODE
     } finally {
         Pop-Location
     }
+
+    if ($generateExitCode -ne 0) {
+        Write-Error "[BUILD-FAIL] Falha em 'serverpod generate' (exit $generateExitCode)."
+        exit $generateExitCode
+    }
+
+    if (-not (Test-Path $clientEntry)) {
+        Write-Error "[BUILD-FAIL] Client gerado ausente: solution/client/lib/devtasks_client.dart"
+        exit 1
+    }
+    Write-Host "  [OK] Client gerado: solution/client (membro do workspace)"
 }
 
 # 6. Artefato de build (F0.2 / NC-10): compila o server e ASSERE o artefato esperado.

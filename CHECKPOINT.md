@@ -7,30 +7,33 @@
 ## Contexto
 
 Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
-**EPIC-00 (FUNDAÇÃO) encerrada** em 2026-10-22 — CI verde, auditoria de QA independente
-(`docs/plan/reviews/qa-review-v0.1.0.md`) com os achados P0/P1 resolvidos. Próxima fase: EPIC-01.
+**EPIC-00 encerrada** (release `v0.1.0` publicada) e **EPIC-01 (Autenticação) em execução**.
 
 ## Estado verificado (2026-10-22)
 
-- **EPIC-00**: 8 UCs consolidados em `develop`; gates **NFR-03** (core ≤ 60 s — falha) e
-  **NFR-04** (global ≥ 70% / domínio ≥ 90% — falha) ativos; hooks `commit-msg` (claim + D-04) e
-  `pre-commit` (encoding) instalados; build produz/assere `solution/builds/devtasks-server.exe`.
-- **CI**: GitHub Actions run `79954f0` **SUCCESS** (Lint/Test/DAG Gate + Docker Build Validation).
-- **Remotes**: `origin` (Gitea LAN) e `github` em paridade; `develop` = `79954f0`.
-- **Release**: `main` = `v0.1.0` (merge de `develop` + tag anotada) — publicada no push.
-- **Achados de QA ainda ABERTOS** (declarados; não bloqueiam a EPIC-01): NC-15 (gate de DIP),
-  NC-17 (tema/WCAG — pertence a épico de UI), NC-22 (placeholder "NãoExiste aqui" no épico),
-  NC-24 (cópia do hook vs `hooksPath`), NC-25 (contagem de linhas citada em `UC-CURRENT`).
-- Decisões do PO: D-01 (Kanban 3 col), D-02 (3 papéis), D-03 (Riverpod), D-04 (commits em develop).
+- **`UC-01.00` (F1.0 — Wiring do Stack Serverpod) ✅**: `serverpod` + `serverpod_auth_server`
+  (pin `3.4.13`), scaffold em `solution/server/config/`, `/health` preservado (web **8082**),
+  `solution/client` **gerado e versionado** (membro do workspace — fecha a dívida do UC-00.02),
+  build assere o artefato, Docker/CI adaptados. Gates 3 (review) e 4 (qa) aprovados.
+- **Gates ativos**: NFR-03 (core ≤ 60 s — falha) · NFR-04 (global ≥70% / domínio ≥90% — falha) ·
+  hooks `commit-msg` (claim + D-04) e `pre-commit` (encoding).
+- **Remotes**: `origin` (Gitea) + `github` em paridade; `main` = `v0.1.0` (`0e57b38`).
+- **Gate 2.5 do `UC-01.01` já invocado** (auth): 8 achados (`SEC-01..08`), `INV-SEC-01..12`
+  propostas — implementação pendente no próprio UC.
+- **Achados de auditoria ainda abertos**: NC-15 (gate de DIP), NC-17 (tema/WCAG), NC-22
+  (placeholder no épico-00), NC-24 (cópia do hook), NC-25 (contagem de linhas no hand-off).
+- **Risco residual**: Docker do novo stack não validado no host local (CI `docker-build` prova).
 
-## Próximo passo (EPIC-01 — Autenticação)
+## Próximo passo (EPIC-01 · `UC-01.01`)
 
-1. **Gate 2.5 (Segurança)** para `UC-01.01` **antes** do Coder (superfície sensível: auth/sessão).
-2. Claim atômico (`tools/bin/claims.cmd claim -slice UC-01.01 -owner <papel> -paths <paths>`) →
-   TDD Red-Before-Green → Gate 3 (`review`) → Gate 4 (`qa`) → commit `(UC-01.01)` → release do claim.
+1. Claim → Coder em TDD: endpoint de sign-up + tela `/register` (normalização INV-08, duplicata
+   `ERR_EMAIL_ALREADY_TAKEN` 409) **respeitando o Gate 2.5**: `INV-SEC-04` (erro/timing único),
+   `INV-SEC-08` (senha 12–128 + complexidade), `INV-SEC-09` (DTO só `name/email/password`),
+   `INV-SEC-05` (zero PII em log), `INV-SEC-12` (`emailVerified=false`).
+2. Gate 3 (`review`) → Gate 4 (`qa`) → commit `(UC-01.01)` → release do claim.
 
 ## Travas vivas
 
-- Ciclo roda em `develop`; commit de UC assinado `(UC-XX.YY)` exige claim ativo; `main` só por
-  release (D-04). Push exige pedido explícito + 3 evidências.
-- NFR-05 rate limit (10/min) revisar no **Gate 2.5** da EPIC-01.
+- Ciclo em `develop`; commit de UC exige claim ativo; `main` só por release (D-04).
+- Push exige pedido explícito + 3 evidências.
+- `UC-01.00` em consolidação não está commitado — não misturar com o próximo UC.

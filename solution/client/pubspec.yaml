@@ -1,0 +1,11 @@
+name: devtasks_client
+description: "Contrato client-server do DevTasks gerado por serverpod generate."
+
+environment:
+  sdk: ^3.13.5
+
+resolution: workspace
+
+dependencies:
+  serverpod_auth_client: 3.4.13
+  serverpod_client: 3.4.13

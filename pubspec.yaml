@@ -1,5 +1,5 @@
 name: devtasks
-description: "DevTasks — workspace raiz (membros: app, server)."
+description: "DevTasks — workspace raiz (membros: app, server, client)."
 publish_to: none
 
 environment:
@@ -8,3 +8,4 @@ environment:
 workspace:
   - solution/app
   - solution/server
+  - solution/client

@@ -15,6 +15,16 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-22 — Wiring do Serverpod: armadilhas silenciosas medidas (UC-01.00)
+
+- **Sintoma**: ao ligar o stack Serverpod (F1.0) apareceram comportamentos que **não falham alto**.
+- **Causas e fixes**:
+  1. `serverpod generate` **não cria** `solution/client/pubspec.yaml` (erro `Failed to load client pubspec.yaml`, exit 126) **nem** adiciona `serverpod_auth_client` ao client, mesmo quando o endpoint gerado o importa — os dois são manuais.
+  2. Override de banco em container é **`SERVERPOD_DATABASE_*`**: chave sem o prefixo (`DATABASE_HOST`) **não dá erro** — só não tem efeito (verde falso de configuração).
+  3. `resolution: workspace` + client **versionado** torna a geração **idempotente** (SHA256 dos arquivos gerados idêntico antes/depois) — é o que permite versionar código gerado sem churn.
+  4. `tools/build.ps1` quebrava com `Join-Path $env:PUB_CACHE` quando a variável é nula (`Não é possível associar o argumento ao parâmetro 'Path' porque ele é nulo`) → candidatos montados sob guarda de existência.
+- **Prevenção**: ao integrar framework gerador, validar (a) **idempotência por hash**, (b) nomes de override por ambiente **documentados** (o silêncio é o pior caso), (c) artefatos que o gerador *não* cria (pubspec/deps) — e fail-fast em variável de ambiente ausente.
+
 ## 2026-10-21 — Ciclo de UC iniciado na branch errada (main em vez de develop)
 
 - **Sintoma**: os dois primeiros commits do ciclo pós-Gate Zero (`d09aa9a`, `05bf4aa`) caíram

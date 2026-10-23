@@ -1,6 +1,6 @@
 # Epic 01 — Autenticação (autenticacao)
 
-> Status: ⏳ Pendente | Prioridade: Crítica | Dependências: EPIC-00 ✅
+> Status: 🔄 Em execução | Prioridade: Crítica | Dependências: EPIC-00 ✅
 
 ## 1. Objetivo e Valor de Negócio
 
@@ -17,6 +17,7 @@ sensível (workflow_rules §Gate 2.5).
 
 | # | Feature | UCs/Histórias | Independência / Risco | Status |
 |:---|:---|:---:|:---|:---:|
+| F1.0 | Wiring do stack Serverpod | 1 | Infra habilitante (dívida do UC-00.02) | ✅ |
 | F1.1 | Cadastro de usuário | 1 | Alto: INV-08, Gate 2.5 | ⏳ |
 | F1.2 | Login & sessão persistente | 1 | Alto: NFR-05, credenciais | ⏳ |
 | F1.3 | Logout & guarda de rotas privadas | 1 | Depende de F1.2 | ⏳ |
@@ -25,6 +26,54 @@ sensível (workflow_rules §Gate 2.5).
 ---
 
 ## 3. Detalhamento das Features
+
+### Feature 1.0 — Wiring do Stack Serverpod (infra habilitante)
+
+**Descrição**: materializa no repositório a premissa técnica de toda a EPIC-01 — o projeto Serverpod
+(`serverpod` + `serverpod_auth_server`, D-ENG-04), o scaffold (`config/`, `protocol.yaml`, entrypoint
+com webserver preservando a rota `/health`) e a **geração do `solution/client`** (alvo declarado no
+UC-00.02 e **nunca entregue**: sem ele o `UC-01.01` não é implementável como escrito). Adapta
+build/Docker/CI ao novo stack.
+
+> **Correção de decisão (2026-10-22)**: o UC-00.02 planejava `solution/client/` como diretório
+> **ignorado**. Como membro de workspace ausente quebra `flutter pub get` em clone limpo (medido no
+> UC-00.01) e a app precisa do contrato gerado, o client passa a ser **versionado** (padrão do
+> template Serverpod); a regra `/solution/client/` sai do `.gitignore`.
+
+**DoR**: EPIC-00 ✅ · CLI `serverpod` provisionável · Gate 2.5 da dependência avaliado (ver hand-off).
+**DoD**: `serverpod generate` verde e `solution/client` **versionado** integrando o workspace;
+server sobe e `/health` responde 200; `tools/build.ps1` gera o client e compila o artefato;
+Dockerfile/CI adaptados; suíte verde (core ≤ 60 s, governança ≤ 600 s).
+
+#### User Story 1.0.1 — Backend Serverpod de pé antes de qualquer regra de auth
+
+* **Identificador**: `UC-01.00`
+* **Narrativa**:
+  - **Como** engenheiro de plataforma
+  - **Eu quero** o projeto Serverpod gerado e o client versionado no workspace
+  - **Para que** os endpoints de auth (UC-01.01+) tenham contrato gerado e build determinístico
+* **Critérios de Aceitação**:
+  ```gherkin
+  Cenário: client gerado e versionável
+    Dado o projeto Serverpod configurado em solution/server
+    Quando executo serverpod generate
+    Então solution/client é gerado, integra o workspace e o contrato compila
+
+  Cenário: server sobe e responde health
+    Dado o server Serverpod compilado
+    Quando inicio o processo e consulto /health
+    Então recebo 200 com o payload de readiness
+  ```
+* **Tarefas Técnicas**:
+  1. `TASK-01`: dependências + scaffold Serverpod (`config/`, `protocol.yaml`, entrypoint) mantendo `/health` ➔ Commit: `chore(server): wire serverpod project and keep health route`
+  2. `TASK-02`: `serverpod generate` + `solution/client` **versionado** como membro do workspace (fecha a dívida do UC-00.02) ➔ Commit: `chore(server): generate and track client package`
+  3. `TASK-03`: adaptar `tools/build.ps1`, `docker/Dockerfile` e workflows de CI ao novo stack ➔ Commit: `chore(build): adapt artifact, docker and ci to serverpod`
+* **Impacto & Arquivos Alvo**:
+  - `solution/server/pubspec.yaml`, `solution/server/config/**`, `solution/server/lib/**` [NEW/MODIFY]
+  - `solution/client/**` [NEW — gerado e versionado]
+  - `pubspec.yaml` (membro `client`), `.gitignore`, `tools/build.ps1`, `docker/Dockerfile`, `.github/workflows/ci.yml`, `.gitea/workflows/ci.yml` [MODIFY]
+
+---
 
 ### Feature 1.1 — Cadastro de Usuário (RF-01)
 
