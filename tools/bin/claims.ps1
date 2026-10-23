@@ -1,5 +1,5 @@
 # tools/bin/claims.ps1
-# Gerenciamento de claims atômicos de Caso de Uso (F0.4 / UC-00.04 / NC-05)
+# Gerenciamento de claims atômicos de Caso de Uso (F0.4 / UC-00.04 / NC-05 / D-04)
 [CmdletBinding()]
 param(
     [Parameter(Position=0, Mandatory=$true)]
@@ -13,7 +13,10 @@ param(
     [string]$Owner = "developer",
 
     [Parameter(Mandatory=$false)]
-    [int]$Ttl = 90
+    [int]$Ttl = 90,
+
+    [Parameter(Mandatory=$false, ValueFromRemainingArguments=$true)]
+    [string[]]$Paths = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -92,12 +95,18 @@ function Parse-Claim([string]$filePath) {
             $isActive = $false
         }
 
+        $claimPaths = @()
+        if ($data.paths) {
+            $claimPaths = @($data.paths)
+        }
+
         return [PSCustomObject]@{
             FilePath = $filePath
             Slice = [string]$data.slice
             Owner = [string]$data.owner
             Expires = $expires
             IsActive = [bool]$isActive
+            Paths = $claimPaths
             Raw = $data
         }
     } catch {
@@ -115,6 +124,20 @@ switch ($Action) {
         $now = [DateTime]::UtcNow
         $expires = $now.AddMinutes($Ttl)
 
+        $normalizedPaths = @()
+        if ($Paths -and $Paths.Count -gt 0) {
+            foreach ($p in $Paths) {
+                if ($p -match ",") {
+                    $normalizedPaths += ($p -split ",") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" }
+                } else {
+                    $trimmed = $p.Trim()
+                    if ($trimmed -ne "") {
+                        $normalizedPaths += $trimmed
+                    }
+                }
+            }
+        }
+
         $claimData = @{
             schema = "claims/v1"
             slice = $Slice
@@ -126,6 +149,7 @@ switch ($Action) {
             expires_at = $expires.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
             ttl_minutes = $Ttl
             ttlMinutes = $Ttl
+            paths = $normalizedPaths
             status = "active"
         }
         $json = $claimData | ConvertTo-Json -Depth 3
@@ -136,7 +160,11 @@ switch ($Action) {
             $existing = Parse-Claim $existingPath
             if ($existing -and $existing.IsActive) {
                 if ($existing.Owner -eq $Owner) {
-                    # Renovação pelo mesmo dono (heartbeat)
+                    # Renovação pelo mesmo dono (heartbeat com eventual atualização de paths)
+                    if ($normalizedPaths.Count -eq 0 -and $existing.Paths.Count -gt 0) {
+                        $claimData.paths = $existing.Paths
+                        $json = $claimData | ConvertTo-Json -Depth 3
+                    }
                     [System.IO.File]::WriteAllText($existingPath, $json, [System.Text.Encoding]::UTF8)
                     Write-Host "==> [Claims] Claim renovado pelo dono ($Owner): $Slice (expira em: $($expires.ToString('HH:mm:ss')) UTC)"
                     exit 0
@@ -246,7 +274,8 @@ switch ($Action) {
             $parsed = Parse-Claim $f.FullName
             if ($parsed -and $parsed.IsActive) {
                 $activeCount++
-                Write-Host "  - $($parsed.Slice) | Owner: $($parsed.Owner) | Expira em: $($parsed.Expires.ToString('HH:mm:ss')) UTC"
+                $pathsStr = if ($parsed.Paths.Count -gt 0) { " | Paths: $($parsed.Paths -join ', ')" } else { "" }
+                Write-Host "  - $($parsed.Slice) | Owner: $($parsed.Owner)$pathsStr | Expira em: $($parsed.Expires.ToString('HH:mm:ss')) UTC"
             }
         }
         if ($activeCount -eq 0) {

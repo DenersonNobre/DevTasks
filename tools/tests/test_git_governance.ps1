@@ -83,6 +83,31 @@ try {
     }
     Write-Host "Pass: Claim released and verified inactive."
 
+    Write-Host "`n=== TEST 7: Ativação de claim com parâmetro -Paths e validação de schema ==="
+    $testSlice = "UC-99.98"
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript release -slice $testSlice | Out-Null
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript claim -slice $testSlice -owner "test-runner" -paths "solution/server/lib/src/test.dart,solution/client/lib/src/protocol.dart"
+    if ($LASTEXITCODE -ne 0) {
+        throw "FAIL: Failed to create claim with -Paths for $testSlice"
+    }
+
+    $claimFile = Join-Path $RepoRoot ".git/claims/$testSlice.json"
+    if (-not (Test-Path $claimFile)) {
+        throw "FAIL: Expected claim file $claimFile to exist."
+    }
+    $claimJson = Get-Content -Raw -Path $claimFile -Encoding UTF8 | ConvertFrom-Json
+    if ($claimJson.schema -ne "claims/v1") {
+        throw "FAIL: Expected schema 'claims/v1', got '$($claimJson.schema)'"
+    }
+    if ($null -eq $claimJson.paths -or $claimJson.paths.Count -ne 2) {
+        throw "FAIL: Expected 2 paths in claim json, got '$($claimJson.paths)'"
+    }
+    if ($claimJson.paths[0] -ne "solution/server/lib/src/test.dart" -or $claimJson.paths[1] -ne "solution/client/lib/src/protocol.dart") {
+        throw "FAIL: Paths array content does not match expected paths."
+    }
+    Write-Host "Pass: Claim created with -Paths and validated against canonical schema."
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $ClaimsScript release -slice $testSlice | Out-Null
+
 } finally {
     if (Test-Path $tempMsgFile) {
         Remove-Item $tempMsgFile -Force -ErrorAction SilentlyContinue
