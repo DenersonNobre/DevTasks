@@ -8,6 +8,30 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ### Adicionado
 
+- **`UC-02.01` — CRUD de Workspace (EPIC-02 / F2.1)**: Modelos `DevtasksWorkspace` e `DevtasksWorkspaceMember`
+  (Serverpod CLI 3.4.13) com papel `owner | developer | viewer` e índice `UNIQUE(workspaceId, userId)` (INV-09);
+  migração versionada `20261023211407351`; porta `WorkspaceRepository` e serviço puro `WorkspaceService` aplicando
+  anti-enumeração (INV-01: não-membro e inexistente retornam idêntico `ERR_NOT_FOUND`) e autorização na fronteira
+  (INV-06: apenas papel `owner` renomeia workspace); `WorkspaceEndpoint` e `ServerpodWorkspaceRepository`
+  com criação atômica via transação; extração de `userId` estritamente da sessão autenticada (INV-SEC-06).
+- **`UC-01.08` — wiring real do app (F1.8)**: Porta fina `SecureKeyValueStore` e implementação
+  `FlutterSecureKeyValueStore` (`flutter_secure_storage: 11.2.0`); adaptador real `ServerpodAuthClient`
+  com mapeamento exaustivo de códigos de erro para falhas tipadas (`ERR_INVALID_CREDENTIALS`, `ERR_EMAIL_ALREADY_TAKEN`,
+  `ERR_VALIDATION`, `ERR_RATE_LIMITED`, `ERR_NOT_AUTHENTICATED`, `ERR_INFRA_FAILURE`); restauração de sessão no boot;
+  `DevTasksApp` com `onGenerateRoute` integrando o `RouteGuard` puro; `PrivateAreaView` com dados de sessão e
+  fluxo de logout resiliente ponta a ponta.
+- **`UC-01.07` — emissão e validação de sessão com token opaco (F1.7)**: Modelo `DevtasksSession` (`serverOnly: true`,
+  INV-SEC-17); geração via CSPRNG de 32 bytes (INV-SEC-10) armazenado como digest SHA-256; resolução de token
+  exclusivamente via header `Authorization: Bearer <token>` (INV-SEC-16); composition root de produção nos endpoints;
+  `signOut` e invalidação em cascata; oráculo independente no teste com `package:crypto`.
+- **`UC-01.04` — rate limit no cadastro e login (F1.4)**: `RateLimiter` em memória efêmera com evicção LRU $O(1)$
+  e teto duro de memória (`INV-SEC-14`); mitigação de DoS pre-crypto (`INV-SEC-13`); sanitização anti-spoofing
+  de headers de proxy (`INV-SEC-15`).
+- **Calibração do runner NFR-03 (`tools/test.ps1`)**: Separação de modos `-Unit` (gate NFR-03 ≤ 60s para suíte de
+  domínio puro sem I/O) e `-Integration`/`all` (≤ 120s para widgets e contratos); isolamento do overhead de
+  resolução de dependências (`--no-pub` e switch `-NoPub`); medição granular por membro (`app=...s server=...s`);
+  inclusão da flag `-NoPub` nos workflows de CI (`.github` e `.gitea`).
+
 - **`UC-01.03` — logout & guarda de rotas**: `SessionGuard` (token nulo/vazio **sem consultar** o
   authenticator; inválido → `ERR_NOT_AUTHENTICATED`) + `MeEndpoint` como **endpoint privado de
   referência** (guard **vivo** por padrão via `NoSessionAuthenticator`; token **fora do body**, lido de
