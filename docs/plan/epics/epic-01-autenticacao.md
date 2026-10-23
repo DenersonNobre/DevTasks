@@ -247,6 +247,12 @@ nenhuma senha/PII em log.
   - `solution/app/lib/modules/auth/presentation/**` · `solution/app/lib/global/router/**` [NEW/MODIFY]
   - `solution/app/pubspec.yaml` (`flutter_riverpod`) · `pubspec.lock` (workspace) [MODIFY]
   - `solution/app/test/unit/auth/**` · `solution/app/test/widget/**` [NEW]
+* **Gaps conhecidos (follow-up rastreado)**:
+  - **Wiring do `RouteGuard` no router**: `MaterialApp.routes` não consulta o guard — `/projects` é
+    alcançável sem sessão no app real. O guard é puro e testado (`UC-01.03`); falta ligá-lo
+    (`go_router` com `redirect` ou `onGenerateRoute`). Depende de `UC-01.07` (token) para o fluxo real.
+  - **Adaptadores reais** (`AuthClient`/`SessionStore`) e restauração de sessão no boot: dependem da
+    emissão de token (`UC-01.07`).
 
 ---
 

@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:devtasks_app/global/kernel/.kernel.dart';
 import 'package:devtasks_app/global/session/.session.dart';

@@ -1,4 +1,4 @@
-﻿// solution/app/lib/global/session/session_providers.dart
+// solution/app/lib/global/session/session_providers.dart
 // Composição do estado transversal de sessão (D-07 regra 4).
 // SRP: ligar a porta [SessionStore] ao [SessionController].
 // NÃO faz: escolher o mecanismo de armazenamento (adaptador entra pela borda).

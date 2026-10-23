@@ -16,9 +16,11 @@ Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
 - **`UC-01.06` (F1.6 telas `/login` + `/register`, D-07 MVVM por slice)**:
   - implementação `6cc4ba3` → **Gate 3 rejeitado** (4 bloqueantes: token duplicado no `LoginState`,
     DoD incompleto, inversão `global → modules`, evidência sobredeclarada);
-  - correções em `e88e2c4` (+ `dcbef49` docs): `LoginState` sem token, `SessionStore` movido para
+  - correções em `e88e2c4` (e `dcbef49`): `LoginState` sem token, `SessionStore` movido para
     `global/session/`, loading do cadastro + teste de logout, widgets compartilhados, `AppSpacing`,
-    mensagem genérica para `InfraFailure`, barrels dentro da camada;
+    mensagem genérica para `InfraFailure`, barrels dentro da camada. **Atenção**: `dcbef49` (docs)
+    **não compila** — o rename de `session_store.dart` entrou ali por staging prévio e os 4 imports só
+    foram atualizados em `e88e2c4`; a quebra de atomicidade está registrada em `UC-CURRENT.md`;
   - **verde**: app **66/66** testes, `flutter analyze` sem issues; prova negativa reproduzível
     M1=2 / M2=9 / M3=1 falhas (restauração byte-a-byte);
   - **2ª rodada do Gate 3 em andamento** (não declarar aprovado antes do veredito).

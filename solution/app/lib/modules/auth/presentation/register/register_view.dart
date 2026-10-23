@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:devtasks_app/global/router/app_routes.dart';
@@ -46,7 +46,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _AuthTextField(
+                AuthTextField(
                   fieldKey: const Key('register-name'),
                   controller: _name,
                   label: 'Nome',
@@ -55,7 +55,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                   autofillHints: const [AutofillHints.name],
                 ),
                 const SizedBox(height: AppSpacing.space4),
-                _AuthTextField(
+                AuthTextField(
                   fieldKey: const Key('register-email'),
                   controller: _email,
                   label: 'E-mail',
@@ -64,7 +64,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                   autofillHints: const [AutofillHints.email],
                 ),
                 const SizedBox(height: AppSpacing.space4),
-                _AuthTextField(
+                AuthTextField(
                   fieldKey: const Key('register-password'),
                   controller: _password,
                   label: 'Senha',
@@ -108,40 +108,4 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     if (!completed || !context.mounted) return;
     Navigator.pushReplacementNamed(context, AppRoutes.login);
   }
-}
-
-/// Campo de texto do cadastro, sobre o tema de `F1.5`.
-class _AuthTextField extends StatelessWidget {
-  const _AuthTextField({
-    required this.fieldKey,
-    required this.controller,
-    required this.label,
-    required this.errorText,
-    this.obscureText = false,
-    this.keyboardType,
-    this.textCapitalization = TextCapitalization.none,
-    this.autofillHints,
-  });
-
-  final Key fieldKey;
-  final TextEditingController controller;
-  final String label;
-  final String? errorText;
-  final bool obscureText;
-  final TextInputType? keyboardType;
-  final TextCapitalization textCapitalization;
-  final Iterable<String>? autofillHints;
-
-  @override
-  Widget build(BuildContext context) => TextField(
-        key: fieldKey,
-        controller: controller,
-        obscureText: obscureText,
-        autocorrect: !obscureText,
-        enableSuggestions: !obscureText,
-        keyboardType: keyboardType,
-        textCapitalization: textCapitalization,
-        autofillHints: autofillHints,
-        decoration: InputDecoration(labelText: label, errorText: errorText),
-      );
 }

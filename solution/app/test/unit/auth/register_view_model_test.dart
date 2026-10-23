@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:devtasks_app/global/kernel/.kernel.dart';
 import 'package:devtasks_app/global/session/.session.dart';

@@ -1,4 +1,4 @@
-﻿import 'package:devtasks_app/global/session/.session.dart';
+import 'package:devtasks_app/global/session/.session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeSessionStore implements SessionStore {

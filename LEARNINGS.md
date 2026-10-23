@@ -147,3 +147,10 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 - **Causa raiz**: o harness de mutação gravava o backup em caminho fixo (`%TEMP%\mut_<arquivo>.bak`). Uma execução anterior deixou ali a cópia **já mutada**; uma restauração posterior (`Copy-Item`) reintroduziu a mutação na árvore de trabalho. O commit estava correto — o dano era só na árvore, mas contaminaria o próximo stage.
 - **Fix**: `git show HEAD:<path>` para confirmar o que foi commitado e `git checkout -- <path>` para restaurar; suíte revalidada (46/46 auth+widget; app completo 66/66).
 - **Prevenção**: no harness de mutação (1) backup **único por execução** (`<arquivo>.<guid>.bak`) removido em `finally`; (2) após restaurar, validar o **hash** do arquivo contra o estado pré-mutação — não confiar em "a suíte passou"; (3) `git status --porcelain` vazio antes de qualquer `git add`.
+
+## 2026-10-23 — `Set-Content -Encoding utf8` grava BOM no Windows PowerShell (e o hook não pega)
+
+- **Sintoma**: 8 arquivos `.dart` receberam UTF-8 BOM sem nenhuma alteração visível no `git diff` (a linha do `import` parece normal); só apareceu na auditoria por leitura de bytes.
+- **Causa raiz**: `Set-Content -Encoding utf8` / `Add-Content -Encoding utf8` no **Windows PowerShell 5.1** gravam UTF-8 **com BOM** (no PowerShell 7 o default é sem BOM). O `pre-commit.ps1` só reprova arquivo cujo conteúdo seja **apenas** BOM, então um BOM no início de arquivo válido passa.
+- **Fix**: remover os 3 bytes (`EF BB BF`) lendo/escrevendo bytes (`[IO.File]::ReadAllBytes` / `WriteAllBytes`); para escrever texto sem BOM usar `[IO.File]::WriteAllText($p, $t, (New-Object System.Text.UTF8Encoding($false)))`.
+- **Prevenção**: (1) no repo Dart, nunca usar `Set-Content -Encoding utf8` para reescrever fonte — usar a ferramenta de edição ou `WriteAllText` com `UTF8Encoding($false)`; (2) o gate de encoding deve comparar com o blob do `HEAD` (delta) e acusar BOM **introduzido**, não só arquivo-BOM-só; (3) ao final de qualquer lote, contar BOM por byte (não por inspeção visual).

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:devtasks_app/global/router/app_routes.dart';
@@ -44,7 +44,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _AuthTextField(
+                AuthTextField(
                   fieldKey: const Key('login-email'),
                   controller: _email,
                   label: 'E-mail',
@@ -53,7 +53,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                   autofillHints: const [AutofillHints.email],
                 ),
                 const SizedBox(height: AppSpacing.space4),
-                _AuthTextField(
+                AuthTextField(
                   fieldKey: const Key('login-password'),
                   controller: _password,
                   label: 'Senha',
@@ -96,37 +96,4 @@ class _LoginViewState extends ConsumerState<LoginView> {
     if (!completed || !context.mounted) return;
     Navigator.pushReplacementNamed(context, AppRoutes.privateArea);
   }
-}
-
-/// Campo de texto do formulário de autenticação (senha fica obscura por padrão).
-class _AuthTextField extends StatelessWidget {
-  const _AuthTextField({
-    required this.fieldKey,
-    required this.controller,
-    required this.label,
-    required this.errorText,
-    this.obscureText = false,
-    this.keyboardType,
-    this.autofillHints,
-  });
-
-  final Key fieldKey;
-  final TextEditingController controller;
-  final String label;
-  final String? errorText;
-  final bool obscureText;
-  final TextInputType? keyboardType;
-  final Iterable<String>? autofillHints;
-
-  @override
-  Widget build(BuildContext context) => TextField(
-        key: fieldKey,
-        controller: controller,
-        obscureText: obscureText,
-        autocorrect: !obscureText,
-        enableSuggestions: !obscureText,
-        keyboardType: keyboardType,
-        autofillHints: autofillHints,
-        decoration: InputDecoration(labelText: label, errorText: errorText),
-      );
 }

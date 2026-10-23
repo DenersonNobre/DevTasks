@@ -1,4 +1,4 @@
-﻿import 'package:devtasks_app/global/router/route_guard.dart';
+import 'package:devtasks_app/global/router/route_guard.dart';
 import 'package:devtasks_app/global/session/.session.dart';
 import 'package:flutter_test/flutter_test.dart';
 

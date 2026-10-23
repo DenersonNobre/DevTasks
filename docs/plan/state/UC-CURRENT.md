@@ -27,8 +27,10 @@ coberta pela decisão **D-03** (gerência de estado local, sem superfície de re
 2. **Porta `AuthClient`** (app): `signIn(email, password)` / `signUp(name, email, password)` devolvendo
    os DTOs do contrato ou um `AuthFailure` tipado. O **cliente gerado do Serverpod** é o adaptador real
    (wiring com URL/token = follow-up declarado, pois a emissão de token ainda não existe).
-3. **Roteador**: manter o `RouteGuard` puro como contrato; o router real (go_router) é dependência nova
-   → **não** entra neste UC sem decisão explícita (o DoD não exige; o guard já é testável).
+3. **Roteador**: manter o `RouteGuard` puro como contrato. A **descrição da F1.6** cita "aplica o
+   `RouteGuard`", mas o **DoD** não exige wiring de roteador; `MaterialApp.routes` **não** consulta o guard
+   (⇒ `/projects` é alcançável sem sessão no app real). Wiring (go_router ou `onGenerateRoute`) fica como
+   **follow-up rastreado no épico** (F1.6, "Gaps conhecidos"), não como efeito colateral silencioso.
 4. **Qualidade (DoD de código)**: enxuto e otimizado — 1 nível de indentação por método, sem `else` de
    validação, sem números/strings mágicos, VOs para primitivos de negócio, zero comentário-ruído;
    Object Calisthenics + SOLID + Clean Code auditados no Gate 3.
@@ -86,7 +88,8 @@ coberta pela decisão **D-03** (gerência de estado local, sem superfície de re
 
 ## Gate 3 (veredito e correções)
 
-**Veredito original: REJEITADO (confiança Alta)** — 4 bloqueantes, todos corrigidos nesta fatia:
+**Rodada 1: REJEITADO (confiança Alta)** — 4 bloqueantes, todos fechados **no código** na rodada 2
+(o revisor reproduziu as 3 mutações por execução, não por relato):
 
 1. `LoginState.session` duplicava o estado transversal e mantinha o token vivo após logout →
    campo **removido**; o sucesso é `status: completed` e a prova é `store.token` +
@@ -104,7 +107,23 @@ duplicados → `presentation/widgets/auth_form_widgets.dart` (DRY); `InfraFailur
 da camada (`.`-prefixed) conforme correção do agente paralelo.
 
 Não corrigidos (declarados): `RouteGuard` ainda não consultado no `main.dart` (wiring de roteador é
-follow-up); providers lançam `UnimplementedError` até a borda injetar adaptadores reais.
+follow-up rastreado em F1.6 "Gaps conhecidos"); providers lançam `UnimplementedError` até a borda
+injetar adaptadores reais.
+
+### Rodada 2 — novos bloqueantes e correção
+
+1. **`dcbef49` não compila (atomicidade partida, agora REGISTRADA aqui)**: o rename
+   `modules/auth/domain/session_store.dart` → `global/session/session_store.dart` entrou no commit de
+   **docs** por staging prévio de `git mv`, mas 4 imports ainda apontavam para o caminho antigo
+   (`session_controller.dart`, `test/support/in_memory_session_store.dart`, e os 2 testes de sessão/guard).
+   Consequência: `analyze`/`test`/`git bisect` quebram nesse commit; `e88e2c4` fecha a árvore.
+   **Histórico não reescrito** (decisão): o defeito é documental, e reescrever um commit em árvore
+   compartilhada é risco maior que o benefício.
+2. **UTF-8 BOM em 8 arquivos `.dart`** (invisível no diff): `Set-Content -Encoding utf8` do Windows
+   PowerShell grava BOM. Removidos byte-a-byte; o padrão do repo é **UTF-8 sem BOM**. Lacuna do gate
+   registrada em `LEARNINGS.md` (o pre-commit só reprova arquivo com BOM *e nada mais*).
+3. **`_AuthTextField` duplicado** entre as duas views (já divergindo) → promovido a `AuthTextField` em
+   `presentation/widgets/auth_form_widgets.dart`, usado pelas duas telas.
 
 ## Desvios e follow-ups declarados
 
@@ -114,7 +133,8 @@ follow-up); providers lançam `UnimplementedError` até a borda injetar adaptado
 - **`signUp` não emite sessão** (contrato `SignUpResultDto`): cadastro conclui com `userId` e volta
   para `/login`; auto-login pós-cadastro fica para quando o token existir.
 - **Roteador**: `MaterialApp.routes` nomeadas (sem `go_router`); o `RouteGuard` segue como contrato
-  puro testado — wiring no router é decisão futura.
+  puro testado. **Gap conhecido**: `/projects` é alcançável sem sessão no app real — wiring do guard no
+  router está rastreado como follow-up da F1.6 no épico.
 - **Rate limit** (`UC-01.04`, brief 09) é do outro agente; a UI mapeia `ERR_RATE_LIMITED` como erro de
   formulário genérico (mensagem do servidor) quando ele entrar.
 
