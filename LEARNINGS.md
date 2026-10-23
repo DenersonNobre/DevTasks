@@ -15,6 +15,20 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-23 — Drift da CLI do Serverpod gerou código para a API errada (UC-01.01)
+
+- **Sintoma**: `serverpod generate` saía **0**, mas `flutter analyze solution/server` passou a acusar
+  23 erros (`Protocol extends DatabaseSerializationManager` não existe no pacote resolvido).
+- **Causa raiz**: o CLI era resolvido pela **PATH** (`Get-Command serverpod` → **4.0.4**) enquanto o
+  projeto pina `serverpod: 3.4.13`. O gerador emitiu código para a API **4.x**, incompatível com o
+  pacote 3.4.13 do lock. O `pin-gate.ps1` compara versões **no pubspec/lock**, não a **versão do CLI
+  em execução** — verde no papel, capacidade divergente.
+- **Fix**: `dart pub global activate serverpod_cli 3.4.13` (CLI alinhado ao pin) + regeneração; o
+  protocolo voltou a estender `SerializationManagerServer` e a suíte voltou a 19 testes verdes.
+- **Prevenção**: (a) `build.ps1`/CI devem comparar `serverpod --version` com o pin e **falhar alto**;
+  (b) todo `generate` precisa de prova de **idempotência** (árvore limpa depois) — gerador que suja a
+  árvore é drift silencioso; (c) registrar o binário real usado no laudo do build.
+
 ## 2026-10-22 — Wiring do Serverpod: armadilhas silenciosas medidas (UC-01.00)
 
 - **Sintoma**: ao ligar o stack Serverpod (F1.0) apareceram comportamentos que **não falham alto**.
