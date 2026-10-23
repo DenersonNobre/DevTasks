@@ -249,7 +249,7 @@ vs `dart test` = 24,1 s).
 
 | NC | Estado | Evidência |
 |:--|:---|:---|
-| NC-15 | **aberto** | não existe gate de DIP (zero imports de infra no domínio) — verificação segue manual |
+| NC-15 | **fechado** | `tools/dip-gate.ps1` enforça pureza do kernel/domínio (exit 1 em violação) com 3 provas negativas reais — `tools/tests/test_dip_gate.ps1` |
 | NC-17 | **aberto** | RNF-05/06/07 (tema base/WCAG) não entregues; `ThemeData`/`darkTheme` ausentes |
 | NC-22 | **aberto** | `epic-00:269` ainda traz o placeholder "Money-like **NãoExiste aqui**" |
 | NC-24 | **mitigado** | `core.hooksPath = tools/hooks` ✅; a cópia para `.git/hooks` segue como salvaguarda (pode defasar do versionado) |

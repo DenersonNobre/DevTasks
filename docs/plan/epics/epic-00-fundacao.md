@@ -271,7 +271,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 **DoR**: SPEC §5/§6 revisadas (portas e taxonomia de falhas prontas).
 **DoD**:
 - [x] unit tests do kernel verde (`kernel_test.dart`).
-- [x] **zero** imports de infra no domínio (DIP verificado por análise estática).
+- [x] **zero** imports de infra no domínio (DIP **enforçado por gate**: `tools/dip-gate.ps1` + provas negativas versionadas).
 - [x] `IResult<T, F>`, taxonomia `IFailure` e VOs base implementados.
 
 #### User Story 0.7.1 — Primitivos de domínio reutilizáveis

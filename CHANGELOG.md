@@ -4,6 +4,18 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [Não publicado]
+
+### Adicionado
+
+- **`UC-01.00` — wiring do stack Serverpod**: `serverpod`/`serverpod_auth_server` pinados (`3.4.13`),
+  scaffold em `solution/server/config/`, `/health` preservado (web **8082**), **`solution/client`
+  gerado e versionado** como membro do workspace (fecha a dívida do `UC-00.02`), build assere o
+  artefato e Docker/CI adaptados.
+- **Gate de DIP (`tools/dip-gate.ps1`, NC-15)**: reprova import de infraestrutura (`dart:io`,
+  `dart:ui`, `package:flutter/`, `http`, `sqflite`, `serverpod`, …) no kernel de domínio, com
+  **3 provas negativas** versionadas (`tools/tests/test_dip_gate.ps1`); ligado à suíte de governança.
+
 ## [0.1.0] - 2026-10-22
 
 ### Adicionado

@@ -138,6 +138,7 @@ if ($Governance -or $Target -eq "governance") {
         "tools/tests/test_test_runner.ps1",
         "tools/tests/test_git_governance.ps1",
         "tools/tests/test_precommit_encoding.ps1",
+        "tools/tests/test_dip_gate.ps1",
         "tools/tests/test_ci_pipeline.ps1",
         "tools/tests/test_doc_governance.ps1",
         "docker/tests/test_docker_manifests.ps1"
