@@ -49,11 +49,16 @@ abstract interface class UserRepository {
 `generate` idempotente (3.4.13) · adapter documentado com o SQLSTATE e a origem das tabelas
 (`serverpod_auth_server` legado — registrar essa dependência no LEARNINGS).
 
-## 3. Item B — Adapter de hash: **aguardando decisão do PO**
+## 3. Item B — Adapter de hash: **DECIDIDO PELO PO (2026-10-23): `pointycastle` Argon2id**
 
-Sua recomendação é a opção (a) (wrapper `src/` confinado). **Não implemente** até o PO decidir entre
-(a) wrapper `src/`, (b) `pointycastle` Argon2id, (c) aguardar IDP 3.5+. Se ele aprovar (a), o adapter
-deve também fornecer um **`dummyHash` válido** (hoje é placeholder) para fechar o side-channel.
+Implemente `Argon2PasswordHasher` (porta `PasswordHasher`) com:
+- Argon2id e parâmetros **OWASP** (documentar os valores no arquivo);
+- salt de 16 bytes via **`Random.secure()`** (`INV-SEC-10`);
+- formato de hash versionado/autodescritivo (ex.: `argon2id$v=19$m=...$salt$hash`) para permitir upgrade;
+- **`dummyHash` válido** exposto para o `SignInHandler` (fecha o side-channel de timing);
+- testes: hash != senha; verificação correta/incorreta; salt único por chamada; CSPRNG;
+  paridade com o `PasswordVerifier` (`hash` → `verify` = true).
+- Registrar a dependência no `pubspec` (pinned) e no `CHANGELOG`/`LEARNINGS` no mesmo commit.
 
 ## 4. Item C — UI `/login` e `/register`: bloqueado até a consolidação
 
