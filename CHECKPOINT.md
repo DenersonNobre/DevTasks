@@ -20,9 +20,11 @@ Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
 - **Remotes**: `origin` (Gitea) + `github` em paridade; `main` = `v0.1.0` (`0e57b38`).
 - **Gate 2.5 do `UC-01.01` já invocado** (auth): 8 achados (`SEC-01..08`), `INV-SEC-01..12`
   propostas — implementação pendente no próprio UC.
-- **Achados de auditoria ainda abertos**: NC-15 (gate de DIP), NC-17 (tema/WCAG), NC-22
-  (placeholder no épico-00), NC-24 (cópia do hook), NC-25 (contagem de linhas no hand-off).
-- **Risco residual**: Docker do novo stack não validado no host local (CI `docker-build` prova).
+- **Achados de auditoria abertos**: NC-17 (tema/WCAG — pertence a épico de UI) e NC-25 (contagem de
+  linhas citada no hand-off). Fechados: NC-15 (DIP gate), NC-22 (placeholder), NC-24 (hooksPath) e
+  NC-26 (release `v0.1.0`).
+- **Residuais do Gate 4 do `UC-01.00`**: R-01 (suíte de governança ~408 s × teto 600 s) e R-03
+  (cobertura do server sem `lcov`). Docker do novo stack **provado no CI** (run `036af42` = success).
 
 ## Próximo passo (EPIC-01 · `UC-01.01`)
 

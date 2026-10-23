@@ -251,11 +251,14 @@ vs `dart test` = 24,1 s).
 |:--|:---|:---|
 | NC-15 | **fechado** | `tools/dip-gate.ps1` enforça pureza do kernel/domínio (exit 1 em violação) com 3 provas negativas reais — `tools/tests/test_dip_gate.ps1` |
 | NC-17 | **aberto** | RNF-05/06/07 (tema base/WCAG) não entregues; `ThemeData`/`darkTheme` ausentes |
-| NC-22 | **aberto** | `epic-00:269` ainda traz o placeholder "Money-like **NãoExiste aqui**" |
+| NC-22 | **fechado** | placeholder removido do épico-00 (`036af42`) |
 | NC-24 | **fechado** | `core.hooksPath` é fonte única; `install-hooks.ps1` remove cópias legadas (cópia só com `-LegacyCopyFallback`) |
 | NC-25 | **aberto** | `UC-CURRENT.md:46` ainda afirma "`CHECKPOINT.md` com 42 linhas" (real: 35) |
-| NC-26 | **aberto** | `main` local em `17b69f4` (não publicada) e **zero tags** — release não cortada |
+| NC-26 | **fechado** | release `v0.1.0` cortada: `main` + tag publicadas em `origin` e `github` (`0e57b38`), CI verde |
 | NC-27 | **parcial** | DoR da F0.1 corrigido no épico; `LEARNINGS.md` agora registra o ciclo (3 entradas) |
 
-> **Nota de escopo**: NC-15/17/22/24/25/26 não estavam no recorte desta rodada de correção; ficam
+> **Nota de escopo**: NC-17 (tema/WCAG) e NC-25 (contagem no hand-off) seguem abertos; NC-15/22/24/26
+> fechados nos commits `99d9615`, `036af42`, `f71ecdd` e na release `v0.1.0`. Pendências residuais do
+> Gate 4 do `UC-01.00`: **R-01** (suíte de governança em ~408 s contra teto de 600 s) e **R-03**
+> (cobertura do server sem `lcov`).
 > registrados como pendência explícita, não como "esquecimento".
