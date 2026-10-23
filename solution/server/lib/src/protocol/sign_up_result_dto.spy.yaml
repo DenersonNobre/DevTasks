@@ -4,3 +4,4 @@ fields:
   userId: String?
   errorCode: String?
   message: String?
+  field: String?

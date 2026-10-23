@@ -12,12 +12,16 @@ Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
 ## Estado verificado (2026-10-23)
 
 - **`UC-01.00` (F1.0 — wiring Serverpod) ✅** consolidado e publicado (`53ed8dd`).
-- **`UC-01.01` (F1.1 — cadastro) — fatias 1–2 implementadas, Gates 3/4 PENDENTES**:
-  - app: `Email`/`Password` (INV-08 + política 12–128) — **13 testes** verdes;
-  - server: `SignUpHandler` + portas DIP (`UserRepository`/`PasswordHasher`) — **8 testes** verdes
-    (hash também no caminho de duplicata, `emailVerified=false`);
-  - contrato: `auth.signUp` + `SignUpDto`/`SignUpResultDto` gerados; migração
-    `migrations/20261023024432194`; build assere artefato (14,14 MB); analyze limpo nos 3 membros.
+- **`UC-01.01` (F1.1 — cadastro) — fatias 1–2 + reconciliação do Gate 3; Gate 4 PENDENTE**:
+  - app: `Email`/`Password` (INV-08 + política 12–128) — **13 testes de auth** (21 no app);
+  - server: `SignUpHandler` + `SignUpService` + portas DIP — **19 testes** no server (hash também no
+    caminho de duplicata com spy; **`emailVerified=false` NÃO é provado** — é default do contrato de
+    persistência, ver item 6 da matriz do hand-off);
+  - contrato: `auth.signUp` + DTOs gerados (inclui `field` para a UI), migração
+    `migrations/20261023024432194` (**21 tabelas do framework/auth, zero de domínio**); client
+    regenerado e idempotente (2 gerações sem diff); build assere artefato; analyze limpo nos 3 membros;
+  - **Gate 3**: rodada 1 rejeitada (evidência sobredeclarada) → rodada 2 **aprovada com ressalvas**,
+    ressalvas R1 (client fora de sincronia) e R2 (contradição neste CHECKPOINT) **fechadas**.
   - **Lacunas declaradas**: adaptador de persistência (DB) e de hash (API privada em 3.4.13),
     UI `/register` e mapeamento HTTP 409/400 → follow-ups.
 - **Suíte funcional verde**: 9/9 suítes de governança `[OK]` · core **34,75 s** (≤60) · cobertura app

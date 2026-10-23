@@ -62,13 +62,14 @@ void main() {
       expect(result.errorCode, 'ERR_EMAIL_ALREADY_TAKEN');
     });
 
-    test('senha inválida devolve ERR_VALIDATION', () async {
+    test('senha inválida devolve ERR_VALIDATION com o campo', () async {
       final service = SignUpService(SignUpHandler(_Repo(), _Hasher()));
 
       final result = await service.signUp(_dto(password: 'curta1!A'));
 
       expect(result.success, isFalse);
       expect(result.errorCode, 'ERR_VALIDATION');
+      expect(result.field, 'password');
     });
 
     test('sem adaptadores responde ERR_INFRA_FAILURE com mensagem neutra',

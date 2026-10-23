@@ -37,7 +37,7 @@ lockfile (`INV-SEC-11`). Riverpod (D-03) é decisão prévia do PO e não altera
 | 7 | **INV-SEC-11** — pin exato | **ENTREGUE** | `serverpod*` em `3.4.13` + `tools/pin-gate.ps1` no CI |
 | 8 | **INV-SEC-10** — `allowUnsecureRandom:false` | **NÃO ENTREGUE** | o knob **não existe** na 3.4.13 sem o IDP; vincula-se ao adapter de hash → follow-up |
 | 9 | Gherkin — sessão no cadastro | **NÃO ENTREGUE** | o contrato não emite sessão/token → **`UC-01.02`** (login/sessão) |
-| 10 | Migração versionada | **PARCIAL** | a migração tem **só tabelas do framework/módulo auth** (19 `serverpod_*`); **sem tabela de domínio** → slice de persistência |
+| 10 | Migração versionada | **PARCIAL** | a migração tem **só tabelas do framework/módulo auth** (**21** `serverpod_*`); **sem tabela de domínio** → slice de persistência |
 
 > **Correção pós-Gate 3 (rodada 1)**: a matriz anterior marcava itens sem enforcement como cobertos
 > (6, 8, 9) e descrevia a migração como "schema do modelo" — corrigido aqui. `pubspec.lock`: o
@@ -83,9 +83,9 @@ lockfile (`INV-SEC-11`). Riverpod (D-03) é decisão prévia do PO e não altera
 
 ### Fatia 2 — Handler + serviço + endpoint + contrato gerado (server)
 - **Red**: `dart test test/unit/auth/sign_up_handler_test.dart` → exit 1 (portas/handler ausentes).
-- **Green**: `dart test` → **18 testes verdes**: handler (normalização, duplicata com **hash executado**,
-  senha inválida sem hash, nome obrigatório), `SignUpService` (mapeamento sucesso/duplicata/validação/
-  sem-adaptadores) e smoke/health.
+- **Green**: `dart test` → **19 testes verdes**: handler (normalização, duplicata com **hash executado**,
+  senha inválida sem hash, nome obrigatório), `SignUpService` (sucesso/duplicata/validação com `field`/
+  sem-adaptadores) e smoke/health/contract.
 - `serverpod generate` → exit 0 (endpoint `auth` registrado; DTOs no client versionado). **Correção**:
   a uniformidade de banco exigida pelo 3.4.13 foi resolvida no `config/test.yaml` (seção `database`
   adicionada; os testes constroem `ServerpodConfig` próprio e não leem o arquivo).
@@ -112,6 +112,21 @@ lockfile (`INV-SEC-11`). Riverpod (D-03) é decisão prévia do PO e não altera
 7. **Fonte única da política de senha** (app × server): hoje duplicada — exige pacote compartilhado.
 8. **Red versionado**: os Reds foram capturados em prosa (erro de compilação), sem artefato no repo.
 9. `R-01` (teto de governança) segue com o trabalho paralelo.
+10. **Limite de nome `> 100`** (`sign_up_handler.dart`) é regra **não prevista** em SPEC/PRD — o ramo
+    não tem teste. Decisão: formalizar o VO de nome na SPEC (dono: `arch`) ou remover o limite.
+11. **`SignUpDto.toString()`** (gerado) serializa `password` em claro; a mitigação `sessionLogs: off`
+    não cobre um `print` futuro — o teste de log pendente deve asseverar isso explicitamente.
+12. **Duplicação de regra** inclui o **regex de e-mail** (app × server), além da política de senha —
+    fonte única exige pacote compartilhado.
+13. **Colisão de nomes**: endpoint `auth` × módulo `auth` (no client, `client.auth` é o endpoint;
+    o módulo só via `client.modules.auth`). Renomear é barato **antes** do UC-01.02 — decisão pendente.
+
+### Correções aplicadas após o Gate 3 (rodada 2)
+- **R1** — client regenerado com o CLI **3.4.13**; `generate` executado 2× sem diff (idempotente).
+- **R2** — `CHECKPOINT.md` deixou de afirmar `emailVerified=false` como prova de teste.
+- **N13** — teste renomeado para `sign_up_service_test.dart` (nome = objeto testado).
+- **N14** — `SignUpResultDto.field` adicionado e mapeado (a UI consegue destacar o input).
+- **N16** — `Email.toString()` mascarado (`Email(***)`), com asserção no teste.
 
 ## Pendências declaradas
 

@@ -18,11 +18,7 @@ import 'package:devtasks_client/src/protocol/sign_up_dto.dart' as _i4;
 import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i5;
 import 'protocol.dart' as _i6;
 
-/// Endpoint de cadastro (F1.1 / UC-01.01).
-///
-/// Borda fina: a regra vive em [SignUpHandler] (domínio puro). Os adaptadores de
-/// persistência e de hash entram por injeção — sem eles o endpoint responde
-/// `ERR_INFRA_FAILURE` em vez de fingir sucesso (capacidade declarada, não fingida).
+/// Endpoint de cadastro de usuário (F1.1).
 /// {@category Endpoint}
 class EndpointAuth extends _i1.EndpointRef {
   EndpointAuth(_i1.EndpointCaller caller) : super(caller);

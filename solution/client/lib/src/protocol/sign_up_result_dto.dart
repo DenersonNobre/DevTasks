@@ -19,6 +19,7 @@ abstract class SignUpResultDto implements _i1.SerializableModel {
     this.userId,
     this.errorCode,
     this.message,
+    this.field,
   });
 
   factory SignUpResultDto({
@@ -26,6 +27,7 @@ abstract class SignUpResultDto implements _i1.SerializableModel {
     String? userId,
     String? errorCode,
     String? message,
+    String? field,
   }) = _SignUpResultDtoImpl;
 
   factory SignUpResultDto.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -34,6 +36,7 @@ abstract class SignUpResultDto implements _i1.SerializableModel {
       userId: jsonSerialization['userId'] as String?,
       errorCode: jsonSerialization['errorCode'] as String?,
       message: jsonSerialization['message'] as String?,
+      field: jsonSerialization['field'] as String?,
     );
   }
 
@@ -45,6 +48,8 @@ abstract class SignUpResultDto implements _i1.SerializableModel {
 
   String? message;
 
+  String? field;
+
   /// Returns a shallow copy of this [SignUpResultDto]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -53,6 +58,7 @@ abstract class SignUpResultDto implements _i1.SerializableModel {
     String? userId,
     String? errorCode,
     String? message,
+    String? field,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -62,6 +68,7 @@ abstract class SignUpResultDto implements _i1.SerializableModel {
       if (userId != null) 'userId': userId,
       if (errorCode != null) 'errorCode': errorCode,
       if (message != null) 'message': message,
+      if (field != null) 'field': field,
     };
   }
 
@@ -79,11 +86,13 @@ class _SignUpResultDtoImpl extends SignUpResultDto {
     String? userId,
     String? errorCode,
     String? message,
+    String? field,
   }) : super._(
          success: success,
          userId: userId,
          errorCode: errorCode,
          message: message,
+         field: field,
        );
 
   /// Returns a shallow copy of this [SignUpResultDto]
@@ -95,12 +104,14 @@ class _SignUpResultDtoImpl extends SignUpResultDto {
     Object? userId = _Undefined,
     Object? errorCode = _Undefined,
     Object? message = _Undefined,
+    Object? field = _Undefined,
   }) {
     return SignUpResultDto(
       success: success ?? this.success,
       userId: userId is String? ? userId : this.userId,
       errorCode: errorCode is String? ? errorCode : this.errorCode,
       message: message is String? ? message : this.message,
+      field: field is String? ? field : this.field,
     );
   }
 }

@@ -32,6 +32,7 @@ class SignUpService {
       success: false,
       errorCode: failure.code.wireCode,
       message: failure.message,
+      field: failure.field,
     );
   }
 }

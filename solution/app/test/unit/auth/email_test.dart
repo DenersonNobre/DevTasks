@@ -11,7 +11,8 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.valueOrNull?.value, 'bia@ex.com');
-      expect(result.valueOrNull.toString(), 'bia@ex.com');
+      expect(result.valueOrNull!.toString(), 'Email(***)');
+      expect(result.valueOrNull!.toString(), isNot(contains('bia@ex.com')));
     });
 
     test('rejects input without at sign with a validation failure on email', () {
