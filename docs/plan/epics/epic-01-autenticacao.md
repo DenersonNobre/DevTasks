@@ -22,6 +22,7 @@ sensível (workflow_rules §Gate 2.5).
 | F1.2 | Login & sessão persistente | 1 | Alto: NFR-05, credenciais | ✅ |
 | F1.3 | Logout & guarda de rotas privadas | 1 | Depende de F1.2 | ⏳ |
 | F1.4 | Hardening de auth (rate limit + validação) | 1 | **Gate 2.5 obrigatório** | ⏳ |
+| F1.5 | Tema base & acessibilidade (D-06) | 1 | RNF-05/06/07 reatribuídos da EPIC-00 | ✅ |
 
 ---
 
@@ -148,6 +149,49 @@ local entre visitas, mensagem única de credencial inválida.
   - `solution/server/lib/src/endpoints/auth_endpoint.dart` [MODIFY]
   - `solution/app/lib/modules/auth/presentation/**`, `solution/app/lib/global/**` (session provider) [MODIFY/NEW]
   - `solution/app/test/unit/auth/**` [MODIFY]
+
+---
+
+### Feature 1.5 — Tema Base & Acessibilidade (D-06 · RNF-05/06/07)
+
+**Descrição**: Design System mínimo do app — tokens de cor (claro/escuro), `ThemeData` e validação de
+contraste **WCAG AA** — reatribuído da EPIC-00 para a EPIC-01 pela decisão **D-06** (junto das telas de
+autenticação, onde o Design System vira real).
+
+**DoR**: D-06 registrada (`DESIGN.md` §12); tokens do `DESIGN.md` §2 como contrato.
+**DoD**: `ThemeData` claro/escuro aplicado no app (segue o sistema); testes de contraste AA
+(texto ≥ 4.5:1, grandes ≥ 3:1) verdes; `flutter analyze` limpo.
+
+#### User Story 1.5.1 — Interface legível nos dois temas
+
+* **Identificador**: `UC-01.05`
+* **Narrativa**:
+  - **Como** usuário
+  - **Eu quero** tema claro/escuro com contraste adequado
+  - **Para que** eu leia e opere com conforto e acessibilidade
+* **Critérios de Aceitação**:
+  ```gherkin
+  Cenário: contraste AA nos dois temas
+    Dado os tokens de cor claro e escuro
+    Quando calculo o contraste texto/fundo
+    Então texto >= 4.5:1 e elementos grandes >= 3:1
+
+  Cenário: tema segue a preferência do sistema
+    Dado o app iniciado
+    Quando o sistema alterna claro/escuro
+    Então o MaterialApp usa o tema correspondente
+  ```
+* **Tarefas Técnicas**:
+  1. `TASK-01`: tokens + `ThemeData` claro/escuro ➔ `feat(theme): add tokens and app theme`
+  2. `TASK-02`: cálculo de contraste + testes AA ➔ `test(theme): enforce wcag aa contrast`
+  3. `TASK-03`: wiring no `MaterialApp` ➔ `feat(ui): apply app theme`
+* **Impacto & Arquivos Alvo**:
+  - `solution/app/lib/global/theme/{tokens,app_theme,contrast}.dart` [NEW]
+  - `solution/app/test/unit/theme/**` [NEW]
+  - `solution/app/lib/main.dart` [MODIFY]
+
+> **Status**: implementado e verificado pelo orquestrador (12 testes de tema verdes, `analyze` limpo,
+> `MaterialApp` com `theme`/`darkTheme`/`ThemeMode.system`) — commit `3042406`.
 
 ---
 
