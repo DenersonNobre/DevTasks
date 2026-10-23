@@ -3,6 +3,7 @@ fields:
   success: bool
   userId: String?
   sessionToken: String?
+  expiresAt: DateTime?
   errorCode: String?
   message: String?
   field: String?

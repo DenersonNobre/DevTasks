@@ -1,0 +1,6 @@
+class: SignOutResultDto
+fields:
+  success: bool
+  errorCode: String?
+  message: String?
+

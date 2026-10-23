@@ -1,0 +1,13 @@
+class: DevtasksSession
+table: devtasks_session
+fields:
+  userId: String
+  tokenHash: String
+  createdAt: DateTime
+  expiresAt: DateTime
+  revokedAt: DateTime?
+indexes:
+  devtasks_session_token_hash_idx:
+    fields: tokenHash
+    unique: true
+
