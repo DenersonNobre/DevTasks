@@ -16,6 +16,8 @@ import 'package:serverpod/serverpod.dart' as _i2;
 import 'dart:async' as _i3;
 import 'package:devtasks_server/src/generated/sign_up_result_dto.dart' as _i4;
 import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i5;
+import 'package:devtasks_server/src/generated/sign_in_result_dto.dart' as _i6;
+import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i7;
 import 'package:devtasks_server/src/generated/protocol.dart';
 import 'package:devtasks_server/src/generated/endpoints.dart';
 export 'package:serverpod_test/serverpod_test_public_exports.dart';
@@ -181,6 +183,37 @@ class _AuthEndpoint {
                   _localCallContext.arguments,
                 )
                 as _i3.Future<_i4.SignUpResultDto>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i6.SignInResultDto> signIn(
+    _i1.TestSessionBuilder sessionBuilder,
+    _i7.SignInDto dto,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'auth',
+            method: 'signIn',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'auth',
+          methodName: 'signIn',
+          parameters: _i1.testObjectToJson({'dto': dto}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i6.SignInResultDto>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

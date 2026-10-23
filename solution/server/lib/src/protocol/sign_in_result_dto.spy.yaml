@@ -1,0 +1,8 @@
+class: SignInResultDto
+fields:
+  success: bool
+  userId: String?
+  sessionToken: String?
+  errorCode: String?
+  message: String?
+  field: String?

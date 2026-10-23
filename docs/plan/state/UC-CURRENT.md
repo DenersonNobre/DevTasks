@@ -50,10 +50,10 @@ Rate limit permanece **fora deste UC**.
 
 ## Estado de execução
 
-> **Nota de integridade (árvore compartilhada)**: os arquivos da fatia 1 foram varridos para o commit
-> **`35cff70`** (commit de docs do outro agente) por staging alheio (`git add` amplo). Conteúdo
-> **íntegro no HEAD** (25 testes verdes), porém **sem a assinatura `(UC-01.02)`**. Não reescrevi o
-> commit alheio (árvore compartilhada); o registro fica aqui. A fatia 2 abre o commit assinado do UC.
+> **Nota de integridade (árvore compartilhada)**: durante a fatia 1, um `git add` amplo do outro agente
+> varreu estes arquivos para um commit de docs (`35cff70`); ele **desfez o commit** (`reset --mixed`),
+> os arquivos voltaram à árvore e foram então commitados com a assinatura `(UC-01.02)`. **Sem perda de
+> conteúdo**; o registro fica para auditoria da concorrência (não reescrevi commit alheio).
 
 - Claim: **ativo** — `UC-01.02`, owner `coder` (paths `solution/app`, `solution/server`, hand-off).
 - Modelo do Coder: `opencode/deepseek-v4.1-flash-free`.

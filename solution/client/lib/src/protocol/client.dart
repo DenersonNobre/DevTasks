@@ -15,10 +15,12 @@ import 'package:serverpod_client/serverpod_client.dart' as _i1;
 import 'dart:async' as _i2;
 import 'package:devtasks_client/src/protocol/sign_up_result_dto.dart' as _i3;
 import 'package:devtasks_client/src/protocol/sign_up_dto.dart' as _i4;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i5;
-import 'protocol.dart' as _i6;
+import 'package:devtasks_client/src/protocol/sign_in_result_dto.dart' as _i5;
+import 'package:devtasks_client/src/protocol/sign_in_dto.dart' as _i6;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i7;
+import 'protocol.dart' as _i8;
 
-/// Endpoint de cadastro de usuário (F1.1).
+/// Endpoint de autenticação (cadastro e login).
 /// {@category Endpoint}
 class EndpointAuth extends _i1.EndpointRef {
   EndpointAuth(_i1.EndpointCaller caller) : super(caller);
@@ -32,14 +34,21 @@ class EndpointAuth extends _i1.EndpointRef {
         'signUp',
         {'dto': dto},
       );
+
+  _i2.Future<_i5.SignInResultDto> signIn(_i6.SignInDto dto) =>
+      caller.callServerEndpoint<_i5.SignInResultDto>(
+        'auth',
+        'signIn',
+        {'dto': dto},
+      );
 }
 
 class Modules {
   Modules(Client client) {
-    auth = _i5.Caller(client);
+    auth = _i7.Caller(client);
   }
 
-  late final _i5.Caller auth;
+  late final _i7.Caller auth;
 }
 
 class Client extends _i1.ServerpodClientShared {
@@ -62,7 +71,7 @@ class Client extends _i1.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i6.Protocol(),
+         _i8.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,

@@ -60,3 +60,45 @@ abstract interface class UserRepository {
 abstract interface class PasswordHasher {
   Future<String> hash(String password);
 }
+
+/// Registro mínimo para autenticar — inclui o hash; **só esta porta o expõe** (ISP).
+class CredentialRecord {
+  const CredentialRecord({
+    required this.id,
+    required this.email,
+    required this.passwordHash,
+  });
+
+  final String id;
+  final String email;
+  final String passwordHash;
+}
+
+/// Porta de leitura de credenciais (o handler de cadastro não depende do hash).
+abstract interface class CredentialRepository {
+  Future<CredentialRecord?> findByEmail(String normalizedEmail);
+}
+
+/// Porta de verificação de senha contra um hash armazenado.
+abstract interface class PasswordVerifier {
+  Future<bool> verify({required String password, required String passwordHash});
+}
+
+/// Usuário autenticado devolvido pelo login.
+class AuthenticatedUser {
+  const AuthenticatedUser({required this.id, required this.email});
+
+  final String id;
+  final String email;
+}
+
+/// Códigos de falha do login (espelham a `SPEC.md` §6).
+enum SignInErrorCode {
+  invalidCredentials('ERR_INVALID_CREDENTIALS'),
+  validation('ERR_VALIDATION'),
+  infra('ERR_INFRA_FAILURE');
+
+  const SignInErrorCode(this.wireCode);
+
+  final String wireCode;
+}

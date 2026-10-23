@@ -1,2 +1,3 @@
 auth:
   - signUp:
+  - signIn:

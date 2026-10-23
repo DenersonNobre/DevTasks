@@ -1,0 +1,4 @@
+class: SignInDto
+fields:
+  email: String
+  password: String

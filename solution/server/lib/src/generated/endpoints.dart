@@ -14,7 +14,8 @@
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../endpoints/auth_endpoint.dart' as _i2;
 import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i3;
-import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i4;
+import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i4;
+import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i5;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -49,8 +50,26 @@ class Endpoints extends _i1.EndpointDispatch {
                 params['dto'],
               ),
         ),
+        'signIn': _i1.MethodConnector(
+          name: 'signIn',
+          params: {
+            'dto': _i1.ParameterDescription(
+              name: 'dto',
+              type: _i1.getType<_i4.SignInDto>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['auth'] as _i2.AuthEndpoint).signIn(
+                session,
+                params['dto'],
+              ),
+        ),
       },
     );
-    modules['serverpod_auth'] = _i4.Endpoints()..initializeEndpoints(server);
+    modules['serverpod_auth'] = _i5.Endpoints()..initializeEndpoints(server);
   }
 }
