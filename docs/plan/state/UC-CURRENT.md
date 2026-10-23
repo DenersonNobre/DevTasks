@@ -27,10 +27,12 @@ coberta pela decisão **D-03** (gerência de estado local, sem superfície de re
 2. **Porta `AuthClient`** (app): `signIn(email, password)` / `signUp(name, email, password)` devolvendo
    os DTOs do contrato ou um `AuthFailure` tipado. O **cliente gerado do Serverpod** é o adaptador real
    (wiring com URL/token = follow-up declarado, pois a emissão de token ainda não existe).
-3. **Roteador**: manter o `RouteGuard` puro como contrato. A **descrição da F1.6** cita "aplica o
-   `RouteGuard`", mas o **DoD** não exige wiring de roteador; `MaterialApp.routes` **não** consulta o guard
-   (⇒ `/projects` é alcançável sem sessão no app real). Wiring (go_router ou `onGenerateRoute`) fica como
-   **follow-up rastreado no épico** (F1.6, "Gaps conhecidos"), não como efeito colateral silencioso.
+3. **Roteador**: manter o `RouteGuard` puro como contrato. O wiring **estava** no escopo: a
+   **descrição da F1.6** diz "aplica o `RouteGuard`" **e** a `TASK-03` lista "wiring do `RouteGuard` +
+   testes de widget dos 4 estados" — ou seja, é **escopo não executado, declarado**, não ambiguidade.
+   `MaterialApp.routes` **não** consulta o guard (⇒ `/projects` é alcançável sem sessão no app real).
+   Wiring (go_router ou `onGenerateRoute`) fica como **follow-up rastreado no épico** (F1.6,
+   "Gaps conhecidos").
 4. **Qualidade (DoD de código)**: enxuto e otimizado — 1 nível de indentação por método, sem `else` de
    validação, sem números/strings mágicos, VOs para primitivos de negócio, zero comentário-ruído;
    Object Calisthenics + SOLID + Clean Code auditados no Gate 3.
@@ -114,8 +116,9 @@ injetar adaptadores reais.
 
 1. **`dcbef49` não compila (atomicidade partida, agora REGISTRADA aqui)**: o rename
    `modules/auth/domain/session_store.dart` → `global/session/session_store.dart` entrou no commit de
-   **docs** por staging prévio de `git mv`, mas 4 imports ainda apontavam para o caminho antigo
-   (`session_controller.dart`, `test/support/in_memory_session_store.dart`, e os 2 testes de sessão/guard).
+   **docs** por staging prévio de `git mv`, mas **4 imports** continuavam apontando para o caminho antigo
+   (`session_controller.dart`, `test/support/in_memory_session_store.dart`, e os 2 testes de sessão/guard)
+   **e** o barrel `modules/auth/.domain.dart` ainda **exportava** o caminho antigo (5ª referência órfã).
    Consequência: `analyze`/`test`/`git bisect` quebram nesse commit; `e88e2c4` fecha a árvore.
    **Histórico não reescrito** (decisão): o defeito é documental, e reescrever um commit em árvore
    compartilhada é risco maior que o benefício.
@@ -124,6 +127,15 @@ injetar adaptadores reais.
    registrada em `LEARNINGS.md` (o pre-commit só reprova arquivo com BOM *e nada mais*).
 3. **`_AuthTextField` duplicado** entre as duas views (já divergindo) → promovido a `AuthTextField` em
    `presentation/widgets/auth_form_widgets.dart`, usado pelas duas telas.
+
+### Rodada 3 — veredito
+
+**APROVADO (confiança Alta), zero bloqueantes.** Verificação por medição: BOM nos blobs do HEAD = **0/47**;
+`git grep "_AuthTextField"` = **0**; `git cat-file -e dcbef49:<caminho antigo>` = **exit 128** (prova de que
+o rename vazou no commit de docs). Advisories aplicados: citação da **`TASK-03`** (o wiring era tarefa
+explícita) e registro do **export órfão** no barrel como 5ª referência.
+
+**Próximo**: Gate 4 (harness completo) — só depois marcar `F1.6` ✅ no épico.
 
 ## Desvios e follow-ups declarados
 
