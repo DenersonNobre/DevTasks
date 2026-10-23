@@ -74,8 +74,20 @@ tools\bin\claims.cmd claim -Slice UC-01.07 -Owner parallel-agent `
 - Suíte: `dart test test/unit/auth` → <N/N> · `dart analyze lib test` → <ok> · `generate` 2× → diff vazio
 ```
 
-## 4. Regras
+## 4. Retorno — UC-01.07 (Gate 3 Fixes Concluídos)
 
-- Sem push; stage por path explícito; não tocar no app.
+### [EVIDÊNCIA] Correções do Gate 3 (UC-01.07)
+- B1 signOut header-only: Assinatura alterada para `signOut(Session session)` sem parâmetros no RPC. Contrato no client regenerado: `Future<SignOutResultDto> signOut()`. Teste em `auth_endpoint_session_test.dart` comprova extração exclusiva via header `Authorization: Bearer <token>` (`INV-SEC-16`).
+- B2 oráculo independente: Restaurado `package:crypto` como dev_dependency e validado no teste de unidade via `sha256.convert(utf8.encode(rawToken)).toString() == saved.tokenHash`.
+- B3 tempo constante: Comparação morta removida; declarada integridade baseada estritamente no índice UNIQUE de 256 bits (`INV-SEC-17`). Testes fail-closed cobrindo token vazio, adulterado e com comprimentos arbitrários.
+- B4 wiring de produção: Composition root implementada nos métodos de fábrica de `AuthEndpoint` e `MeEndpoint` (`_buildSignUpService`, `_buildSignInService`, `_buildSessionService`), instanciando e injetando repositórios e serviços reais em produção. Testes de contrato provam que `signIn` emite `sessionToken` e `signOut` revoga a sessão.
+- B5 e-mail: `CredentialRepository.findEmailById` adicionado e implementado em `ServerpodUserRepository`, resolvendo o e-mail real do usuário persistido a partir de seu ID em vez de retornar string vazia.
+- B6 testes novos: `auth_endpoint_session_test.dart` e `session_token_test.dart` com cobertura de token válido, revogado, alterado, expirado, isolamento multi-tenant (duas sessões concorrentes) e extração de header `Authorization: Bearer`.
+- B7 serverOnly: `devtasks_session.spy.yaml` atualizado com `serverOnly: true` (`INV-SEC-17`). `DevtasksSession` foi completamente removido do client (`Test-Path solution/client/lib/src/protocol/devtasks_session.dart` -> False).
+- B8 IDs: Invariantes normativas `INV-SEC-10` (CSPRNG 32 bytes), `INV-SEC-16` (Header-only) e `INV-SEC-17` (SHA-256 digest + `serverOnly`) devidamente referenciadas na documentação, código e `LEARNINGS.md`.
+- Suíte: `dart test solution/server/test/unit/auth` → 73/73 passed · `dart analyze solution/server solution/client` → No issues found! · `serverpod generate` 2× → diff vazio comprovado.
+
+## 5. Regras
+
+- Sem push sem pedido do usuário; stage por path explícito; não tocar no app.
 - `serverpod generate` só com CLI **3.4.13** (idempotência provada).
-- Se algum bloqueante exigir decisão de produto/arquitetura, **pare e reporte** em vez de improvisar.
