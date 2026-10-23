@@ -171,5 +171,77 @@ class WorkspaceService {
       workspace: WorkspaceWithRole(workspace: workspace, role: role).toDto(),
     );
   }
+
+  /// Adiciona um membro a um workspace (INV-06: apenas owner pode mutar).
+  Future<WorkspaceResultDto> addMember({
+    required String userId,
+    required int workspaceId,
+    required WorkspaceMemberRole role,
+  }) async {
+    final callerRole = await _repository.getMemberRole(
+      workspaceId: workspaceId,
+      userId: userId,
+    );
+    if (callerRole != WorkspaceMemberRole.owner) {
+      return WorkspaceResultDto(
+        success: false,
+        errorCode: WorkspaceErrorCodes.insufficientRole,
+        message: 'Permissao insuficiente para adicionar membro.',
+      );
+    }
+    final added = await _repository.addMember(
+      workspaceId: workspaceId,
+      userId: userId,
+      role: role,
+    );
+    return WorkspaceResultDto(
+      success: true,
+      workspace: WorkspaceWithRole(
+        workspace: WorkspaceEntity(
+          id: added.workspace.id,
+          name: added.workspace.name,
+          createdAt: added.workspace.createdAt,
+        ),
+        role: added.role,
+      ).toDto(),
+    );
+  }
+
+  /// Remove um membro de um workspace (INV-06; INV-01 indistinction).
+  Future<WorkspaceResultDto> removeMember({
+    required String userId,
+    required int workspaceId,
+  }) async {
+    final callerRole = await _repository.getMemberRole(
+      workspaceId: workspaceId,
+      userId: userId,
+    );
+    if (callerRole == null) {
+      return WorkspaceResultDto(
+        success: false,
+        errorCode: WorkspaceErrorCodes.notFound,
+        message: 'Workspace nao encontrado.',
+      );
+    }
+    if (callerRole != WorkspaceMemberRole.owner) {
+      return WorkspaceResultDto(
+        success: false,
+        errorCode: WorkspaceErrorCodes.insufficientRole,
+        message: 'Permissao insuficiente para remover membro.',
+      );
+    }
+    final removed = await _repository.removeMember(
+      workspaceId: workspaceId,
+      userId: userId,
+    );
+    if (!removed) {
+      return WorkspaceResultDto(
+        success: false,
+        errorCode: WorkspaceErrorCodes.notFound,
+        message: 'Membro nao encontrado.',
+      );
+    }
+    return WorkspaceResultDto(success: true);
+  }
 }
 
