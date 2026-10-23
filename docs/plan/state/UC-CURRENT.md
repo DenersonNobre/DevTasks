@@ -1,94 +1,64 @@
 # UC-CURRENT — DevTasks
 
-> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-01-autenticacao.md` §F1.3.
+> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-01-autenticacao.md` §F1.6.
 > Ordem de leitura ao retomar: `CHECKPOINT.md` → este arquivo → código.
 
 ## UC corrente
 
-**UC-01.03** — Logout & Guarda de Rotas Privadas (EPIC-01 · F1.3 · `US-1.3.1`).
+**UC-01.06** — Telas de Autenticação (EPIC-01 · F1.6 · `US-1.6.1`).
 
-**Gate 2.5: INVOKED** — reutiliza a análise de auth do ciclo; aplicáveis: `INV-SEC-06` (token só em
-header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a trava de exposição
-(rate limit ainda em `UC-01.04`).
+**Gate 2.5: INVOKED** — a superfície de auth já foi analisada no ciclo (`SEC-01..08`, `INV-SEC-04/05/06`);
+este UC herda as invariantes aplicáveis ao cliente: `INV-SEC-05` (senha/PII **nunca** em log/print),
+`INV-SEC-06` (token só via header/cookie — nunca em URL/body de tela) e **dependência** `flutter_riverpod`
+coberta pela decisão **D-03** (gerência de estado local, sem superfície de rede própria).
 
-## Escopo (DoD da F1.3)
+## Escopo (DoD da F1.6)
 
-- **DoD**: teste prova que **cada endpoint privado sem sessão** responde falha tipada de sessão
-  (`ERR_NOT_AUTHENTICATED`) — **contrato, não UI**; logout limpa o estado local.
-- **TASK-01**: teste Red do guard de sessão (servidor) + guarda de rota (app).
-- **TASK-02**: guard no servidor + primeiro endpoint privado de referência (`MeEndpoint`).
-- **TASK-03**: logout no app (já existe `SessionController.signOut`) + decisão de rota.
+- Telas `/login` e `/register` com os **4 estados** do `DESIGN` §3 (`idle/loading/error/authenticated`).
+- Validação de formulário pelos VOs existentes (`Email`/`Password`).
+- Sucesso → estado `authenticated` → `RouteGuard` permite rota privada; logout → volta ao login.
+- Testes de **widget** dos 4 estados + unit do controller; nenhuma senha em log.
 
-## Decisões de fatia (infra ainda ausente — mesmo padrão dos UCs anteriores)
+## Decisões de fatia
 
-1. **Server**: porta `SessionAuthenticator` (token → usuário | null) + `SessionGuard` **puro**
-   (token vazio/nulo ou inválido → falha `ERR_NOT_AUTHENTICATED`). O `MeEndpoint` é o **endpoint
-   privado de referência** (padrão que os endpoints da EPIC-02+ adotam).
-2. **App**: `RouteGuard` **puro** (rota privada + sessão ausente → redireciona ao login; autenticado →
-   permite). O roteador real (go_router) é decisão do slice de UI — não adiciono dependência aqui.
-3. **HTTP 401**: o RPC devolve código tipado; o mapeamento para status HTTP pertence à fachada REST
-   (mesma decisão registrada nos UCs anteriores).
+1. **Porta `AuthClient`** (app): `signIn(email, password)` / `signUp(name, email, password)` devolvendo
+   os DTOs do contrato ou um `AuthFailure` tipado. O **cliente gerado do Serverpod** é o adaptador real
+   (wiring com URL/token = follow-up declarado, pois a emissão de token ainda não existe).
+2. **Riverpod (D-03)**: providers sobre um `AuthController` (`Notifier`) reutilizando o
+   `SessionController` (persistência local já entregue em F1.2).
+3. **Roteador**: manter o `RouteGuard` puro como contrato; o router real (go_router) é dependência nova
+   → **não** entra neste UC sem decisão explícita (o DoD não exige; o guard já é testável).
 
 ## Interfaces
 
-- `SessionGuard(authenticator).requireSession(token)` → `GuardOutcome` (`user` | `code`).
-- `MeService(guard)` (**guard obrigatório**) → `MeResultDto`; sem token/válido ⇒ `ERR_NOT_AUTHENTICATED`.
-  O `MeEndpoint()` usa `SessionGuard(NoSessionAuthenticator())` por padrão (guard **vivo**).
-- `RouteGuard.decide({requiresSession, session})` → `RouteDecision.allow | redirectToLogin`.
+- `AuthClient` (porta) · `AuthState` (`idle|loading|error(failure)|authenticated(token)`) ·
+  `authControllerProvider` · reuso de `SessionController`/`SessionStore`.
 
 ## Arquivos-alvo
 
-- `solution/server/lib/src/modules/auth/{ports,session_guard,me_service}.dart` [NEW/MODIFY]
-- `solution/server/lib/src/endpoints/me_endpoint.dart` + `protocol/me_*.spy.yaml` [NEW]
-- `solution/app/lib/global/router/route_guard.dart` [NEW]
-- `solution/server/test/unit/auth/**`, `solution/app/test/unit/auth/**` [NEW]
+- `solution/app/lib/modules/auth/presentation/**` (controller + telas) [NEW/MODIFY]
+- `solution/app/lib/modules/auth/infrastructure/**` (adaptador `AuthClient` — fachada do cliente gerado) [NEW]
+- `solution/app/pubspec.yaml` (`flutter_riverpod`) · `pubspec.lock` (workspace) [MODIFY]
+- `solution/app/test/unit/auth/**` · `solution/app/test/widget/**` [NEW]
 
 ## Estado de execução
 
-- Claim: **ativo** — `UC-01.03`, owner `coder` (paths `solution/app`, `solution/server`, hand-off).
-- Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (os 2 coder anteriores estouraram passos →
-  implementação conduzida pelo orquestrador, gates independentes).
-- Implementação: **fatias 1–2 implementadas e aprovadas**. Gate 3: rodada 1 **rejeitou** (guard morto
-  em produção; token no body; hand-off stale) → `81ecc7f`; rodada 2 **rejeitou** (hand-off + Red do teste
-  novo) → `9c0a943`; rodada 3 **rejeitou** (2 linhas residuais) → `bf5af53`; **rodada 4 APROVOU**;
-  **Gate 4 APROVADO** (confiança Alta, zero divergências).
+- Claim: **ativo** — `UC-01.06`, owner `coder` (paths `solution/app`, hand-off).
+- **Implementação: não iniciada** — segurando para não disputar o `pubspec.lock` do workspace com o
+  brief 08 do outro agente (que adicionará `pointycastle` no server). Liberar quando ele fechar.
+- Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (os anteriores estouraram passos; orquestrador
+  conduz a implementação e os Gates 3/4 auditam).
 
 ## Evidência
 
-### Fatia 1 — guard no server (endpoint privado de referência)
-- **Red**: `dart test test/unit/auth/session_guard_test.dart` → exit 1 (`session_guard.dart`/porta ausentes).
-- **Green**: **4 testes** — token nulo **sem consultar** o authenticator, token vazio, token inválido →
-  `ERR_NOT_AUTHENTICATED`; token válido → usuário autorizado.
-- `MeEndpoint`/`MeService` = **padrão de referência** para endpoints privados (EPIC-02+); o guard é
-  **obrigatório** no `MeService` e o `MeEndpoint()` monta um guard vivo por padrão. DTOs: só
-  `MeResultDto` (o `MeDto` foi removido — token fora do body).
-
-### Fatia 2 — guarda de rota no app
-- **Red**: `flutter test test/unit/auth/route_guard_test.dart` → exit 1 (arquivo ausente).
-- **Green**: **4 testes** — rota privada sem sessão → `redirectToLogin`; autenticada → `allow`;
-  pública → `allow`; **após `signOut` volta a redirecionar** (logout integrado ao `SessionController`).
-
-- **Suítes**: server **37 testes** · app auth **24** · `analyze` limpo nos dois · `serverpod generate`
-  (CLI 3.4.13) exit 0.
-- **Guard vivo em produção**: `MeEndpoint()` (construção do dispatch gerado) monta
-  `MeService(SessionGuard(NoSessionAuthenticator()))` → responde **`ERR_NOT_AUTHENTICATED`**.
-  O branch `ERR_INFRA_FAILURE` deixou de existir no `MeService` (guard obrigatório); o adaptador real
-  (token opaco/IDP) substitui o `NoSessionAuthenticator` na composition root quando a emissão existir.
-- **INV-SEC-06**: o token **não** trafega no body — `MeDto` foi removido; o endpoint lê da sessão/header
-  (leitura real = follow-up, hoje devolve `null`).
-- **Prova negativa do guard (mutação, substitui o Red temporal)**: com `NoSessionAuthenticator` mutado
-  para autorizar, o teste *"autenticador padrão nega sessão"* **falha** (`Expected: false / Actual:
-  true`, exit 1); restaurado → **4 verdes**. O teste nasceu **pós-fix** (é prova de que morde, não Red
-  temporal) — o Red de B1 foi o achado do Gate 3 (guard morto) sobre o commit `eab2197`.
-- **Declarado**: roteador real (go_router), mapeamento HTTP 401 e emissão de token pertencem à
-  fachada/UI (follow-up).
+- Red/Green: a preencher.
 
 ## Pendências / coordenação
 
-- **`tools/**` + persistência/hash** estão com o outro agente (brief 07). Não editar.
-- Persistência real, token emitido e roteador (go_router)/UI seguem como follow-up declarado.
-- Rate limit (`SEC-02`) → `UC-01.04`.
+- **`solution/server/**` está com o outro agente** (brief 08: persistência + Argon2id). Não tocar.
+- Wiring real do `AuthClient` (URL do server + token) e router (go_router) = follow-ups declarados.
+- `UC-01.04` (rate limit) segue **bloqueado por colisão** com o brief 08 — abre depois.
 
 ## Próximo UC
 
-- `UC-01.04` (Hardening de auth: rate limit + validação na fronteira).
+- `UC-01.04` (Hardening de auth) — retomar quando o brief 08 fechar.
