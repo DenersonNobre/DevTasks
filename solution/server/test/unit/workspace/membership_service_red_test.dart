@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 class _FakeRepoImpl implements WorkspaceRepository {
   final Map<int, WorkspaceEntity> workspaces = {};
-  final List<DevtasksWorkspaceMember> members = {};
+  final List<DevtasksWorkspaceMember> members = [];
   int _seq = 1;
 
   @override
@@ -74,9 +74,19 @@ void main() {
     test('apenas owner pode adicionar membro (INV-06)', () async {
       final created = await service.createWorkspace(userId: 'owner-1', name: 'W');
       final wsId = created.workspace!.id;
-      final added = await service.addMember(userId: 'owner-1', workspaceId: wsId, role: WorkspaceMemberRole.developer);
+      final added = await service.addMember(
+        callerUserId: 'owner-1',
+        workspaceId: wsId,
+        memberUserId: 'dev-user',
+        role: WorkspaceMemberRole.developer,
+      );
       expect(added.success, isTrue);
-      final resDev = await service.addMember(userId: 'dev-user', workspaceId: wsId, role: WorkspaceMemberRole.viewer);
+      final resDev = await service.addMember(
+        callerUserId: 'dev-user',
+        workspaceId: wsId,
+        memberUserId: 'viewer-user',
+        role: WorkspaceMemberRole.viewer,
+      );
       expect(resDev.success, isFalse);
       expect(resDev.errorCode, equals(WorkspaceErrorCodes.insufficientRole));
     });

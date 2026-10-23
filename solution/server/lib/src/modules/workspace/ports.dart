@@ -26,5 +26,18 @@ abstract interface class WorkspaceRepository {
     required int workspaceId,
     required String name,
   });
+
+  /// Adiciona um membro a um workspace (INV-06: apenas owner pode mutar).
+  Future<WorkspaceWithRole> addMember({
+    required int workspaceId,
+    required String userId,
+    required WorkspaceMemberRole role,
+  });
+
+  /// Remove um membro de um workspace (INV-06).
+  Future<bool> removeMember({
+    required int workspaceId,
+    required String userId,
+  });
 }
 

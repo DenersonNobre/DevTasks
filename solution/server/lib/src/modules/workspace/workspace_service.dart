@@ -174,13 +174,14 @@ class WorkspaceService {
 
   /// Adiciona um membro a um workspace (INV-06: apenas owner pode mutar).
   Future<WorkspaceResultDto> addMember({
-    required String userId,
+    required String callerUserId,
     required int workspaceId,
+    required String memberUserId,
     required WorkspaceMemberRole role,
   }) async {
     final callerRole = await _repository.getMemberRole(
       workspaceId: workspaceId,
-      userId: userId,
+      userId: callerUserId,
     );
     if (callerRole != WorkspaceMemberRole.owner) {
       return WorkspaceResultDto(
@@ -191,7 +192,7 @@ class WorkspaceService {
     }
     final added = await _repository.addMember(
       workspaceId: workspaceId,
-      userId: userId,
+      userId: memberUserId,
       role: role,
     );
     return WorkspaceResultDto(
@@ -209,12 +210,13 @@ class WorkspaceService {
 
   /// Remove um membro de um workspace (INV-06; INV-01 indistinction).
   Future<WorkspaceResultDto> removeMember({
-    required String userId,
+    required String callerUserId,
     required int workspaceId,
+    required String memberUserId,
   }) async {
     final callerRole = await _repository.getMemberRole(
       workspaceId: workspaceId,
-      userId: userId,
+      userId: callerUserId,
     );
     if (callerRole == null) {
       return WorkspaceResultDto(
@@ -232,7 +234,7 @@ class WorkspaceService {
     }
     final removed = await _repository.removeMember(
       workspaceId: workspaceId,
-      userId: userId,
+      userId: memberUserId,
     );
     if (!removed) {
       return WorkspaceResultDto(

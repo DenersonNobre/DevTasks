@@ -116,5 +116,38 @@ class ServerpodWorkspaceRepository implements WorkspaceRepository {
       createdAt: updated.createdAt,
     );
   }
+
+  @override
+  Future<WorkspaceWithRole> addMember({
+    required int workspaceId,
+    required String userId,
+    required WorkspaceMemberRole role,
+  }) async {
+    final member = DevtasksWorkspaceMember(
+      workspaceId: workspaceId,
+      userId: userId,
+      role: role,
+    );
+    await DevtasksWorkspaceMember.db.insertRow(_session, member);
+    final ws = await findById(workspaceId);
+    return WorkspaceWithRole(
+      workspace: ws!,
+      role: role,
+    );
+  }
+
+  @override
+  Future<bool> removeMember({
+    required int workspaceId,
+    required String userId,
+  }) async {
+    final member = await DevtasksWorkspaceMember.db.findFirstRow(
+      _session,
+      where: (t) => t.workspaceId.equals(workspaceId) & t.userId.equals(userId),
+    );
+    if (member == null) return false;
+    await DevtasksWorkspaceMember.db.deleteRow(_session, member);
+    return true;
+  }
 }
 

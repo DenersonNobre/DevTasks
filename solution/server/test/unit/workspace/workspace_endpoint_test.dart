@@ -106,6 +106,33 @@ class _FakeRepo implements WorkspaceRepository {
     workspaces[workspaceId] = updated;
     return updated;
   }
+
+  @override
+  Future<WorkspaceWithRole> addMember({
+    required int workspaceId,
+    required String userId,
+    required WorkspaceMemberRole role,
+  }) async {
+    final member = DevtasksWorkspaceMember(
+      id: members.length + 1,
+      workspaceId: workspaceId,
+      userId: userId,
+      role: role,
+    );
+    members.add(member);
+    final ws = workspaces[workspaceId]!;
+    return WorkspaceWithRole(workspace: ws, role: role);
+  }
+
+  @override
+  Future<bool> removeMember({
+    required int workspaceId,
+    required String userId,
+  }) async {
+    final before = members.length;
+    members.removeWhere((m) => m.workspaceId == workspaceId && m.userId == userId);
+    return members.length < before;
+  }
 }
 
 void main() {
