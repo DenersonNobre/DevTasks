@@ -222,6 +222,9 @@ O wireframe é **mais rico que o MVP aprovado**. Recomendação padrão: **PRD g
 | **D-01** | Colunas do Kanban (W-01) | **3 colunas**: `Backlog → Em Progresso → Concluído` (seguir o wireframe) | PRD RF-10 + Apêndice A (C4) + modelo §9 (`status: backlog\|in_progress\|done`) corrigidos |
 | **D-02** | Papéis (W-02) | **3 papéis**: Owner / Developer / Viewer (seguir o wireframe) | PRD RF-05, matriz §7 e modelo §9 (`role: owner\|developer\|viewer`) corrigidos; SPEC modelará enum de 3 valores |
 | **D-03** | Estado no app (D-ENG-07) | **Riverpod** | D-ENG-07 atualizado — GetX descartado |
+| **D-04** | Branches & Ciclo | Commits de UC em **`develop`** com claim ativo; `main` só release consolidada | Hook commit-msg bloqueia violações mecânicas (2026-10-21) |
+| **D-05** | Runner do Gitea Actions | **Adiado para janela dedicada de DevOps** | GitHub Actions garante oráculo verde de testes, lint e Docker build; runner Gitea será provisionado quando houver suporte a containers |
+| **D-06** | Tema Base & WCAG (NC-17) | **Reatribuído da EPIC-00 para a EPIC-01** | RNF-05/06/07 vinculados ao Design System e telas de autenticação, onde há UI real para validação de contraste e tema |
 
 > Registradas aqui com data e efeito aplicado — nada foi mudado silenciosamente nos documentos.
 
@@ -232,4 +235,4 @@ O wireframe é **mais rico que o MVP aprovado**. Recomendação padrão: **PRD g
 - [ ] Tokens §2.1 revisados (hex `[estimado]` confirmados/ajustados pelo PO)
 - [x] D-01, D-02, D-03 decididos (2026-10-21) → PRD e DESIGN ajustados; SPEC nasce já coerente com as decisões
 - [ ] Tabela §11 com aceite/rejeção por linha (o que vira pós-MVP no plano)
-- [ ] Validação de contraste (WCAG) por ferramenta na EPIC-00
+- [x] Validação de contraste (WCAG) reatribuída para a EPIC-01 (D-06)
