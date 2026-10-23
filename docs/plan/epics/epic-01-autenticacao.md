@@ -23,6 +23,7 @@ sensível (workflow_rules §Gate 2.5).
 | F1.3 | Logout & guarda de rotas privadas | 1 | Depende de F1.2 | ✅ |
 | F1.4 | Hardening de auth (rate limit + validação) | 1 | **Gate 2.5 obrigatório** | ⏳ |
 | F1.5 | Tema base & acessibilidade (D-06) | 1 | RNF-05/06/07 reatribuídos da EPIC-00 | ✅ |
+| F1.6 | Telas de autenticação (D-03) | 1 | Depende de F1.1–F1.3 (app-side) | ⏳ |
 
 ---
 
@@ -192,6 +193,57 @@ autenticação, onde o Design System vira real).
 
 > **Status**: implementado e verificado pelo orquestrador (12 testes de tema verdes, `analyze` limpo,
 > `MaterialApp` com `theme`/`darkTheme`/`ThemeMode.system`) — commit `3042406`.
+
+---
+
+### Feature 1.6 — Telas de Autenticação (D-03 · DESIGN §3)
+
+**Descrição**: telas `/login` e `/register` em Flutter com **Riverpod (D-03)**, consumindo uma porta
+`AuthClient` (o cliente gerado do Serverpod é o adaptador real) e aplicando o `RouteGuard` — estados
+`idle / loading / error / authenticated` do `DESIGN.md` §3, sobre o tema de `F1.5`.
+
+**DoR**: `F1.1`/`F1.2`/`F1.3` ✅ · design de UI aprovado (brief 07 §8) · D-03.
+**DoD**: as duas telas renderizam os 4 estados (testes de widget); validação de formulário usa os VOs
+(`Email`/`Password`); submit válido → `authenticated` → navega para rota privada; logout volta ao login;
+nenhuma senha/PII em log.
+
+#### User Story 1.6.1 — Entrar e criar conta pelas telas
+
+* **Identificador**: `UC-01.06`
+* **Narrativa**:
+  - **Como** visitante/usuário
+  - **Eu quero** telas de login e cadastro claras, com estados de carregamento e erro
+  - **Para que** eu autentique sem ambiguidade e veja o que aconteceu quando falha
+* **Critérios de Aceitação**:
+  ```gherkin
+  Cenário: formulário inválido não envia
+    Dado a tela de login com e-mail malformado e senha curta
+    Quando toco em "Entrar"
+    Então vejo erros inline nos campos e nenhuma chamada ao AuthClient
+
+  Cenário: credencial inválida mostra erro único
+    Dado um AuthClient que responde ERR_INVALID_CREDENTIALS
+    Quando submeto o formulário
+    Então vejo a mensagem única ("E-mail ou senha inválidos.") sem indicar o campo
+
+  Cenário: sucesso navega para área privada
+    Dado um AuthClient que responde sucesso com token
+    Quando submeto o formulário
+    Então o estado vira authenticated e o RouteGuard permite a rota privada
+
+  Cenário: logout volta ao login
+    Dado um usuário autenticado
+    Quando executo logout
+    Então volto para /login e a rota privada volta a redirecionar
+  ```
+* **Tarefas Técnicas**:
+  1. `TASK-01`: porta `AuthClient` + providers Riverpod (state `idle/loading/error/authenticated`)
+  2. `TASK-02`: telas `/login` e `/register` com os estados e validação via VOs
+  3. `TASK-03`: wiring do `RouteGuard` + testes de widget dos 4 estados
+* **Impacto & Arquivos Alvo**:
+  - `solution/app/lib/modules/auth/presentation/**` · `solution/app/lib/global/router/**` [NEW/MODIFY]
+  - `solution/app/pubspec.yaml` (`flutter_riverpod`) · `pubspec.lock` (workspace) [MODIFY]
+  - `solution/app/test/unit/auth/**` · `solution/app/test/widget/**` [NEW]
 
 ---
 
