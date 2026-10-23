@@ -59,6 +59,30 @@
 - **INV-08 (Identidade única & senha)**: `User.email` é único após normalização (trim + lowercase). Senha existe **somente** como hash do framework (`allowUnsecureRandom: false`, D-ENG-04) — texto plano é invariante de rejeição, não erro de implementação.
 - **INV-09 (Membresia única)**: `UNIQUE(workspaceId, userId)`; papel sempre explícito (nenhum dos 3 valores pode ser nulo).
 
+### 3.1 Invariantes de Segurança (namespace canônico `INV-SEC`)
+
+*Fonte única dos IDs. Antes desta seção o namespace vivia apenas em briefs e colidia (`INV-SEC-07` era usado
+para pin de cripto **e** para rate limit; `INV-SEC-12` para `emailVerified` **e** para throttling). Nenhum UC
+pode criar ID novo fora desta tabela — achado sem ID vira follow-up declarado.*
+
+| ID | Invariante | Origem |
+|---|---|---|
+| `INV-SEC-02` | Rate limit: mais de 10 requisições/min do mesmo IP é bloqueado **antes** do crypto | Gate 2.5 (brief 22-02) |
+| `INV-SEC-04` | Anti-enumeração/timing: e-mail existente e inexistente percorrem o **mesmo** caminho e devolvem o mesmo erro; login devolve erro único | Gate 2.5 (brief 22-02) |
+| `INV-SEC-05` | Log estruturado **nunca** contém senha, token, e-mail ou nome em claro | Gate 2.5 (brief 22-02) |
+| `INV-SEC-07` | Dependência criptográfica **pinada** (sem faixa aberta); gate de pin no CI é `INV-SEC-11` | Gate 2.5 (brief 22-02) |
+| `INV-SEC-08` | Política de senha: 12..128 com minúscula, maiúscula e dígito; fora disso → `ERR_VALIDATION` | Gate 2.5 (brief 22-02) |
+| `INV-SEC-09` | DTO de cadastro aceita **apenas** `name`/`email`/`password` (mass assignment) | Gate 2.5 (brief 22-02) |
+| `INV-SEC-10` | Salt/pepper gerado exclusivamente por `Random.secure()` | Gate 2.5 (brief 22-02) |
+| `INV-SEC-11` | Gate de pin de dependências no CI (inclui prevenção de drift da CLI do framework) | brief 22-03 |
+| `INV-SEC-12` | Cadastro persiste o usuário com `emailVerified == false` | Gate 2.5 (brief 22-02) |
+| `INV-SEC-13` | Throttling executa **antes** de hash/verify: a 11ª tentativa não consome custo de senha | Gate 2.5 (`UC-01.04`, 2026-10-23) |
+| `INV-SEC-14` | IP só existe em memória efêmera do processo: **nunca** é logado nem persistido (LGPD) | Gate 2.5 (`UC-01.04`, 2026-10-23) |
+| `INV-SEC-15` | `X-Forwarded-For`/`Forwarded` não são fonte de identidade sem proxy reverso confiável declarado | Gate 2.5 (`UC-01.04`, 2026-10-23) |
+
+> IDs `INV-SEC-01/03/06` aparecem apenas como referência em briefs antigos, sem definição normativa
+> rastreável: estão **reservados** e não podem ser reutilizados sem definição aqui.
+
 ---
 
 ## 4. Modelos de Domínio & Agregados
