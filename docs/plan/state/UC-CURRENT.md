@@ -32,7 +32,8 @@ header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a
 ## Interfaces
 
 - `SessionGuard(authenticator).requireSession(token)` → `GuardOutcome` (`user` | `code`).
-- `MeService(guard?)` → `MeResultDto` (sem guard → `ERR_INFRA_FAILURE`, não finge).
+- `MeService(guard)` (**guard obrigatório**) → `MeResultDto`; sem token/válido ⇒ `ERR_NOT_AUTHENTICATED`.
+  O `MeEndpoint()` usa `SessionGuard(NoSessionAuthenticator())` por padrão (guard **vivo**).
 - `RouteGuard.decide({requiresSession, session})` → `RouteDecision.allow | redirectToLogin`.
 
 ## Arquivos-alvo
@@ -68,11 +69,15 @@ header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a
 - **Suítes**: server **37 testes** · app auth **24** · `analyze` limpo nos dois · `serverpod generate`
   (CLI 3.4.13) exit 0.
 - **Guard vivo em produção**: `MeEndpoint()` (construção do dispatch gerado) monta
-  `MeService(SessionGuard(NoSessionAuthenticator()))` → responde **`ERR_NOT_AUTHENTICATED`** (não
-  `ERR_INFRA_FAILURE`). O adaptador real (token opaco/IDP) substitui o `NoSessionAuthenticator` na
-  composition root quando a emissão de token existir (follow-up declarado).
+  `MeService(SessionGuard(NoSessionAuthenticator()))` → responde **`ERR_NOT_AUTHENTICATED`**.
+  O branch `ERR_INFRA_FAILURE` deixou de existir no `MeService` (guard obrigatório); o adaptador real
+  (token opaco/IDP) substitui o `NoSessionAuthenticator` na composition root quando a emissão existir.
 - **INV-SEC-06**: o token **não** trafega no body — `MeDto` foi removido; o endpoint lê da sessão/header
   (leitura real = follow-up, hoje devolve `null`).
+- **Prova negativa do guard (mutação, substitui o Red temporal)**: com `NoSessionAuthenticator` mutado
+  para autorizar, o teste *"autenticador padrão nega sessão"* **falha** (`Expected: false / Actual:
+  true`, exit 1); restaurado → **4 verdes**. O teste nasceu **pós-fix** (é prova de que morde, não Red
+  temporal) — o Red de B1 foi o achado do Gate 3 (guard morto) sobre o commit `eab2197`.
 - **Declarado**: roteador real (go_router), mapeamento HTTP 401 e emissão de token pertencem à
   fachada/UI (follow-up).
 
