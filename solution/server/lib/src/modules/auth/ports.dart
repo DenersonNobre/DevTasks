@@ -7,8 +7,17 @@ library;
 /// Códigos de falha que espelham a taxonomia da `SPEC.md` §6.
 ///
 /// O server é um pacote separado e não importa o kernel da app; a paridade dos
-/// códigos (`ERR_VALIDATION`, `ERR_EMAIL_ALREADY_TAKEN`) é o contrato.
-enum SignUpErrorCode { validation, emailAlreadyTaken, infra }
+/// códigos (`ERR_VALIDATION`, `ERR_EMAIL_ALREADY_TAKEN`, `ERR_INFRA_FAILURE`) é o contrato.
+enum SignUpErrorCode {
+  validation('ERR_VALIDATION'),
+  emailAlreadyTaken('ERR_EMAIL_ALREADY_TAKEN'),
+  infra('ERR_INFRA_FAILURE');
+
+  const SignUpErrorCode(this.wireCode);
+
+  /// Código estável exposto no contrato (fonte única — sem strings duplicadas).
+  final String wireCode;
+}
 
 /// Falha esperada de negócio do cadastro (nunca exceção para fluxo esperado).
 class SignUpFailure {

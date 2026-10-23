@@ -31,6 +31,7 @@ redis:
 maxRequestSize: 524288
 
 sessionLogs:
-  persistentEnabled: true
-  consoleEnabled: true
+  # INV-SEC-05: payloads de auth contêm credenciais; sessão não é logada.
+  persistentEnabled: false
+  consoleEnabled: false
   consoleLogFormat: text

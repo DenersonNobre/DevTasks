@@ -26,21 +26,24 @@ lockfile (`INV-SEC-11`). Riverpod (D-03) é decisão prévia do PO e não altera
 
 ## Matriz de aceite (corrigida — cruza Gate 2.5 + Gherkin)
 
-| # | Invariante | Caso/asserção |
-|:--|:---|:---|
-| 1 | **INV-08** | `"  BIA@Ex.COM "` → persiste `bia@ex.com`; 2º cadastro do mesmo e-mail (qualquer caixa) → `ERR_EMAIL_ALREADY_TAKEN` → **409** |
-| 2 | **INV-SEC-04** | e-mail existente × inexistente → **mesmo** `Result.Fail(ERR_EMAIL_ALREADY_TAKEN)`; hasher **spy** chamado nos dois caminhos (sem assert de wall-clock) |
-| 3 | **INV-SEC-08** | senha `< 12` / `> 128` / sem maiúscula / sem dígito → `ERR_VALIDATION` **400** **sem** hash nem escrita no banco; válida → segue |
-| 4 | **INV-SEC-09** | payload com `role`/`workspaceId`/`emailVerified` → **400** (DTO aceita só `name/email/password`) |
-| 5 | **INV-SEC-05** | log capturado não contém e-mail/nome/senha/**token** em claro (e-mail só como hash) |
-| 6 | **INV-SEC-12** | usuário criado com `emailVerified == false` |
-| 7 | **INV-SEC-11** | `serverpod_auth_server` em versão **exata** (`3.4.13`) e `pubspec.lock` coerente |
-| 8 | **INV-SEC-10** | configuração de auth usa `allowUnsecureRandom: false` (assert de **config**, não de interface fictícia) |
-| 9 | Gherkin US-1.1.1 | cadastro válido → conta criada com e-mail normalizado e **sessão iniciada** (resposta com sessão/token; status de criação registrado) |
-| 10 | Persistência | migração gerada (`serverpod create-migration`) **versionada** em `solution/server/migrations/` |
+| # | Item | Status | Evidência / Dono |
+|:--|:---|:---:|:---|
+| 1 | **INV-08** — normalização + duplicata | **ENTREGUE** | handler + testes (`"  BIA@Ex.COM "` → `bia@ex.com`; duplicata → `ERR_EMAIL_ALREADY_TAKEN`) |
+| 2 | **INV-SEC-04** — hash sempre (anti-timing) | **ENTREGUE** | spy: `hashCalls == 1` no caminho de duplicata |
+| 3 | **INV-SEC-08** — política de senha | **ENTREGUE** | 4 casos inválidos → `ERR_VALIDATION` com `hashCalls == 0` |
+| 4 | **INV-SEC-09** — DTO restrito | **PARCIAL** | DTO só tem `name/email/password`; **não há** rejeição de chave extra (RPC descarta chaves desconhecidas) — 400 na fachada REST (**não entregue**) |
+| 5 | **INV-SEC-05** — PII em log | **PARCIAL** | `sessionLogs` desligado em dev/prod (mitigação); **falta** teste de log capturado |
+| 6 | **INV-SEC-12** — `emailVerified=false` | **NÃO ENTREGUE** | é default do schema; a prova unitária anterior era tautológica (removida) → **slice de persistência** |
+| 7 | **INV-SEC-11** — pin exato | **ENTREGUE** | `serverpod*` em `3.4.13` + `tools/pin-gate.ps1` no CI |
+| 8 | **INV-SEC-10** — `allowUnsecureRandom:false` | **NÃO ENTREGUE** | o knob **não existe** na 3.4.13 sem o IDP; vincula-se ao adapter de hash → follow-up |
+| 9 | Gherkin — sessão no cadastro | **NÃO ENTREGUE** | o contrato não emite sessão/token → **`UC-01.02`** (login/sessão) |
+| 10 | Migração versionada | **PARCIAL** | a migração tem **só tabelas do framework/módulo auth** (19 `serverpod_*`); **sem tabela de domínio** → slice de persistência |
 
-> Não usar `UserStatus.pendingVerification` (campo inexistente na SPEC). Não testar timing por
-> relógio (flaky) — usar spy do hasher injetado.
+> **Correção pós-Gate 3 (rodada 1)**: a matriz anterior marcava itens sem enforcement como cobertos
+> (6, 8, 9) e descrevia a migração como "schema do modelo" — corrigido aqui. `pubspec.lock`: o
+> `flutter pub get` do workspace mantém `serverpod*` como `transitive` (comportamento canônico do pub em
+> workspace) — a alegação de "lock obsoleto" foi **refutada por medição** (`git status` do lock vazio
+> após o pub get).
 
 ## Interfaces
 
@@ -59,8 +62,12 @@ lockfile (`INV-SEC-11`). Riverpod (D-03) é decisão prévia do PO e não altera
 ## Estado de execução
 
 - Claim: ativo — `UC-01.01`, owner `coder`.
-- Modelo do Coder: `openrouter/cohere/north-mini-code:free` (mapa §2.1).
-- Implementação: **não iniciada** (hand-off pronto).
+- Modelo do Coder: `openrouter/cohere/north-mini-code:free` (mapa §2.1) — **falhou 2×**; implementação
+  feita pelo orquestrador (registrado acima).
+- **Gate 3 rodada 1: REJEITADO (confiança Alta)** — evidência sobredeclarada (itens 6/8/9, migração)
+  e teste tautológico; correções aplicadas nesta revisão (matriz reconciliada, nome validado,
+  `sessionLogs` off, service testado, enum com `wireCode`, `config/test.yaml` uniformizado).
+- **Gate 3 rodada 2: pendente** (re-submissão após as correções).
 
 ## Evidência (preenchida pelo Coder + orquestrador)
 
@@ -74,20 +81,37 @@ lockfile (`INV-SEC-11`). Riverpod (D-03) é decisão prévia do PO e não altera
 - `Email.parse` normaliza `"  BIA@Ex.COM "` → `bia@ex.com`; `Password.toString()` → `Password(***)` (sem vazar segredo).
 - `pwsh tools/dip-gate.ps1` → exit 0 (domínio puro).
 
-### Fatia 2 — Handler + endpoint + contrato gerado (server)
+### Fatia 2 — Handler + serviço + endpoint + contrato gerado (server)
 - **Red**: `dart test test/unit/auth/sign_up_handler_test.dart` → exit 1 (portas/handler ausentes).
-- **Green**: `+8: All tests passed!` (normalização, duplicata com **hash executado**, senha inválida sem hash, `emailVerified == false`).
-- `serverpod generate` → exit 0 (endpoint `auth` registrado; `SignUpDto`/`SignUpResultDto` no client versionado).
-- `serverpod create-migration` → `migrations/20261023024432194` (schema do modelo + módulo de auth).
-- `flutter analyze` → app/server/client **sem issues** · `tools/test.ps1` core **34,75 s** (≤60 s) · `tools/build.ps1` → artefato **14,14 MB**.
-- Suíte `-Governance`: **todas as 9 suítes `[OK]`** e cobertura app **96,26%** (≥70) — porém o **teto de tempo da governança estourou (712,91 s × 600 s)** → `R-01` (dono: trabalho paralelo) segue **aberto**; não afrouxei o teto.
+- **Green**: `dart test` → **18 testes verdes**: handler (normalização, duplicata com **hash executado**,
+  senha inválida sem hash, nome obrigatório), `SignUpService` (mapeamento sucesso/duplicata/validação/
+  sem-adaptadores) e smoke/health.
+- `serverpod generate` → exit 0 (endpoint `auth` registrado; DTOs no client versionado). **Correção**:
+  a uniformidade de banco exigida pelo 3.4.13 foi resolvida no `config/test.yaml` (seção `database`
+  adicionada; os testes constroem `ServerpodConfig` próprio e não leem o arquivo).
+- `serverpod create-migration` → `migrations/20261023024432194` — **apenas tabelas do framework/módulo
+  auth** (sem tabela de domínio; ver item 10 da matriz).
+- `flutter analyze` → app/server/client **sem issues** · `tools/test.ps1` core **34,75 s** (≤60 s) ·
+  `tools/build.ps1` → artefato **14,14 MB**.
+- Suíte `-Governance`: **9/9 suítes `[OK]`** e cobertura app **96,26%** — porém o **teto de tempo da
+  governança estourou (712,91 s × 600 s)** → `R-01` (trabalho paralelo) **aberto**; teto **não** afrouxado.
 
 ### Lacunas declaradas (não fingidas)
-1. **Adaptador de persistência (DB)** não implementado: sem ele o `AuthEndpoint` responde `ERR_INFRA_FAILURE` — **não finge sucesso**. Requer Postgres provisionado para prova de runtime.
-2. **Adaptador de hash**: o hash do framework **não é API pública** em `serverpod_auth_server 3.4.13` (só `src/business/password_hash.dart`); o caminho suportado (IDP) exige 3.5+. Decisão do PO: handler próprio (pin mantido) — adapter de hash = follow-up.
-3. **UI `/register` (TASK-03)**: adiada (novo slice de UI).
-4. **Mapeamento HTTP 409/400**: o endpoint RPC devolve `SignUpResultDto` tipado; a tradução para status HTTP pertence à fachada REST (decisão registrada).
-5. `R-01` (teto de governança) e `R-03` (cobertura do server) são do trabalho paralelo (o outro agente já adicionou `test_pin_gate.ps1` e a cobertura do server em `tools/test.ps1`).
+1. **Persistência (DB)**: sem adaptador, `AuthEndpoint` responde `ERR_INFRA_FAILURE` (não finge sucesso).
+   Inclui obrigatoriamente **`UNIQUE` no e-mail normalizado + tradução da violação para
+   `ERR_EMAIL_ALREADY_TAKEN`** — hoje o `existsByEmail`→`create` é **check-then-act (TOCTOU)** e não há
+   enforcement de unicidade no banco. Também é onde nasce o default `emailVerified=false` (item 6).
+2. **Adaptador de hash**: o hasher do framework **não é API pública** em `3.4.13` (só `src/`);
+   `allowUnsecureRandom` (INV-SEC-10) não é configurável sem o IDP (3.5+). Sem decisão do PO, não
+   importo API privada nem adiciono dependência.
+3. **Sessão no cadastro** (Gherkin "login automático") → **`UC-01.02`**.
+4. **UI `/register` (TASK-03)** → novo slice de UI.
+5. **Mapeamento HTTP 409/400** → fachada REST (RPC devolve `SignUpResultDto`); inclui a rejeição de
+   chaves desconhecidas (INV-SEC-09 parcial).
+6. **Teste de log capturado (INV-SEC-05)** pendente; mitigação aplicada (`sessionLogs` off em dev/prod).
+7. **Fonte única da política de senha** (app × server): hoje duplicada — exige pacote compartilhado.
+8. **Red versionado**: os Reds foram capturados em prosa (erro de compilação), sem artefato no repo.
+9. `R-01` (teto de governança) segue com o trabalho paralelo.
 
 ## Pendências declaradas
 

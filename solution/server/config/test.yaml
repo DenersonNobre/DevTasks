@@ -22,6 +22,16 @@ redis:
   host: localhost
   port: 6379
 
+# Serverpod 3.4.13 exige configuração de banco uniforme entre run modes no `generate`.
+# Os testes de unidade/contrato constroem `ServerpodConfig` próprio (sem banco) e não
+# leem este arquivo; a seção existe apenas para satisfazer a uniformidade.
+database:
+  host: localhost
+  port: 5432
+  name: devtasks_test
+  user: devtasks
+  requireSsl: false
+
 sessionLogs:
   persistentEnabled: false
   consoleEnabled: false

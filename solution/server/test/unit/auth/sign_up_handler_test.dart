@@ -120,14 +120,28 @@ void main() {
       });
     }
 
-    test('aceita senha válida e devolve usuário não verificado', () async {
+    test('aceita senha válida e persiste com o nome normalizado', () async {
       final repository = _FakeUserRepository();
       final handler = SignUpHandler(repository, _SpyPasswordHasher());
 
-      final outcome = await handler.execute(_command());
+      final outcome = await handler.execute(_command(name: '  Bia  '));
 
       expect(outcome.isSuccess, isTrue);
-      expect(outcome.user!.emailVerified, isFalse);
+      expect(repository.created.single.name, 'Bia');
+    });
+  });
+
+  group('SignUpHandler — nome obrigatório (RF-01)', () {
+    test('nome vazio falha na validação sem chamar o hasher', () async {
+      final hasher = _SpyPasswordHasher();
+      final handler = SignUpHandler(_FakeUserRepository(), hasher);
+
+      final outcome = await handler.execute(_command(name: '   '));
+
+      expect(outcome.isSuccess, isFalse);
+      expect(outcome.failure!.code, SignUpErrorCode.validation);
+      expect(outcome.failure!.field, 'name');
+      expect(hasher.hashCalls, 0);
     });
   });
 }

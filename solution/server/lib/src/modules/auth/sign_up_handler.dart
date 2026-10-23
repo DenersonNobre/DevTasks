@@ -48,7 +48,14 @@ class SignUpHandler {
 
   Future<SignUpOutcome> execute(SignUpCommand command) async {
     final email = command.email.trim().toLowerCase();
+    final name = command.name.trim();
 
+    if (name.isEmpty) {
+      return _validation('Nome é obrigatório.', 'name');
+    }
+    if (name.length > 100) {
+      return _validation('Nome deve ter no máximo 100 caracteres.', 'name');
+    }
     if (email.isEmpty) {
       return _validation('E-mail é obrigatório.', 'email');
     }
@@ -76,7 +83,7 @@ class SignUpHandler {
     }
 
     final user = await _repository.create(
-      name: command.name.trim(),
+      name: name,
       email: email,
       passwordHash: passwordHash,
     );
