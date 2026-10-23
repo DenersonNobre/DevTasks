@@ -225,8 +225,23 @@ O wireframe é **mais rico que o MVP aprovado**. Recomendação padrão: **PRD g
 | **D-04** | Branches & Ciclo | Commits de UC em **`develop`** com claim ativo; `main` só release consolidada | Hook commit-msg bloqueia violações mecânicas (2026-10-21) |
 | **D-05** | Runner do Gitea Actions | **Adiado para janela dedicada de DevOps** | GitHub Actions garante oráculo verde de testes, lint e Docker build; runner Gitea será provisionado quando houver suporte a containers |
 | **D-06** | Tema Base & WCAG (NC-17) | **Reatribuído da EPIC-00 para a EPIC-01** | RNF-05/06/07 vinculados ao Design System e telas de autenticação, onde há UI real para validação de contraste e tema |
+| **D-07** | Padrão de apresentação (app) | **MVVM por slice, unidirecional**: 1 caso de uso = 1 ViewModel com **estado imutável** + **intents**; View renderiza e despacha; Model = VOs/handlers/portas | Riverpod é o **mecanismo** (D-03), não a arquitetura. Estado transversal (sessão/tema) em `global/` — slice **observa**, nunca duplica. VM sem `BuildContext`/I/O; **código enxuto** com Object Calisthenics, SOLID e Clean Code **ponta a ponta**, verificados no Gate 3 (2026-10-23) |
 
 > Registradas aqui com data e efeito aplicado — nada foi mudado silenciosamente nos documentos.
+
+### 12.1 Regras de execução da D-07 (vinculantes para o app)
+
+1. **1 slice = 1 ViewModel** (por caso de uso): `presentation/<slice>/<slice>_view_model.dart` +
+   `<slice>_view.dart` + `<slice>_state.dart`. Proibido ViewModel "de módulo" acumulando fatias.
+2. **Estado imutável + intents**: `LoginState` (campos `final`) e métodos-intenção (`submit()`, `retry()`).
+   Nada de campo público mutável, nada de *two-way binding* (não existe em Flutter; emular cria loop).
+3. **VM puro**: sem `BuildContext`, sem I/O — portas injetadas (Riverpod `Provider`/`Notifier`).
+   I/O e mapeamento vivem em `infrastructure/` e no domínio.
+4. **Transversal só em `global/`** (sessão, tema, config); o VM do slice **observa** o estado global.
+5. **Qualidade de código (DoD do slice)**: um nível de indentação por método, sem `else` de validação,
+   sem números/strings mágicos, VOs para primitivos de negócio, sem comentário-ruído, arquivos pequenos;
+   o **Gate 3** audita explicitamente Calisthenics + SOLID + Clean Code no diff.
+6. **Testes**: unit do ViewModel com fakes (base da pirâmide) ≫ widget test (renderização/eventos).
 
 ---
 

@@ -32,3 +32,6 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
 - **D-03**: Gerência de estado do app = **Riverpod** (GetX descartado).
 - **D-04**: Branches = ciclo por UC com commits assinados direto em **`develop`**; `main` só via
   release; hook F0.04 bloqueia commit `(UC-XX.YY)` fora de `develop` (2026-10-21).
+- **D-07**: Apresentação do app = **MVVM por slice, unidirecional** (1 UC = 1 ViewModel com estado
+  imutável + intents; Riverpod é o mecanismo); estado transversal em `global/`; código enxuto com
+  **Object Calisthenics + SOLID + Clean Code ponta a ponta** auditados no Gate 3 (2026-10-23).

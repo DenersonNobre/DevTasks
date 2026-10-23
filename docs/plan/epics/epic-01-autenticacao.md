@@ -198,9 +198,11 @@ autenticação, onde o Design System vira real).
 
 ### Feature 1.6 — Telas de Autenticação (D-03 · DESIGN §3)
 
-**Descrição**: telas `/login` e `/register` em Flutter com **Riverpod (D-03)**, consumindo uma porta
-`AuthClient` (o cliente gerado do Serverpod é o adaptador real) e aplicando o `RouteGuard` — estados
-`idle / loading / error / authenticated` do `DESIGN.md` §3, sobre o tema de `F1.5`.
+**Descrição**: telas `/login` e `/register` em Flutter com **Riverpod (D-03)** e **MVVM por slice
+(D-07)**: 1 caso de uso = 1 ViewModel (estado imutável + intents), View renderiza/despacha, Model =
+VOs/portas; estado transversal (sessão) em `global/`. Consome uma porta `AuthClient` (o cliente gerado
+do Serverpod é o adaptador real) e aplica o `RouteGuard` — estados `idle / loading / error /
+authenticated` do `DESIGN.md` §3, sobre o tema de `F1.5`.
 
 **DoR**: `F1.1`/`F1.2`/`F1.3` ✅ · design de UI aprovado (brief 07 §8) · D-03.
 **DoD**: as duas telas renderizam os 4 estados (testes de widget); validação de formulário usa os VOs
