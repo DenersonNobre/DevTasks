@@ -6,6 +6,7 @@
 ## UC corrente
 
 **UC-01.08** — Wiring Real do App: Adaptadores, Guard & Boot (EPIC-01 · F1.8). Status: **Concluído ✅**.
+**UC-02.03** — MembershipGuard transversal (INV-06): apenas `owner` pode mutar membros. Status: **Em execução** 🔄.
 
 **Gate 2.5: COMPLETED** — Invariantes de segurança satisfeitas:
 - `INV-SEC-05`: Senha/PII nunca logadas ou impressas.
