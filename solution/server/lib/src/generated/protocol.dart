@@ -14,6 +14,10 @@
 import 'package:serverpod/serverpod.dart' as _i1;
 import 'package:serverpod/protocol.dart' as _i2;
 import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i3;
+import 'sign_up_dto.dart' as _i4;
+import 'sign_up_result_dto.dart' as _i5;
+export 'sign_up_dto.dart';
+export 'sign_up_result_dto.dart';
 
 class Protocol extends _i1.SerializationManagerServer {
   Protocol._();
@@ -54,6 +58,18 @@ class Protocol extends _i1.SerializationManagerServer {
       }
     }
 
+    if (t == _i4.SignUpDto) {
+      return _i4.SignUpDto.fromJson(data) as T;
+    }
+    if (t == _i5.SignUpResultDto) {
+      return _i5.SignUpResultDto.fromJson(data) as T;
+    }
+    if (t == _i1.getType<_i4.SignUpDto?>()) {
+      return (data != null ? _i4.SignUpDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i5.SignUpResultDto?>()) {
+      return (data != null ? _i5.SignUpResultDto.fromJson(data) : null) as T;
+    }
     try {
       return _i3.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
@@ -65,6 +81,8 @@ class Protocol extends _i1.SerializationManagerServer {
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
+      _i4.SignUpDto => 'SignUpDto',
+      _i5.SignUpResultDto => 'SignUpResultDto',
       _ => null,
     };
   }
@@ -78,6 +96,12 @@ class Protocol extends _i1.SerializationManagerServer {
       return (data['__className__'] as String).replaceFirst('devtasks.', '');
     }
 
+    switch (data) {
+      case _i4.SignUpDto():
+        return 'SignUpDto';
+      case _i5.SignUpResultDto():
+        return 'SignUpResultDto';
+    }
     className = _i2.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod.$className';
@@ -94,6 +118,12 @@ class Protocol extends _i1.SerializationManagerServer {
     var dataClassName = data['className'];
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
+    }
+    if (dataClassName == 'SignUpDto') {
+      return deserialize<_i4.SignUpDto>(data['data']);
+    }
+    if (dataClassName == 'SignUpResultDto') {
+      return deserialize<_i5.SignUpResultDto>(data['data']);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);

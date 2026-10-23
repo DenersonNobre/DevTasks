@@ -7,35 +7,39 @@
 ## Contexto
 
 Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
-**EPIC-00 encerrada** (release `v0.1.0` publicada) e **EPIC-01 (Autenticação) em execução**.
+**EPIC-00 encerrada** (release `v0.1.0` publicada) · **EPIC-01 (Autenticação) em execução**.
 
-## Estado verificado (2026-10-22)
+## Estado verificado (2026-10-23)
 
-- **`UC-01.00` (F1.0 — Wiring do Stack Serverpod) ✅**: `serverpod` + `serverpod_auth_server`
-  (pin `3.4.13`), scaffold em `solution/server/config/`, `/health` preservado (web **8082**),
-  `solution/client` **gerado e versionado** (membro do workspace — fecha a dívida do UC-00.02),
-  build assere o artefato, Docker/CI adaptados. Gates 3 (review) e 4 (qa) aprovados.
-- **Gates ativos**: NFR-03 (core ≤ 60 s — falha) · NFR-04 (global ≥70% / domínio ≥90% — falha) ·
-  hooks `commit-msg` (claim + D-04) e `pre-commit` (encoding).
-- **Remotes**: `origin` (Gitea) + `github` em paridade; `main` = `v0.1.0` (`0e57b38`).
-- **Gate 2.5 do `UC-01.01` já invocado** (auth): 8 achados (`SEC-01..08`), `INV-SEC-01..12`
-  propostas — implementação pendente no próprio UC.
-- **Achados de auditoria abertos**: NC-17 (tema/WCAG — pertence a épico de UI) e NC-25 (contagem de
-  linhas citada no hand-off). Fechados: NC-15 (DIP gate), NC-22 (placeholder), NC-24 (hooksPath) e
-  NC-26 (release `v0.1.0`).
-- **Residuais do Gate 4 do `UC-01.00`**: R-01 (suíte de governança ~408 s × teto 600 s) e R-03
-  (cobertura do server sem `lcov`). Docker do novo stack **provado no CI** (run `036af42` = success).
+- **`UC-01.00` (F1.0 — wiring Serverpod) ✅** consolidado e publicado (`53ed8dd`).
+- **`UC-01.01` (F1.1 — cadastro) — fatias 1–2 implementadas, Gates 3/4 PENDENTES**:
+  - app: `Email`/`Password` (INV-08 + política 12–128) — **13 testes** verdes;
+  - server: `SignUpHandler` + portas DIP (`UserRepository`/`PasswordHasher`) — **8 testes** verdes
+    (hash também no caminho de duplicata, `emailVerified=false`);
+  - contrato: `auth.signUp` + `SignUpDto`/`SignUpResultDto` gerados; migração
+    `migrations/20261023024432194`; build assere artefato (14,14 MB); analyze limpo nos 3 membros.
+  - **Lacunas declaradas**: adaptador de persistência (DB) e de hash (API privada em 3.4.13),
+    UI `/register` e mapeamento HTTP 409/400 → follow-ups.
+- **Suíte funcional verde**: 9/9 suítes de governança `[OK]` · core **34,75 s** (≤60) · cobertura app
+  **96,26%** · **R-01 ABERTO**: teto de governança estourado (**712,91 s × 600 s**) — dono: trabalho
+  paralelo (suíte nova `test_pin_gate` + R-03 + carga concorrente). **Teto não foi afrouxado.**
+- **Worktree compartilhado**: `tools/test.ps1` e `tools/tests/test_test_runner.ps1` têm mudanças
+  **dos dois agentes** (não commitadas por mim); briefs em `docs/plan/briefs/` também do outro agente.
+- **Remotes**: `origin` (Gitea) e `github` em paridade no último push (`9782d9d`); commit deste ciclo
+  **não publicado**.
+- Claim `UC-01.01` (owner `coder`) ativo até ~04:18 UTC — renove no próximo ciclo.
 
-## Próximo passo (EPIC-01 · `UC-01.01`)
+## Próximo passo (retomar `UC-01.01`)
 
-1. Claim → Coder em TDD: endpoint de sign-up + tela `/register` (normalização INV-08, duplicata
-   `ERR_EMAIL_ALREADY_TAKEN` 409) **respeitando o Gate 2.5**: `INV-SEC-04` (erro/timing único),
-   `INV-SEC-08` (senha 12–128 + complexidade), `INV-SEC-09` (DTO só `name/email/password`),
-   `INV-SEC-05` (zero PII em log), `INV-SEC-12` (`emailVerified=false`).
-2. Gate 3 (`review`) → Gate 4 (`qa`) → commit `(UC-01.01)` → release do claim.
+1. **Gate 3** (`review`) + **Gate 4** (`qa`) sobre o diff de `solution/**` + docs (evidência em
+   `UC-CURRENT.md`); corrigir achados.
+2. Consolidação: marcar F1.1 `✅` no épico + matriz (`1/5 → 2/5`, `9/27 → 10/27`) e `claims release`.
+3. Push (exige pedido explícito + 3 evidências).
+4. Fechar **R-01** (teto de governança) antes de declarar a EPIC-01 saudável; follow-ups do UC
+   (persistência/hash/UI) viram slices próprios.
 
 ## Travas vivas
 
 - Ciclo em `develop`; commit de UC exige claim ativo; `main` só por release (D-04).
 - Push exige pedido explícito + 3 evidências.
-- `UC-01.00` em consolidação não está commitado — não misturar com o próximo UC.
+- Não commitar arquivos de harness do outro agente sem coordenação (árvore compartilhada).

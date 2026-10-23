@@ -12,11 +12,45 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
 import 'package:serverpod/serverpod.dart' as _i1;
-import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i2;
+import '../endpoints/auth_endpoint.dart' as _i2;
+import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i3;
+import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i4;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
   void initializeEndpoints(_i1.Server server) {
-    modules['serverpod_auth'] = _i2.Endpoints()..initializeEndpoints(server);
+    var endpoints = <String, _i1.Endpoint>{
+      'auth': _i2.AuthEndpoint()
+        ..initialize(
+          server,
+          'auth',
+          null,
+        ),
+    };
+    connectors['auth'] = _i1.EndpointConnector(
+      name: 'auth',
+      endpoint: endpoints['auth']!,
+      methodConnectors: {
+        'signUp': _i1.MethodConnector(
+          name: 'signUp',
+          params: {
+            'dto': _i1.ParameterDescription(
+              name: 'dto',
+              type: _i1.getType<_i3.SignUpDto>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['auth'] as _i2.AuthEndpoint).signUp(
+                session,
+                params['dto'],
+              ),
+        ),
+      },
+    );
+    modules['serverpod_auth'] = _i4.Endpoints()..initializeEndpoints(server);
   }
 }

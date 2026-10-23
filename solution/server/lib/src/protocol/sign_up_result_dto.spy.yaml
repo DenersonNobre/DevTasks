@@ -1,0 +1,6 @@
+class: SignUpResultDto
+fields:
+  success: bool
+  userId: String?
+  errorCode: String?
+  message: String?

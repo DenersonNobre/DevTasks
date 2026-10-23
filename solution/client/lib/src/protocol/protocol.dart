@@ -12,7 +12,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i2;
+import 'sign_up_dto.dart' as _i2;
+import 'sign_up_result_dto.dart' as _i3;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i4;
+export 'sign_up_dto.dart';
+export 'sign_up_result_dto.dart';
 export 'client.dart';
 
 class Protocol extends _i1.SerializationManager {
@@ -49,14 +53,28 @@ class Protocol extends _i1.SerializationManager {
       }
     }
 
+    if (t == _i2.SignUpDto) {
+      return _i2.SignUpDto.fromJson(data) as T;
+    }
+    if (t == _i3.SignUpResultDto) {
+      return _i3.SignUpResultDto.fromJson(data) as T;
+    }
+    if (t == _i1.getType<_i2.SignUpDto?>()) {
+      return (data != null ? _i2.SignUpDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i3.SignUpResultDto?>()) {
+      return (data != null ? _i3.SignUpResultDto.fromJson(data) : null) as T;
+    }
     try {
-      return _i2.Protocol().deserialize<T>(data, t);
+      return _i4.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
     return super.deserialize<T>(data, t);
   }
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
+      _i2.SignUpDto => 'SignUpDto',
+      _i3.SignUpResultDto => 'SignUpResultDto',
       _ => null,
     };
   }
@@ -70,7 +88,13 @@ class Protocol extends _i1.SerializationManager {
       return (data['__className__'] as String).replaceFirst('devtasks.', '');
     }
 
-    className = _i2.Protocol().getClassNameForObject(data);
+    switch (data) {
+      case _i2.SignUpDto():
+        return 'SignUpDto';
+      case _i3.SignUpResultDto():
+        return 'SignUpResultDto';
+    }
+    className = _i4.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod_auth.$className';
     }
@@ -83,9 +107,15 @@ class Protocol extends _i1.SerializationManager {
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
     }
+    if (dataClassName == 'SignUpDto') {
+      return deserialize<_i2.SignUpDto>(data['data']);
+    }
+    if (dataClassName == 'SignUpResultDto') {
+      return deserialize<_i3.SignUpResultDto>(data['data']);
+    }
     if (dataClassName.startsWith('serverpod_auth.')) {
       data['className'] = dataClassName.substring(15);
-      return _i2.Protocol().deserializeByClassName(data);
+      return _i4.Protocol().deserializeByClassName(data);
     }
     return super.deserializeByClassName(data);
   }
@@ -100,7 +130,7 @@ class Protocol extends _i1.SerializationManager {
       return null;
     }
     try {
-      return _i2.Protocol().mapRecordToJson(record);
+      return _i4.Protocol().mapRecordToJson(record);
     } catch (_) {}
     throw Exception('Unsupported record type ${record.runtimeType}');
   }

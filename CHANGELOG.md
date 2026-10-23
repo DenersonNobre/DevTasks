@@ -8,6 +8,12 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ### Adicionado
 
+- **`UC-01.01` — cadastro de usuário (fatias 1–2, TDD)**: VOs `Email`/`Password` no app (normalização
+  INV-08 + política 12–128 com maiúscula/minúscula/dígito), handler de sign-up no server com portas DIP
+  (`UserRepository`/`PasswordHasher`, hash executado também no caminho de duplicata), endpoint
+  `auth.signUp` + `SignUpDto`/`SignUpResultDto` gerados e **migração versionada**
+  (`migrations/20261023024432194`). **Status: Gates 3/4 e consolidação pendentes** (commit de
+  preservação); adaptadores de persistência/hash e UI `/register` são follow-up declarados.
 - **`UC-01.00` — wiring do stack Serverpod**: `serverpod`/`serverpod_auth_server` pinados (`3.4.13`),
   scaffold em `solution/server/config/`, `/health` preservado (web **8082**), **`solution/client`
   gerado e versionado** como membro do workspace (fecha a dívida do `UC-00.02`), build assere o
