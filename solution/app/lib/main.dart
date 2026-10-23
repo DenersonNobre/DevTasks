@@ -1,4 +1,5 @@
 import 'package:devtasks_app/devtasks_app.dart';
+import 'package:devtasks_app/global/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -13,6 +14,9 @@ class DevTasksApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: appName,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       home: const Scaffold(body: Center(child: Text(appName))),
     );
   }
