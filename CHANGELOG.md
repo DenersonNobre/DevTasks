@@ -15,12 +15,20 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - **Gate de DIP (`tools/dip-gate.ps1`, NC-15)**: reprova import de infraestrutura (`dart:io`,
   `dart:ui`, `package:flutter/`, `http`, `sqflite`, `serverpod`, …) no kernel de domínio, com
   **3 provas negativas** versionadas (`tools/tests/test_dip_gate.ps1`); ligado à suíte de governança.
+- **Suporte a `-Paths` no gerenciador de claims (`tools/bin/claims.ps1`)**: persistência e parse do
+  array de arquivos associados ao slice no schema canônico `claims/v1`, com normalização de argumentos
+  e suite de testes em `tools/tests/test_git_governance.ps1`.
 
 ### Alterado
 
 - **Hooks Git com fonte única (`core.hooksPath`, NC-24)**: `tools/install-hooks.ps1` deixa de copiar
   para `.git/hooks` por padrão (cópia somente com `-LegacyCopyFallback`) e **remove** cópias legadas; o
   teste de encoding passou a exigir `hooksPath` efetivo e **ausência** de cópia em `.git/hooks`.
+
+### Corrigido
+
+- **Limpeza de placeholder documental em F0.7 (NC-22)**: saneamento de resíduo textual em
+  `docs/plan/epics/epic-00-fundacao.md:269`.
 
 ## [0.1.0] - 2026-10-22
 
