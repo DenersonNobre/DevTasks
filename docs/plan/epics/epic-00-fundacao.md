@@ -266,7 +266,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
 
 ### Feature 0.7 — Shared Kernel & Primitivos Universais de Domínio
 
-**Descrição**: `Result<T>` tipado, VOs base (UserId, WorkspaceId, Money-like NãoExiste aqui, DateOnly/ISO-8601, NonEmptyString), `Clock` port e contratos de borda — a base que EPIC-01+ consomem.
+**Descrição**: `Result<T>` tipado, VOs base (UserId, WorkspaceId, DateOnly/ISO-8601, NonEmptyString), `Clock` port e contratos de borda — a base que EPIC-01+ consomem.
 
 **DoR**: SPEC §5/§6 revisadas (portas e taxonomia de falhas prontas).
 **DoD**:
