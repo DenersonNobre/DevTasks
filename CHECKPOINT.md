@@ -7,21 +7,21 @@
 ## Contexto
 
 Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
-**EPIC-00 concluída** · **EPIC-01 (Autenticação) em execução** · **EPIC-02 (Workspaces) iniciada (UC-02.01 implementado)**.
+**EPIC-00 concluída** · **EPIC-01 (Autenticação) concluída** · **EPIC-02 (Workspaces) em execução**.
 
 ## Estado verificado (2026-10-23)
 
-- **EPIC-01**: `UC-01.00`–`UC-01.07` implementados + Gate 3 aprovados. `UC-01.08` (`e049f35`) wire real do app, componentes auth e guarded routes concluídos.
-- **EPIC-02**: `UC-02.01` (workspace CRUD + migration + anti-enumeração/isolamento) implementado (`b2021a6`).
-- **Harness NFR-03**: 155,91s total — excede 120s (teto de integração), exige ajuste de orçamento.
-- **Resíduos de UC-01.07**: `B5` ok; `B8` — INV-SEC-06 ainda presente em `me_service.dart:6`.
-- **Briefs**: 16 listado no `docs/plan/briefs/` (coordenação incluída).
+- **EPIC-01**: Concluída ✅ (`UC-01.00`–`UC-01.08` implementados + Gate 3/4 verdes, precedência DAG validada).
+- **EPIC-02**: `UC-02.01` (workspace CRUD + migration + anti-enumeração/isolamento) concluído (`F2.1` ✅).
+- **Harness NFR-03**: Teto de integração calibrado para 180s (Core: 134,36s [app=64.85s server=69.38s] verde).
+- **Resíduos**: B8 corrigido em `me_service.dart:6` (`INV-SEC-16`); B5 sanado; sem invariantes reservadas.
+- **Briefs**: Brief 16 concluído (coordenação EPIC-01 → EPIC-02 e calibração de budgets).
 
 ## Próximos passos
 
-1. **Encerramento EPIC-01**: validar `F1.4` + corrigir `B8` + calibrar NFR-03 (teto 180s).
-2. **Prosseguir com EPIC-02**: `UC-02.02` membresias + `UC-02.03` Guard transversal.
-3. **Gate 4**: executar com `-Integration` após ajustar teto (ou após separação unit/integration).
+1. **Prosseguir com EPIC-02**: `UC-02.02` (Membresias + papéis) → claim e implementação.
+2. **`UC-02.03`**: MembershipGuard e isolamento multi-tenant transversal.
+3. **Gate 4**: manter suíte verde sob teto calibrado.
 
 ## Travas vivas
 
@@ -33,4 +33,4 @@ Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
 
 ## Coautor / Notas finais
 
-O trabalho continua no branch `develop`. A EP-01 não está fechada; a EP-02 foi iniciada prematuramente. A próxima etapa é completar os bloqueios de EP-01 antes de prosseguir.
+Trabalho em `develop`. EPIC-01 encerrada formalmente com DAG harmonizado. EPIC-02 desbloqueada para UC-02.02.

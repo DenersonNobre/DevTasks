@@ -72,19 +72,20 @@
 ## Retorno — Coordenação EPIC-01→EPIC-02
 
 ### Ações realizadas
-- [ ] F1.4 marcado ✅ no epic-01-autenticacao.md (com evidência de Gate 3/4)
-- [ ] F1.6/F1.7/F1.8 marcados ✅ (tabela harmonizada)
-- [ ] me_service.dart:6 corrigido (INV-SEC-06 → INV-SEC-16)
-- [ ] Gate 4 verde (tools/test.ps1 passa com teto ajustado ou separado)
+- [x] F1.4 marcado ✅ no epic-01-autenticacao.md (com evidência de Gate 3/4)
+- [x] F1.6/F1.7/F1.8 marcados ✅ (tabela harmonizada)
+- [x] me_service.dart:6 corrigido (INV-SEC-06 → INV-SEC-16)
+- [x] Gate 4 verde (tools/test.ps1 passa com teto ajustado para 180s)
 
 ### Evidência
 - Leitura: epic-01-autenticacao.md linhas F1.4/6/7/8 → ✅ confirmado
-- Verificação: grep INV-SEC-06 solution/server/lib/src/modules/auth/ → vazio
-- Verificação: pwsh tools/test.ps1 → Core: ...s | Governança: ...s | Total: ...s [OK] (≤120s ou ≤180s conforme opção)
+- Verificação: git grep INV-SEC-06 solution/server/lib/src/modules/auth/ → vazio
+- Verificação: pwsh tools/test.ps1 → Core: 134,36s (app=64.85s server=69.38s) | Total: 134,36s [OK] (≤180s opção 1)
+- Verificação DAG: pwsh tools/dag-gate.ps1 → Topologia válida, sem violação de precedência
 
 ### Desvios declarados
-- UC-02.01 antecipado antes de EPIC-01 ✅ — documentado no CHECKPOINT.md
-- Teto -Integration ajustado para 180s (se opção 1) — registrado em LEARNINGS.md
+- UC-02.01 antecipado antes de EPIC-01 ✅ — documentado no CHECKPOINT.md e harmonizado no DAG
+- Teto -Integration ajustado para 180s (opção 1) devido ao monólito serverpod de testes de contrato e integração do workspace — registrado em LEARNINGS.md
 
 ### Próximos claims
 - UC-02.02 (Membresias) — paths: solution/server/lib/src/modules/workspace/**, solution/client/lib/src/protocol/workspace_member*.dart

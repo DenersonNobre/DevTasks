@@ -1,6 +1,6 @@
 # Epic 01 — Autenticação (autenticacao)
 
-> Status: 🔄 Em execução | Prioridade: Crítica | Dependências: EPIC-00 ✅
+> Status: ✅ Concluída | Prioridade: Crítica | Dependências: EPIC-00 ✅
 
 ## 1. Objetivo e Valor de Negócio
 
@@ -21,11 +21,11 @@ sensível (workflow_rules §Gate 2.5).
 | F1.1 | Cadastro de usuário | 1 | Alto: INV-08, Gate 2.5 | ✅ |
 | F1.2 | Login & sessão persistente | 1 | Alto: NFR-05, credenciais | ✅ |
 | F1.3 | Logout & guarda de rotas privadas | 1 | Depende de F1.2 | ✅ |
-| F1.4 | Hardening de auth (rate limit + validação) | 1 | **Gate 2.5 obrigatório** | ⏳ |
+| F1.4 | Hardening de auth (rate limit + validação) | 1 | **Gate 2.5 obrigatório** | ✅ |
 | F1.5 | Tema base & acessibilidade (D-06) | 1 | RNF-05/06/07 reatribuídos da EPIC-00 | ✅ |
-| F1.6 | Telas de autenticação (D-03) | 1 | Depende de F1.1–F1.3 (app-side) | ⏳ |
-| F1.7 | Sessão persistida (token opaco em DB) | 1 | Depende de F1.2/F1.3; decisão do PO (2026-10-23) | ⏳ |
-| F1.8 | Wiring real do app (adaptadores + guard) | 1 | Depende de F1.6/F1.7; PO: secure storage + onGenerateRoute | ⏳ |
+| F1.6 | Telas de autenticação (D-03) | 1 | Depende de F1.1–F1.3 (app-side) | ✅ |
+| F1.7 | Sessão persistida (token opaco em DB) | 1 | Depende de F1.2/F1.3; decisão do PO (2026-10-23) | ✅ |
+| F1.8 | Wiring real do app (adaptadores + guard) | 1 | Depende de F1.6/F1.7; PO: secure storage + onGenerateRoute | ✅ |
 
 ---
 

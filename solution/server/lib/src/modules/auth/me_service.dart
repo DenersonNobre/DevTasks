@@ -3,7 +3,7 @@ import 'session_guard.dart';
 
 /// Serviço do endpoint privado de referência (`me`).
 ///
-/// O token **não** vem do corpo (INV-SEC-06): o endpoint o obtém da sessão/header
+/// O token **não** vem do corpo (INV-SEC-16): o endpoint o obtém da sessão/header
 /// e passa aqui. Token nulo/vazio/inválido ⇒ `ERR_NOT_AUTHENTICATED`.
 class MeService {
   MeService(this._guard);

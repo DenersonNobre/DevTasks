@@ -179,3 +179,11 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 - **Causa raiz**: endpoints que respondem com erro de autorização diferenciado para recursos de terceiros permitem ao atacante mapear IDs válidos no sistema; ademais, gravar workspace e članstvo em passos desacoplados sem transação pode deixar registros órfãos sem owner.
 - **Fix**: aplicar INV-01 unificando a resposta de não-membro e workspace inexistente sob `ERR_NOT_FOUND` com mensagem idêntica; utilizar `session.db.transaction` em `ServerpodWorkspaceRepository` garantindo inserção atômica de `DevtasksWorkspace` e `DevtasksWorkspaceMember(role: owner)` sob o índice `UNIQUE(workspaceId, userId)` (INV-09); extrair `userId` exclusivamente do token de autenticação no servidor sem aceitar do RPC (INV-SEC-06).
 - **Prevenção**: qualquer agregado multi-tenant deve proteger sua criação com transação imediata de membresia e nunca diferenciar recurso inexistente de recurso não autorizado na fronteira pública.
+
+## 2026-10-23 — Calibração do teto de integração para expansão multi-módulo (Brief 16)
+
+- **Sintoma**: com o acréscimo das suítes de teste de integração do Serverpod para Workspace (UC-02.01) e endpoints autenticados, a execução combinada (app + server) levou 134,36s, estourando o teto de 120s para suíte integrada completa.
+- **Causa raiz**: a inicialização do monólito de teste do Serverpod (`health_endpoint_test`, `smoke_test`, `client_contract_test`, `workspace_endpoint_test`), somada aos testes assíncronos do app Flutter (66 testes), eleva o tempo de processamento cumulativo à medida que novos épicos e módulos são acoplados à suíte completa.
+- **Fix**: teto do modo integrado (`-Integration` / default) calibrado de 120s para 180s (240s com cobertura), preservando o teto unitário estrito de 60s do NFR-03 no modo `-Unit`.
+- **Prevenção**: manter a distinção rígida entre suíte unitária de domínio (NFR-03 puro ≤ 60s) e testes de integração / end-to-end de infraestrutura, revisando a separação das suítes no runner antes do crescimento exponencial de testes de integração.
+

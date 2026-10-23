@@ -229,15 +229,15 @@ $govElapsed = [Math]::Round($elapsed - $coreElapsed, 2)
 $memberSummary = ($memberTimes.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)s" }) -join " "
 Write-Host ("`n==> [DevTasks] Core: {0:N2}s ({1}) | Governanca: {2:N2}s | Total: {3:N2}s" -f $coreElapsed, $memberSummary, $govElapsed, $elapsed)
 
-# Calibração dos orçamentos de tempo (NFR-03 / Brief 15):
+# Calibração dos orçamentos de tempo (NFR-03 / Brief 15 / Brief 16):
 # -Unit: gate NFR-03 puro (suíte unitária com fakes sem I/O) <= 60s (120s com cobertura);
-# -Integration / all: suíte com widgets e testes de integração <= 120s (180s com cobertura).
+# -Integration / all: suíte com widgets e testes de integração <= 180s (240s com cobertura).
 $coreBudget = if ($Unit) {
     if ($Coverage) { 120 } else { 60 }
 } elseif ($Integration) {
-    if ($Coverage) { 180 } else { 120 }
+    if ($Coverage) { 240 } else { 180 }
 } else {
-    if ($Coverage) { 180 } else { 120 }
+    if ($Coverage) { 240 } else { 180 }
 }
 
 if ($env:DEVTASKS_NESTED_RUN -eq "1") {
