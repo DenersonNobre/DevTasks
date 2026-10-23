@@ -73,6 +73,14 @@ Rate limit permanece **fora deste UC**.
 - **Lacuna declarada**: sem IDP/hasher público em 3.4.13, o `AuthEndpoint.signIn` sem adaptadores
   responde `ERR_INFRA_FAILURE` (não finge sucesso).
 
+### Fatia 2 — sessão no app (fatia concluída)
+- **Red**: `flutter test test/unit/auth/session_controller_test.dart` → exit 1 (porta/controlador ausentes).
+- **Green**: **5 testes** (sem token → `signedOut`; **restaura token de store preenchido = prova de
+  restart**; `signIn` persiste; `signOut` limpa; notificações aos ouvintes) · `analyze` limpo.
+- **Interfaces**: `SessionStore` (porta DIP) + `SessionController` (`ChangeNotifier`).
+- **Declarado**: adaptador real de armazenamento, **provider Riverpod (D-03)** e tela `/login`
+  (TASK-03) ficam para o slice de UI — o DoD da F1.2 não os exige.
+
 ## Pendências / coordenação
 
 - **`tools/**` está com o outro agente** (claim `UC-00.06`: R-01 + drift da CLI). Não editar; a suíte
