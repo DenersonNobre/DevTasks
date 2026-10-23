@@ -1,14 +1,16 @@
 import '../../generated/protocol.dart';
 import 'ports.dart';
+import 'rate_limiter.dart';
 import 'sign_in_handler.dart';
 
 /// Núcleo do login fora do `Endpoint` (testável sem `Session`).
 class SignInService {
-  SignInService([this._handler]);
+  SignInService([this._handler, this._limiter]);
 
   final SignInHandler? _handler;
+  final RateLimiter? _limiter;
 
-  Future<SignInResultDto> signIn(SignInDto dto) async {
+  Future<SignInResultDto> signIn(SignInDto dto, {String? clientIp}) async {
     final handler = _handler;
     if (handler == null) {
       return SignInResultDto(
