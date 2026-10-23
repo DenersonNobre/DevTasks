@@ -153,6 +153,10 @@ explícita) e registro do **export órfão** no barrel como 5ª referência.
   cache quente, contra **113,53 s** no harness sob carga.
   **Proposta (dono: harness, não este UC)**: imprimir tempo **por membro** e mover `pub get` para fora da
   janela (`--no-pub` no CI, com `pub get` num passo anterior); recalibrar só com medição limpa.
+- **Agravante medido**: o CI já resolve dependências num passo anterior
+  (`.github/workflows/ci.yml:33-34` → `flutter pub get`), mas chama `pwsh tools/test.ps1 -Coverage -Governance`
+  **sem `-NoPub`** (`:43`) — logo o CI também mede `pub` de novo e o teto efetivo é 120 s (com coverage),
+  enquanto o run local sem coverage usa 60 s. O gate mede coisas diferentes em cada ambiente.
 
 ## Desvios e follow-ups declarados
 
