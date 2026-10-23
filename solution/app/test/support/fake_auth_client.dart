@@ -14,9 +14,19 @@ final class FakeAuthClient implements AuthClient {
 
   int signInCalls = 0;
   int signUpCalls = 0;
+  int signOutCalls = 0;
   String? lastEmail;
   String? lastPassword;
   String? lastName;
+  String? lastToken;
+  IResult<void, IFailure>? signOutResult;
+
+  @override
+  Future<IResult<void, IFailure>> signOut(String token) {
+    signOutCalls++;
+    lastToken = token;
+    return Future.value(signOutResult ?? const Success(null));
+  }
 
   @override
   Future<IResult<AuthSession, IFailure>> signIn({

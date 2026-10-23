@@ -158,3 +158,10 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 - **Causa raiz**: `Set-Content -Encoding utf8` / `Add-Content -Encoding utf8` no **Windows PowerShell 5.1** gravam UTF-8 **com BOM** (no PowerShell 7 o default é sem BOM). O `pre-commit.ps1` só reprova arquivo cujo conteúdo seja **apenas** BOM, então um BOM no início de arquivo válido passa.
 - **Fix**: remover os 3 bytes (`EF BB BF`) lendo/escrevendo bytes (`[IO.File]::ReadAllBytes` / `WriteAllBytes`); para escrever texto sem BOM usar `[IO.File]::WriteAllText($p, $t, (New-Object System.Text.UTF8Encoding($false)))`.
 - **Prevenção**: (1) no repo Dart, nunca usar `Set-Content -Encoding utf8` para reescrever fonte — usar a ferramenta de edição ou `WriteAllText` com `UTF8Encoding($false)`; (2) o gate de encoding deve comparar com o blob do `HEAD` (delta) e acusar BOM **introduzido**, não só arquivo-BOM-só; (3) ao final de qualquer lote, contar BOM por byte (não por inspeção visual).
+
+## 2026-10-23 — Riverpod ChangeNotifierProvider e resolução dinâmica de estado no RouteGuard
+
+- **Sintoma**: no fluxo de logout (`PrivateAreaView`), a limpeza da sessão local ocorria mas o `Navigator.pushReplacementNamed` para `/login` era bloqueado ou redirecionado de volta para a rota privada pelo `RouteGuard`.
+- **Causa raiz**: `sessionControllerProvider` estava declarado como `Provider<SessionController>` (e não `ChangeNotifierProvider`), impedindo a notificação de mudanças de estado para `DevTasksApp`; adicionalmente, a função `onGenerateRoute` em `MaterialApp` capturava a variável de estado estática do escopo de `build`, tornando a decisão de redirecionamento desatualizada no momento da transição de rota.
+- **Fix**: alterar `sessionControllerProvider` para `ChangeNotifierProvider<SessionController>` e ler o estado vivo em `onGenerateRoute` via `ref.read(sessionControllerProvider).state`.
+- **Prevenção**: todo controlador baseado em `ChangeNotifier` observado pela UI deve usar `ChangeNotifierProvider`; decisões de roteamento sob demanda devem avaliar o estado vivo do provider no momento da invocação.

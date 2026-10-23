@@ -40,4 +40,6 @@ abstract interface class AuthClient {
     required String email,
     required String password,
   });
+
+  Future<IResult<void, IFailure>> signOut(String token);
 }

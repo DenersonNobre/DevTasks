@@ -44,6 +44,12 @@ class ValidationFailure extends BaseFailure {
       field != null ? 'ERR_VALIDATION ($field): $message' : 'ERR_VALIDATION: $message';
 }
 
+/// ERR_RATE_LIMITED: Limite de requisições excedido (INV-SEC-13).
+class RateLimitedFailure extends BaseFailure {
+  const RateLimitedFailure([String message = 'Muitas tentativas. Tente novamente mais tarde.'])
+      : super(code: 'ERR_RATE_LIMITED', message: message);
+}
+
 /// ERR_NOT_AUTHENTICATED: Sessão ausente, inválida ou expirada (RNF-03).
 class NotAuthenticatedFailure extends BaseFailure {
   const NotAuthenticatedFailure([String message = 'Sessão ausente ou expirada.'])

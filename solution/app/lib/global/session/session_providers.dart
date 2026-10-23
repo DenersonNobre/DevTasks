@@ -1,22 +1,21 @@
-// solution/app/lib/global/session/session_providers.dart
-// Composição do estado transversal de sessão (D-07 regra 4).
-// SRP: ligar a porta [SessionStore] ao [SessionController].
-// NÃO faz: escolher o mecanismo de armazenamento (adaptador entra pela borda).
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'flutter_secure_key_value_store.dart';
+import 'secure_session_store.dart';
 import 'session_controller.dart';
 import 'session_store.dart';
 
-/// O adaptador real (armazenamento local) é injetado na borda do app;
-/// enquanto não existir, exige override explícito (testes e boot futuro).
+/// Provider da porta fina de chave-valor segura.
+final secureKeyValueStoreProvider = Provider<SecureKeyValueStore>(
+  (_) => const FlutterSecureKeyValueStore(),
+);
+
+/// Provider do adaptador de persistência de sessão.
 final sessionStoreProvider = Provider<SessionStore>(
-  (_) => throw UnimplementedError(
-    'SessionStore não configurado: adaptador de armazenamento é follow-up declarado.',
-  ),
+  (ref) => SecureSessionStore(ref.watch(secureKeyValueStoreProvider)),
 );
 
 /// Controlador único de sessão do app (observado pelos ViewModels).
-final sessionControllerProvider = Provider<SessionController>(
+final sessionControllerProvider = ChangeNotifierProvider<SessionController>(
   (ref) => SessionController(ref.watch(sessionStoreProvider)),
 );

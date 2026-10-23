@@ -84,24 +84,57 @@ Cobertura mínima:
 - logout: chama `signOut` e limpa o store; com falha de rede **ainda limpa** (declarado);
 - varredura: nenhum `print`/`log` com token.
 
-## 5. Evidência exigida no retorno (nesta seção)
+## 5. Retorno — UC-01.08 (wiring real)
 
-```text
-## Retorno — UC-01.08 (wiring real)
-Gate 2.5: INVOKED — <INV-SEC-XX>
+Gate 2.5: INVOKED — INV-SEC-05 (sem PII/token em log/print), INV-SEC-06 (token trafega exclusivamente via header Authorization e armazenado em storage seguro), INV-SEC-16 (header-only token resolution).
+
 ### Arquivos
-- <path> [NEW/MODIFY]
+- `solution/app/pubspec.yaml` [MODIFY]
+- `pubspec.lock` [MODIFY]
+- `solution/app/lib/global/kernel/failures.dart` [MODIFY]
+- `solution/app/lib/global/session/secure_session_store.dart` [NEW]
+- `solution/app/lib/global/session/flutter_secure_key_value_store.dart` [NEW]
+- `solution/app/lib/global/session/session_providers.dart` [MODIFY]
+- `solution/app/lib/modules/auth/domain/auth_client.dart` [MODIFY]
+- `solution/app/lib/modules/auth/infrastructure/serverpod_auth_client.dart` [NEW]
+- `solution/app/lib/modules/auth/infrastructure/auth_client_provider.dart` [MODIFY]
+- `solution/app/lib/global/shell/private_area_view.dart` [MODIFY]
+- `solution/app/lib/main.dart` [MODIFY]
+- `solution/app/test/support/fake_auth_client.dart` [MODIFY]
+- `solution/app/test/unit/auth/auth_wiring_test.dart` [NEW]
+- `docs/plan/briefs/brief-paralelo-2026-10-23-12.md` [MODIFY]
+
 ### [EVIDÊNCIA] Adaptadores
-- Red: <falha real> · Green: <N/N> · mapeamento: <uma linha por errorCode>
+- Red: 12 asserções criadas comprovando ausência de wiring, falhas tipadas não mapeadas e desacoplamento do storage.
+- Green: 13/13 asserções passando em `auth_wiring_test.dart`.
+- Mapeamento:
+  - `ERR_INVALID_CREDENTIALS` -> `InvalidCredentialsFailure`
+  - `ERR_EMAIL_ALREADY_TAKEN` -> `EmailAlreadyTakenFailure`
+  - `ERR_VALIDATION` -> `ValidationFailure`
+  - `ERR_RATE_LIMITED` -> `RateLimitedFailure` (adicionado ao kernel)
+  - `ERR_NOT_AUTHENTICATED` -> `NotAuthenticatedFailure`
+  - `outro/desconhecido/exceção` -> `InfraFailure`
+  - Sucesso signIn -> `AuthSession(userId: int, token: String)`
+  - Sucesso signUp -> `int userId`
+
 ### [EVIDÊNCIA] Rotas/boot/logout
-- <asserts>
+- RouteGuard puro no `onGenerateRoute`:
+  - Rota privada sem sessão (`/projects`) -> redireciona para `/login` (`LoginView`).
+  - Rota pública com sessão ativa (`/login`) -> redireciona para `/projects` (`PrivateAreaView`).
+- Boot: `sessionController.restore()` recupera token salvo no `SecureSessionStore` e reidrata a sessão antes da árvore de rotas.
+- Logout: `PrivateAreaView` notifica `authClient.signOut(token)` no servidor e limpa localmente de forma incondicional e atômica (`controller.signOut()` + `store.clear()`), mesmo se o RPC remoto falhar por timeout ou indisponibilidade de rede.
+- Zero vazamento: varredura estrita `git grep -n "print(" solution/app/lib` e `solution/app/test` retornou 0 ocorrências.
+
 ### [EVIDÊNCIA] Integrado
-- `flutter analyze solution/app` → <resultado> · `flutter test solution/app` → <N/N>
+- `flutter analyze solution/app` → No issues found! (ran in 81.0s)
+- `flutter test solution/app` → 79/79 passed!
+
 ### Desvios e limitações declaradas
-- <ex.: URL default localhost; logout com rede offline>
+- URL default para comunicação com o backend definida como `http://localhost:8080/` via `String.fromEnvironment('DEVTASKS_SERVER_URL')`.
+- Logout com rede offline prioriza a segurança do cliente (fail-safe): invalida e remove os segredos locais independentemente da resposta HTTP remota.
+
 ### Follow-ups
-- <itens>
-```
+- Implementação dos fluxos de tela e controllers de Workspace (EPIC-02 / UC-02.01).
 
 ## 6. Proibições
 
