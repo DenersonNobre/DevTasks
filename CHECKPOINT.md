@@ -12,38 +12,34 @@ Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
 ## Estado verificado (2026-10-23)
 
 - **`UC-01.00` (F1.0 — wiring Serverpod) ✅** consolidado e publicado (`53ed8dd`).
-- **`UC-01.01` (F1.1 — cadastro) — fatias 1–2 + reconciliação do Gate 3; Gate 4 PENDENTE**:
-  - app: `Email`/`Password` (INV-08 + política 12–128) — **13 testes de auth** (21 no app);
-  - server: `SignUpHandler` + `SignUpService` + portas DIP — **19 testes** no server (hash também no
-    caminho de duplicata com spy; **`emailVerified=false` NÃO é provado** — é default do contrato de
-    persistência, ver item 6 da matriz do hand-off);
-  - contrato: `auth.signUp` + DTOs gerados (inclui `field` para a UI), migração
-    `migrations/20261023024432194` (**21 tabelas do framework/auth, zero de domínio**); client
-    regenerado e idempotente (2 gerações sem diff); build assere artefato; analyze limpo nos 3 membros;
-  - **Gate 3**: rodada 1 rejeitada (evidência sobredeclarada) → rodada 2 **aprovada com ressalvas**,
-    ressalvas R1 (client fora de sincronia) e R2 (contradição neste CHECKPOINT) **fechadas**.
-  - **Lacunas declaradas**: adaptador de persistência (DB) e de hash (API privada em 3.4.13),
-    UI `/register` e mapeamento HTTP 409/400 → follow-ups.
-- **Suíte funcional verde**: 9/9 suítes de governança `[OK]` · core **34,75 s** (≤60) · cobertura app
-  **96,26%** · **R-01 ABERTO**: teto de governança estourado (**712,91 s × 600 s**) — dono: trabalho
-  paralelo (suíte nova `test_pin_gate` + R-03 + carga concorrente). **Teto não foi afrouxado.**
-- **Worktree compartilhado**: `tools/test.ps1` e `tools/tests/test_test_runner.ps1` têm mudanças
-  **dos dois agentes** (não commitadas por mim); briefs em `docs/plan/briefs/` também do outro agente.
-- **Remotes**: `origin` (Gitea) e `github` em paridade no último push (`9782d9d`); commit deste ciclo
-  **não publicado**.
-- Claim `UC-01.01` (owner `coder`) ativo até ~04:18 UTC — renove no próximo ciclo.
+- **`UC-01.01` (F1.1 — cadastro de usuário) ✅ CONSOLIDADO** — 3 commits (`9f3ffe0`, `a0b726c`,
+  `3747cfd`; atomicidade partida pela árvore compartilhada, registrada):
+  - app: `Email`/`Password` (INV-08 + política 12–128) — 13 testes de auth (21 no app);
+  - server: `SignUpHandler` + `SignUpService` + portas DIP — **19 testes**; hash também no caminho
+    de duplicata (spy); `field` no contrato para a UI;
+  - contrato: `auth.signUp` + DTOs gerados; **`generate` idempotente** (CLI **3.4.13** — drift 4.0.4
+    corrigido, ver `LEARNINGS.md`); migração `20261023024432194` (**21 tabelas framework/auth**);
+  - **Gates**: review rodada 1 rejeitada (evidência sobredeclarada) → rodada 2 **aprovada com
+    ressalvas** → QA **aprovado com ressalvas, zero bloqueadores**; matriz bate com o disco.
+- **Follow-ups declarados** (não fingidos): persistência com `UNIQUE(email)` + **TOCTOU** +
+  `emailVerified` default · adapter de hash (`allowUnsecureRandom`) · **sessão no cadastro →
+  `UC-01.02`** · UI `/register` · teste de log (INV-SEC-05) · limite de nome (SPEC) · fonte única das
+  regras (app × server) · colisão `auth` (endpoint × módulo) · Reds não versionados.
+- **R-01 ABERTO**: teto de governança **712,91 s × 600 s** (suítes funcionais verdes) — brief 05.
+- **CI**: verde em `dcc3e2a` (último publicado); **commits locais** deste ciclo não publicados.
+- Claim `UC-01.01`: liberado na consolidação.
 
-## Próximo passo (retomar `UC-01.01`)
+## Próximo passo (`UC-01.02` — Login & Sessão Persistente)
 
-1. **Gate 3** (`review`) + **Gate 4** (`qa`) sobre o diff de `solution/**` + docs (evidência em
-   `UC-CURRENT.md`); corrigir achados.
-2. Consolidação: marcar F1.1 `✅` no épico + matriz (`1/5 → 2/5`, `9/27 → 10/27`) e `claims release`.
-3. Push (exige pedido explícito + 3 evidências).
-4. Fechar **R-01** (teto de governança) antes de declarar a EPIC-01 saudável; follow-ups do UC
-   (persistência/hash/UI) viram slices próprios.
+1. Claim + hand-off: **Gate 2.5 já invocado** para auth (reutilizar; cobrir sessão/token na resposta
+   e `ERR_INVALID_CREDENTIALS` único sem enumerar campo).
+2. TDD: guard de sessão, persistência local no app e mensagem única; depois `UC-01.03` (logout/rotas)
+   e `UC-01.04` (rate limit + hardening).
+3. Antes de declarar a EPIC-01 saudável: fechar **R-01** e decidir os follow-ups de persistência/hash.
 
 ## Travas vivas
 
 - Ciclo em `develop`; commit de UC exige claim ativo; `main` só por release (D-04).
 - Push exige pedido explícito + 3 evidências.
-- Não commitar arquivos de harness do outro agente sem coordenação (árvore compartilhada).
+- Toolchain: **CLI `serverpod` deve ser `3.4.13`** (o PATH já driftou para 4.0.4 e gerou código
+  incompatível); todo `generate` precisa de prova de idempotência.
