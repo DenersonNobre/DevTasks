@@ -25,6 +25,7 @@ sensível (workflow_rules §Gate 2.5).
 | F1.5 | Tema base & acessibilidade (D-06) | 1 | RNF-05/06/07 reatribuídos da EPIC-00 | ✅ |
 | F1.6 | Telas de autenticação (D-03) | 1 | Depende de F1.1–F1.3 (app-side) | ⏳ |
 | F1.7 | Sessão persistida (token opaco em DB) | 1 | Depende de F1.2/F1.3; decisão do PO (2026-10-23) | ⏳ |
+| F1.8 | Wiring real do app (adaptadores + guard) | 1 | Depende de F1.6/F1.7; PO: secure storage + onGenerateRoute | ⏳ |
 
 ---
 
@@ -371,5 +372,56 @@ usuário com token válido e ERR_NOT_AUTHENTICATED com expirado/revogado; nenhum
   - `solution/server/lib/src/modules/auth/**` · `solution/server/lib/src/endpoints/**` [MODIFY]
   - `solution/server/migrations/**` · `solution/client/**` (somente via `serverpod generate`) [MODIFY]
   - `solution/server/test/unit/auth/**` [NEW]
+
+---
+
+### Feature 1.8 — Wiring Real do App (adaptadores + guarda no router)
+
+**Descrição**: ligar o app ao contrato já existente — adaptador `AuthClient` sobre o cliente gerado,
+adaptador `SessionStore` com **`flutter_secure_storage`** (decisão do PO), restauração de sessão no boot e
+`RouteGuard` aplicado via **`onGenerateRoute`** (decisão do PO: sem dependência nova de roteador).
+
+**DoR**: `F1.6`/`F1.7` ✅ · Gate 2.5 (token em repouso + rede) · decisões do PO (2026-10-23).
+**DoD**: login real persiste token seguro e entra em `/projects`; `/projects` sem sessão redireciona ao
+`/login`; logout chama o servidor e limpa o local; boot restaura a sessão; nenhum token em log.
+
+#### User Story 1.8.1 — O app autentica de verdade
+
+* **Identificador**: `UC-01.08`
+* **Narrativa**:
+  - **Como** usuário
+  - **Eu quero** fazer login e continuar autenticado ao reabrir o app
+  - **Para que** eu use o DevTasks de verdade, e não uma demo com adaptadores falsos
+* **Critérios de Aceitação**:
+  ```gherkin
+  Cenário: login real guarda o token com segurança
+    Dado o servidor respondendo sessionToken
+    Quando submeto credenciais válidas
+    Então o token é persistido no armazenamento seguro e a rota /projects abre
+
+  Cenário: rota privada sem sessão redireciona
+    Dado que não há sessão restaurada
+    Quando navego para /projects
+    Então o router redireciona para /login via RouteGuard
+
+  Cenário: sessão sobrevive ao restart
+    Dado um token persistido
+    Quando o app inicia
+    Então a sessão é restaurada e /projects abre direto
+
+  Cenário: logout revoga no servidor e limpa o local
+    Dado um usuário autenticado
+    Quando executo logout
+    Então o adaptador chama auth.signOut, o armazenamento seguro é limpo e volto ao /login
+  ```
+* **Tarefas Técnicas**:
+  1. `TASK-01`: adaptador `SessionStore` com `flutter_secure_storage` + provider de borda
+  2. `TASK-02`: adaptador `AuthClient` sobre o cliente gerado (`signIn`/`signUp`/`signOut`), mapeando
+     `errorCode` → falhas tipadas (incl. `ERR_RATE_LIMITED` e `ERR_INFRA_FAILURE` genérica)
+  3. `TASK-03`: `onGenerateRoute` + `RouteGuard` (redirect nos dois sentidos) + restauração no boot
+* **Impacto & Arquivos Alvo**:
+  - `solution/app/lib/modules/auth/infrastructure/**` · `solution/app/lib/global/{session,router,shell}/**` [MODIFY]
+  - `solution/app/lib/main.dart` · `solution/app/pubspec.yaml` (`flutter_secure_storage`) · `pubspec.lock` [MODIFY]
+  - `solution/app/test/**` [NEW/MODIFY]
 
 ---

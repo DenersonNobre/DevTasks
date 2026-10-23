@@ -137,6 +137,16 @@ explícita) e registro do **export órfão** no barrel como 5ª referência.
 
 **Próximo**: Gate 4 (harness completo) — só depois marcar `F1.6` ✅ no épico.
 
+### Gate 4 — tentativa 1 (reprovado por TEMPO, medição contaminada)
+
+- `tools/test.ps1`: **todos os testes passaram** (server **75/75**, app **66/66**), mas `[NFR-03]` reprovou —
+  core **113,53 s** contra teto de **60 s**.
+- **Contaminação medida**: a execução rodou em paralelo com o Gate 3 do `UC-01.07` (subagente executando
+  `flutter test`/`dart test`) e com um `flutter analyze` que levou **151 s** — o mesmo cenário de
+  "medições contaminadas" já registrado em `LEARNINGS.md`. **Não se recalibra o teto com medição suja.**
+- **Ação**: re-executar o harness com a máquina ociosa; se persistir, medir a decomposição app×server e
+  **otimizar a suíte** — afrouxar o gate é a última opção e exige evidência limpa.
+
 ## Desvios e follow-ups declarados
 
 - **Adaptador real** `AuthClient` (cliente gerado + URL do server) e **adaptador** `SessionStore`
