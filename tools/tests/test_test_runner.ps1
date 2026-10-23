@@ -59,13 +59,23 @@ Write-Host "Pass: cobertura coletada e gate NFR-04 satisfeito."
 Write-Host "=== TEST 5: Gate de cobertura MORDE quando o minimo nao e atingido (NFR-04) ==="
 $probeRunner = Join-Path $RepoRoot "tools/_probe_runner.ps1"
 try {
+    # 5.1 Prova negativa: gate de cobertura do app reprova threshold impossível
     (Get-Content $TestScript -Raw) -replace '\$globalPct -lt 70', '$globalPct -lt 99.9' |
         Set-Content -Path $probeRunner -Encoding utf8
     & $psExe -ExecutionPolicy Bypass -NoProfile -File $probeRunner -Coverage -Target app
     if ($LASTEXITCODE -eq 0) {
-        throw "FAIL: gate de cobertura nao falhou com minimo impossivel (99.9%)"
+        throw "FAIL: gate de cobertura do app nao falhou com minimo impossivel (99.9%)"
     }
-    Write-Host "Pass: gate de cobertura reprovou cobertura insuficiente (exit $LASTEXITCODE)"
+    Write-Host "Pass: gate de cobertura do app reprovou cobertura insuficiente (exit $LASTEXITCODE)"
+
+    # 5.2 Prova negativa (R-03): gate de cobertura do server reprova threshold impossível
+    (Get-Content $TestScript -Raw) -replace '\$serverPct -lt 70', '$serverPct -lt 99.9' |
+        Set-Content -Path $probeRunner -Encoding utf8
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $probeRunner -Coverage -Target server
+    if ($LASTEXITCODE -eq 0) {
+        throw "FAIL: gate de cobertura do server nao falhou com minimo impossivel (99.9%)"
+    }
+    Write-Host "Pass: gate de cobertura do server reprovou cobertura insuficiente (exit $LASTEXITCODE)"
 } finally {
     if (Test-Path $probeRunner) { Remove-Item $probeRunner -Force }
 }

@@ -45,6 +45,9 @@ jobs:
       - name: Verify DAG Precedence Gate
         run: pwsh tools/dag-gate.ps1
 
+      - name: Verify Dependency Pin Gate (INV-SEC-11)
+        run: pwsh tools/pin-gate.ps1
+
   docker-build:
     name: Docker Build Validation
     runs-on: ubuntu-latest

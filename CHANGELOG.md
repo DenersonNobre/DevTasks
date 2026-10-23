@@ -21,6 +21,12 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - **Override por `CLAIMS_DIR` e comando `claims reap` (`tools/bin/claims.ps1`)**: suporte à variável de
   ambiente `CLAIMS_DIR` para isolamento de diretório de claims e ação `reap` (`-DryRun` / `-Force`)
   para coleta e purga segura de claims expirados com prova negativa de preservação de claims ativos.
+- **Gate de pinning de dependências críticas (`tools/pin-gate.ps1`, INV-SEC-11)**: verificação automatizada
+  de pin exato sem ranges (`serverpod: 3.4.13`) e validação de não-divergência no `pubspec.lock`, integrado
+  em paridade nos workflows `.github` e `.gitea` e na suíte de governança com provas negativas versionadas.
+- **Formatação de cobertura lcov do Serverpod (`tools/test.ps1`, R-03)**: conversão automatizada da saída de
+  teste do server para `coverage/lcov.info` (`dart run coverage:format_coverage`) e inclusão da métrica
+  global do servidor no gate de cobertura NFR-04.
 
 ### Alterado
 

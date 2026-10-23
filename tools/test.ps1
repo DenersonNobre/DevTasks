@@ -51,6 +51,10 @@ foreach ($t in $targets) {
         if ($t.Name -eq "server") {
             if ($Coverage) {
                 & dart test --coverage=coverage
+                if ($LASTEXITCODE -eq 0) {
+                    $pkgConfig = Join-Path $RepoRoot ".dart_tool/package_config.json"
+                    & dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=$pkgConfig --report-on=lib | Out-Null
+                }
             } else {
                 & dart test
             }
@@ -88,13 +92,14 @@ $coreElapsed = $stopwatch.Elapsed.TotalSeconds
 # Gate de cobertura (NFR-04 / NC-14): global >= 70% e dominio (kernel) >= 90%.
 if ($Coverage) {
     function Get-LcovPercent {
-        param([string]$LcovPath, [string]$FileFilter)
+        param([string]$LcovPath, [string]$FileFilter, [string]$ExcludeFilter)
         if (-not (Test-Path $LcovPath)) { return $null }
         $raw = Get-Content $LcovPath -Raw
         if (-not $raw) { return $null }
         $lf = 0; $lh = 0
         foreach ($block in ($raw -split "end_of_record")) {
             if ($FileFilter -and ($block -notmatch $FileFilter)) { continue }
+            if ($ExcludeFilter -and ($block -match $ExcludeFilter)) { continue }
             if ($block -match "LF:(\d+)") { $lf += [int]$Matches[1] }
             if ($block -match "LH:(\d+)") { $lh += [int]$Matches[1] }
         }
@@ -107,12 +112,14 @@ if ($Coverage) {
     $domainPct = Get-LcovPercent -LcovPath $appLcov -FileFilter "kernel"
 
     if ($null -eq $globalPct) {
-        Write-Warning "[NFR-04] lcov do app ausente ou vazio - cobertura nao verificada."
+        if ($Target -ne "server") {
+            Write-Warning "[NFR-04] lcov do app ausente ou vazio - cobertura nao verificada."
+        }
     } else {
         Write-Host "  [Coverage] app global = $globalPct% (minimo 70%)"
         if ($globalPct -lt 70) {
             $hasFailure = $true
-            Write-Error "[NFR-04] Cobertura global ($globalPct%) abaixo do minimo de 70%."
+            Write-Error "[NFR-04] Cobertura global do app ($globalPct%) abaixo do minimo de 70%."
         }
     }
 
@@ -125,8 +132,17 @@ if ($Coverage) {
     }
 
     $serverLcov = Join-Path $RepoRoot "solution/server/coverage/lcov.info"
-    if (-not (Test-Path $serverLcov) -or (Get-Item $serverLcov).Length -eq 0) {
-        Write-Warning "[NFR-04] server sem lcov (dart test emite JSON, nao lcov) - cobertura do server nao verificada."
+    $serverPct = Get-LcovPercent -LcovPath $serverLcov -ExcludeFilter "generated[\\/]"
+    if ($null -eq $serverPct) {
+        if ($Target -ne "app") {
+            Write-Warning "[NFR-04] lcov do server ausente ou vazio - cobertura do server nao verificada."
+        }
+    } else {
+        Write-Host "  [Coverage] server global = $serverPct% (minimo 70%)"
+        if ($serverPct -lt 70) {
+            $hasFailure = $true
+            Write-Error "[NFR-04] Cobertura do server ($serverPct%) abaixo do minimo de 70%."
+        }
     }
 }
 
@@ -139,6 +155,7 @@ if ($Governance -or $Target -eq "governance") {
         "tools/tests/test_git_governance.ps1",
         "tools/tests/test_precommit_encoding.ps1",
         "tools/tests/test_dip_gate.ps1",
+        "tools/tests/test_pin_gate.ps1",
         "tools/tests/test_ci_pipeline.ps1",
         "tools/tests/test_doc_governance.ps1",
         "docker/tests/test_docker_manifests.ps1"
