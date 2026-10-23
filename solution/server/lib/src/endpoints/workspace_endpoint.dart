@@ -117,39 +117,34 @@ class WorkspaceEndpoint extends Endpoint {
     return WorkspaceService(repository);
   }
 
-  /// Adiciona um membro a um workspace (INV-06; INV-01 indistinction; Gate 2.5).
+  /// Adiciona um membro a um workspace (INV-06 guard aplicado; Gate 2.5).
   Future<WorkspaceResultDto> addMember(Session session, int workspaceId, String userId, WorkspaceMemberRole role) async {
     final caller = await _authenticate(session);
     if (caller == null) {
-      return WorkspaceResultDto(
-        success: false,
-        errorCode: 'ERR_NOT_AUTHENTICATED',
-        message: 'Sessao ausente ou expirada.',
-      );
+      return WorkspaceResultDto(success: false, errorCode: 'ERR_NOT_AUTHENTICATED', message: 'Sessao ausente.');
+    }
+    final guard = MembershipGuard(ServerpodWorkspaceRepository(session));
+    final can = await guard.canMutate(workspaceId: workspaceId, userId: caller.id);
+    if (!can) {
+      return WorkspaceResultDto(success: false, errorCode: WorkspaceErrorCodes.insufficientRole, message: 'Apenas owner pode mutar membros (INV-06).');
     }
     final service = _resolveService(session);
-    return service.addMember(
-      userId: caller.id,
-      workspaceId: workspaceId,
-      role: role,
-    );
+    return service.addMember(userId: caller.id, workspaceId: workspaceId, role: role);
   }
 
-  /// Remove um membro de um workspace (INV-06; INV-01 indistinction; Gate 2.5).
+  /// Remove um membro de um workspace (INV-06 guard aplicado; Gate 2.5).
   Future<WorkspaceResultDto> removeMember(Session session, int workspaceId, String userId) async {
     final caller = await _authenticate(session);
     if (caller == null) {
-      return WorkspaceResultDto(
-        success: false,
-        errorCode: 'ERR_NOT_AUTHENTICATED',
-        message: 'Sessao ausente ou expirada.',
-      );
+      return WorkspaceResultDto(success: false, errorCode: 'ERR_NOT_AUTHENTICATED', message: 'Sessao ausente.');
+    }
+    final guard = MembershipGuard(ServerpodWorkspaceRepository(session));
+    final can = await guard.canMutate(workspaceId: workspaceId, userId: caller.id);
+    if (!can) {
+      return WorkspaceResultDto(success: false, errorCode: WorkspaceErrorCodes.insufficientRole, message: 'Apenas owner pode remover membros (INV-06).');
     }
     final service = _resolveService(session);
-    return service.removeMember(
-      userId: caller.id,
-      workspaceId: workspaceId,
-    );
+    return service.removeMember(userId: caller.id, workspaceId: workspaceId);
   }
 }
 
