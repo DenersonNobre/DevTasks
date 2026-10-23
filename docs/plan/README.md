@@ -1,4 +1,4 @@
-# Plan — DevTasks
+﻿# Plan — DevTasks
 
 > Índice central de planejamento e roteiro de evolução do projeto.
 > Fonte de escopo: `docs/product/PRD.md` · Domínio/invariantes: `docs/architecture/SPEC.md` ·
@@ -122,11 +122,11 @@ flowchart TD
 | Épico | UCs | UCs concluídos | Status |
 |:---|:---:|:---:|:---:|
 | 00 — Fundação | 8 | 8/8 | ✅ |
-| 01 — Autenticação | 7 | 5/7 | 🔄 |
+| 01 — Autenticação | 8 | 5/8 | 🔄 |
 | 02 — Workspace & Membresias | 3 | 0/3 | ⏳ |
 | 03 — Projetos | 2 | 0/2 | ⏳ |
 | 04 — Tarefas & Kanban | 3 | 0/3 | ⏳ |
 | 05 — Comentários | 2 | 0/2 | ⏳ |
 | 06 — Dashboard | 1 | 0/1 | ⏳ |
 | 07 — Deploy & Medição | 3 | 0/3 | ⏳ |
-| **Total** | **29** | **13/29** | 🔄 |
+| **Total** | **30** | **13/30** | 🔄 |

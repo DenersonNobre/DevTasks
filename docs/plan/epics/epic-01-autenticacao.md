@@ -24,6 +24,7 @@ sensível (workflow_rules §Gate 2.5).
 | F1.4 | Hardening de auth (rate limit + validação) | 1 | **Gate 2.5 obrigatório** | ⏳ |
 | F1.5 | Tema base & acessibilidade (D-06) | 1 | RNF-05/06/07 reatribuídos da EPIC-00 | ✅ |
 | F1.6 | Telas de autenticação (D-03) | 1 | Depende de F1.1–F1.3 (app-side) | ⏳ |
+| F1.7 | Sessão persistida (token opaco em DB) | 1 | Depende de F1.2/F1.3; decisão do PO (2026-10-23) | ⏳ |
 
 ---
 
@@ -320,3 +321,49 @@ em toda fronteira — parâmetro final **revisado no Gate 2.5**.
 * **Impacto & Arquivos Alvo**:
   - `solution/server/lib/src/endpoints/auth_endpoint.dart` [MODIFY]
   - `solution/server/test/**` [NEW]
+
+---
+
+### Feature 1.7 — Sessão Persistida (Token Opaco em DB)
+
+**Descrição**: signIn emite token opaco (32 bytes CSPRNG) e o servidor persiste **apenas o hash**
+
+(SHA-256) com TTL de 24 h e revogação explícita no signOut; MeEndpoint/SessionGuard passam a validar
+
+o banco. Substitui o sessionToken: null de F1.2 e o guard sem validação de F1.3.
+
+**DoR**: F1.2/F1.3 ✅ · Gate 2.5 (superfície de credencial de sessão) · decisão do PO: token opaco (não JWT).
+**DoD**: hash persistido (nunca o token), TTL e revogação provados com clock fake; MeEndpoint devolve o
+usuário com token válido e ERR_NOT_AUTHENTICATED com expirado/revogado; nenhum token em log.
+
+#### User Story 1.7.1 — Sessão que existe de verdade no servidor
+
+* **Identificador**: `UC-01.07`n* **Narrativa**:
+  - **Como** usuário autenticado
+  - **Eu quero** que minha sessão seja reconhecida pelo servidor até eu sair ou expirar
+  - **Para que** eu acesse a área privada sem reenviar credenciais a cada requisição
+* **Critérios de Aceitação**:
+  ``gherkin
+  Cenário: login emite token e persiste apenas o hash
+    Dado credenciais válidas
+    Quando submeto o login
+    Então recebo um sessionToken não vazio e o banco guarda sha256(token), nunca o token
+
+  Cenário: token expirado é rejeitado
+    Dado um token emitido há mais de 24 h
+    Quando ele é usado no MeEndpoint
+    Então recebo ERR_NOT_AUTHENTICATED
+
+  Cenário: logout revoga o token
+    Dado um token válido
+    Quando executo o logout
+    Então o mesmo token deixa de autenticar (idempotente na segunda chamada)
+  ``n* **Tarefas Técnicas**:
+  1. `TASK-01`: testes Red (emissão/validação/expiração/revogação) ➔ `test(auth): red for session token issuance`
+  2. `TASK-02`: modelo + migração + emissão/validação/revogação ➔ `feat(auth): issue opaque session tokens (UC-01.07)`
+* **Impacto & Arquivos Alvo**:
+  - `solution/server/lib/src/modules/auth/**` · `solution/server/lib/src/endpoints/**` [MODIFY]
+  - `solution/server/migrations/**` · `solution/client/**` (somente via `serverpod generate`) [MODIFY]
+  - `solution/server/test/unit/auth/**` [NEW]
+
+---
