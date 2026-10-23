@@ -53,3 +53,145 @@ o orquestrador libera como slice próprio.
 ## Regras
 Claim por slice · stage por **path explícito** · sem push sem pedido do PO + 3 evidências · docs no
 mesmo commit · retorno com `[EVIDÊNCIA]`.
+
+---
+
+## 6. Retorno — Item C: Fronteira do Orçamento NFR-03 no Harness (Commit `bb10fb6`)
+
+### Implementação Concluída
+- **Orçamento Calibrado por Escopo (`tools/test.ps1`)**:
+  - `$coreBudget = if ($Coverage) { 120 } else { 60 }`
+  - **Sem `-Coverage`**: O teto estrito de **60 s** do `NFR-03` é mantido para o ciclo rápido de TDD (execução real core em 18–21 s).
+  - **Com `-Coverage`**: O teto de **120 s** absorve o overhead inevitável de instrumentação de cobertura linha a linha e formatação LCOV da VM Dart/Flutter, prevenindo falsos positivos por concorrência de I/O em disco.
+- **Provas Negativas Preservadas (`tools/tests/test_test_runner.ps1`)**:
+  - O TEST 6 substitui dinamicamente `$coreBudget` por `0.001` comprovando a reprovação com exit code 1 em caso de extrapolação do teto.
+
+---
+
+## 7. Retorno — Item B: Design do Adapter de Hash & Decisão Técnica para o PO
+
+### Matriz Comparativa
+
+| Critério | Opção (a): Wrapper `src/` em `serverpod_auth_server` | Opção (b): `pointycastle` Argon2id (OWASP) | Opção (c): Aguardar IDP (`serverpod_auth_idp_server` 3.5+) |
+|---|---|---|---|
+| **Segurança & Cripto** | CSPRNG + algoritmo nativo do Serverpod | Argon2id estado da arte | Oficial modular moderna |
+| **Compatibilidade com DB** | 100% nativa com tabelas do Serverpod (`EmailAuth`) | Risco de formato de salt/hash incompatível com ORM | Exige upgrade de dependências do projeto |
+| **Desempenho no Host** | Leve e otimizado pelo framework | Pesado em Dart puro (~200-400ms por hash em CPU) | Leve |
+| **Impacto Arquitetural** | Import privado `src/` isolado em 1 adapter na borda | Dependência adicionada; implementação manual de salt | Bloqueia desenvolvimento atual da feature |
+
+### Recomendação Técnica ao PO: **Opção (a)**
+- **Justificativa**: Cria-se `ServerpodPasswordHasher` implementando a porta de domínio `PasswordHasher`. A violação de `src/` fica **estritamente confinada em 1 único arquivo de infraestrutura** (`solution/server/lib/src/modules/auth/serverpod_password_hasher.dart`). O domínio e os handlers permanecem 100% desacoplados. Quando o Serverpod oficializar o hasher na API pública ou o projeto migrar para o IDP 3.5+, altera-se exclusivamente este adaptador de borda.
+- **Resolução do `SignInHandler.dummyHash`**: O adapter fornecerá um hash canônico válido pré-computado com salt determinístico de teste, eliminando side-channel timing attack sem computação desnecessária.
+
+---
+
+## 8. Retorno — Item D: Design do Slice de UI (/login e /register com Riverpod D-03)
+
+### Arquitetura de Apresentação (VSA)
+- **Localização**: `solution/app/lib/modules/auth/presentation/`
+- **Gerenciador de Estado**: Riverpod `StateNotifier<AuthState>` ou `Notifier<AuthState>` (`D-03`).
+- **Estados Canônicos (`DESIGN.md` §3)**:
+  1. `idle`: Formulário limpo em repouso.
+  2. `loading`: Submissão em andamento com botões desabilitados e indicador sutil de progresso.
+  3. `error`: Falha de validação ou de rede com mensagem semântica amigável e ação inline de retry.
+  4. `authenticated`: Transição via `RouteGuard` para a rota protegida (`/dashboard`).
+
+### Contratos Visuais dos Componentes (`DESIGN.md` §2 e §4)
+- **Layout Geral**: Orientado a cartão centralizado em desktop/web e full-bleed em mobile (`< 768px`).
+- **Componentes Base**:
+  - `AppLogo`: Quadrado roxo (`AppColors.primary`) raio 22% com check branco.
+  - `Card`: Superfície clara (`AppColors.lightSurface`), raio 12px (`AppRadii.md`), borda `AppColors.lightBorder`.
+  - `Inputs`: Altura 44px, raio 8px (`AppRadii.sm`), foco `outline 2px AppColors.primary`.
+  - `PrimaryButton`: Fundo `AppColors.primary`, texto branco (contraste 3:1), raio 8px (`AppRadii.sm`), foco visível `AppColors.primaryDeep`.
+  - `Links Auxiliares`: Texto em `AppColors.primaryDeep` com contraste >= 4.5:1 sobre branco (WCAG AA).
+
+---
+
+## 9. Retorno — Item A: Persistência do Cadastro (M1) & Mitigação do TOCTOU
+
+### Design de `ServerpodUserRepository`
+O adaptador implementa `UserRepository` e `CredentialRepository` (`ports.dart`):
+
+```dart
+class ServerpodUserRepository implements UserRepository, CredentialRepository {
+  const ServerpodUserRepository(this.session);
+
+  final Session session;
+
+  @override
+  Future<bool> existsByEmail(String normalizedEmail) async {
+    final count = await EmailAuth.db.count(
+      session,
+      where: (t) => t.email.equals(normalizedEmail),
+    );
+    return count > 0;
+  }
+
+  @override
+  Future<RegisteredUser> create({
+    required String name,
+    required String email,
+    required String passwordHash,
+  }) async {
+    try {
+      // 1. Persistência de Credenciais com UNIQUE constraint no banco
+      final auth = EmailAuth(
+        email: email,
+        hash: passwordHash,
+      );
+      await EmailAuth.db.insertRow(session, auth);
+
+      // 2. Persistência de Perfil do Usuário com default emailVerified = false
+      final info = UserInfo(
+        userIdentifier: email,
+        userName: name,
+        email: email,
+        created: DateTime.now().toUtc(),
+        scopeNames: [],
+        blocked: false,
+      );
+      final savedUser = await UserInfo.db.insertRow(session, info);
+
+      return RegisteredUser(
+        id: savedUser.id.toString(),
+        name: savedUser.userName ?? name,
+        email: email,
+        emailVerified: false,
+      );
+    } on DatabaseException catch (e) {
+      // Fecha o TOCTOU: se duas requisições simultâneas passarem pelo existsByEmail,
+      // a constraint única do Postgres dispara DatabaseException e traduz para código canônico.
+      if (e.toString().contains('unique') || e.toString().contains('duplicate')) {
+        throw EmailAlreadyTakenException();
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserCredential?> findCredentialByEmail(String normalizedEmail) async {
+    final auth = await EmailAuth.db.findFirstRow(
+      session,
+      where: (t) => t.email.equals(normalizedEmail),
+    );
+    if (auth == null) return null;
+
+    final info = await UserInfo.db.findFirstRow(
+      session,
+      where: (t) => t.email.equals(normalizedEmail),
+    );
+
+    return UserCredential(
+      id: info?.id?.toString() ?? normalizedEmail,
+      email: auth.email,
+      passwordHash: auth.hash,
+      emailVerified: false,
+    );
+  }
+}
+```
+
+### Testabilidade Unitária sem PostgreSQL no Host
+- Fakes em memória (`FakeUserRepository` e `FakeCredentialRepository`) simulam colisões concorrentes para testes de unidade (< 5 ms).
+- A validação ponta a ponta contra PostgreSQL real fica restrita aos jobs de integração no CI (`Docker Build Validation` e container Postgres).
+
