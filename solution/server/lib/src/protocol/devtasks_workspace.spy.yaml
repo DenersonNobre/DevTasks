@@ -1,0 +1,6 @@
+class: DevtasksWorkspace
+table: devtasks_workspace
+fields:
+  name: String
+  createdAt: DateTime
+

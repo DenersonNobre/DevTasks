@@ -5,8 +5,6 @@ import 'package:devtasks_server/src/modules/auth/request_auth_helper.dart';
 import 'package:devtasks_server/src/modules/auth/serverpod_session_service.dart';
 import 'package:devtasks_server/src/modules/auth/sign_in_handler.dart';
 import 'package:devtasks_server/src/modules/auth/sign_in_service.dart';
-import 'package:relic/relic.dart' as relic;
-import 'package:relic_core/relic_core.dart';
 import 'package:serverpod/serverpod.dart';
 import 'package:test/test.dart';
 
@@ -18,14 +16,14 @@ class _FakeSession implements Session {
   final String? authHeader;
 
   @override
-  relic.Request? get request {
+  Request? get request {
     final header = authHeader;
     if (header == null) return null;
     return RequestInternal.create(
-      relic.Method.get,
+      Method.get,
       Uri.parse('http://localhost:8080/'),
       Object(),
-      headers: relic.Headers.fromMap({
+      headers: Headers.fromMap({
         'authorization': [header],
       }),
     );

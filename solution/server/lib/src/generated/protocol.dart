@@ -15,19 +15,31 @@ import 'package:serverpod/serverpod.dart' as _i1;
 import 'package:serverpod/protocol.dart' as _i2;
 import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i3;
 import 'devtasks_session.dart' as _i4;
-import 'me_result_dto.dart' as _i5;
-import 'sign_in_dto.dart' as _i6;
-import 'sign_in_result_dto.dart' as _i7;
-import 'sign_out_result_dto.dart' as _i8;
-import 'sign_up_dto.dart' as _i9;
-import 'sign_up_result_dto.dart' as _i10;
+import 'devtasks_workspace.dart' as _i5;
+import 'devtasks_workspace_member.dart' as _i6;
+import 'me_result_dto.dart' as _i7;
+import 'sign_in_dto.dart' as _i8;
+import 'sign_in_result_dto.dart' as _i9;
+import 'sign_out_result_dto.dart' as _i10;
+import 'sign_up_dto.dart' as _i11;
+import 'sign_up_result_dto.dart' as _i12;
+import 'workspace_dto.dart' as _i13;
+import 'workspace_list_result_dto.dart' as _i14;
+import 'workspace_member_role.dart' as _i15;
+import 'workspace_result_dto.dart' as _i16;
 export 'devtasks_session.dart';
+export 'devtasks_workspace.dart';
+export 'devtasks_workspace_member.dart';
 export 'me_result_dto.dart';
 export 'sign_in_dto.dart';
 export 'sign_in_result_dto.dart';
 export 'sign_out_result_dto.dart';
 export 'sign_up_dto.dart';
 export 'sign_up_result_dto.dart';
+export 'workspace_dto.dart';
+export 'workspace_list_result_dto.dart';
+export 'workspace_member_role.dart';
+export 'workspace_result_dto.dart';
 
 class Protocol extends _i1.SerializationManagerServer {
   Protocol._();
@@ -112,6 +124,118 @@ class Protocol extends _i1.SerializationManagerServer {
       ],
       managed: true,
     ),
+    _i2.TableDefinition(
+      name: 'devtasks_workspace',
+      dartName: 'DevtasksWorkspace',
+      schema: 'public',
+      module: 'devtasks',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'devtasks_workspace_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'name',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+      ],
+      foreignKeys: [],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'devtasks_workspace_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        ),
+      ],
+      managed: true,
+    ),
+    _i2.TableDefinition(
+      name: 'devtasks_workspace_member',
+      dartName: 'DevtasksWorkspaceMember',
+      schema: 'public',
+      module: 'devtasks',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault:
+              'nextval(\'devtasks_workspace_member_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'workspaceId',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'userId',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'role',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'protocol:WorkspaceMemberRole',
+        ),
+      ],
+      foreignKeys: [],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'devtasks_workspace_member_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'devtasks_workspace_member_unique_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'workspaceId',
+            ),
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'userId',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
     ..._i3.Protocol.targetTableDefinitions,
     ..._i2.Protocol.targetTableDefinitions,
   ];
@@ -146,44 +270,98 @@ class Protocol extends _i1.SerializationManagerServer {
     if (t == _i4.DevtasksSession) {
       return _i4.DevtasksSession.fromJson(data) as T;
     }
-    if (t == _i5.MeResultDto) {
-      return _i5.MeResultDto.fromJson(data) as T;
+    if (t == _i5.DevtasksWorkspace) {
+      return _i5.DevtasksWorkspace.fromJson(data) as T;
     }
-    if (t == _i6.SignInDto) {
-      return _i6.SignInDto.fromJson(data) as T;
+    if (t == _i6.DevtasksWorkspaceMember) {
+      return _i6.DevtasksWorkspaceMember.fromJson(data) as T;
     }
-    if (t == _i7.SignInResultDto) {
-      return _i7.SignInResultDto.fromJson(data) as T;
+    if (t == _i7.MeResultDto) {
+      return _i7.MeResultDto.fromJson(data) as T;
     }
-    if (t == _i8.SignOutResultDto) {
-      return _i8.SignOutResultDto.fromJson(data) as T;
+    if (t == _i8.SignInDto) {
+      return _i8.SignInDto.fromJson(data) as T;
     }
-    if (t == _i9.SignUpDto) {
-      return _i9.SignUpDto.fromJson(data) as T;
+    if (t == _i9.SignInResultDto) {
+      return _i9.SignInResultDto.fromJson(data) as T;
     }
-    if (t == _i10.SignUpResultDto) {
-      return _i10.SignUpResultDto.fromJson(data) as T;
+    if (t == _i10.SignOutResultDto) {
+      return _i10.SignOutResultDto.fromJson(data) as T;
+    }
+    if (t == _i11.SignUpDto) {
+      return _i11.SignUpDto.fromJson(data) as T;
+    }
+    if (t == _i12.SignUpResultDto) {
+      return _i12.SignUpResultDto.fromJson(data) as T;
+    }
+    if (t == _i13.WorkspaceDto) {
+      return _i13.WorkspaceDto.fromJson(data) as T;
+    }
+    if (t == _i14.WorkspaceListResultDto) {
+      return _i14.WorkspaceListResultDto.fromJson(data) as T;
+    }
+    if (t == _i15.WorkspaceMemberRole) {
+      return _i15.WorkspaceMemberRole.fromJson(data) as T;
+    }
+    if (t == _i16.WorkspaceResultDto) {
+      return _i16.WorkspaceResultDto.fromJson(data) as T;
     }
     if (t == _i1.getType<_i4.DevtasksSession?>()) {
       return (data != null ? _i4.DevtasksSession.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i5.MeResultDto?>()) {
-      return (data != null ? _i5.MeResultDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i5.DevtasksWorkspace?>()) {
+      return (data != null ? _i5.DevtasksWorkspace.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i6.SignInDto?>()) {
-      return (data != null ? _i6.SignInDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i6.DevtasksWorkspaceMember?>()) {
+      return (data != null ? _i6.DevtasksWorkspaceMember.fromJson(data) : null)
+          as T;
     }
-    if (t == _i1.getType<_i7.SignInResultDto?>()) {
-      return (data != null ? _i7.SignInResultDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i7.MeResultDto?>()) {
+      return (data != null ? _i7.MeResultDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i8.SignOutResultDto?>()) {
-      return (data != null ? _i8.SignOutResultDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i8.SignInDto?>()) {
+      return (data != null ? _i8.SignInDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i9.SignUpDto?>()) {
-      return (data != null ? _i9.SignUpDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i9.SignInResultDto?>()) {
+      return (data != null ? _i9.SignInResultDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i10.SignUpResultDto?>()) {
-      return (data != null ? _i10.SignUpResultDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i10.SignOutResultDto?>()) {
+      return (data != null ? _i10.SignOutResultDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i11.SignUpDto?>()) {
+      return (data != null ? _i11.SignUpDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i12.SignUpResultDto?>()) {
+      return (data != null ? _i12.SignUpResultDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i13.WorkspaceDto?>()) {
+      return (data != null ? _i13.WorkspaceDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i14.WorkspaceListResultDto?>()) {
+      return (data != null ? _i14.WorkspaceListResultDto.fromJson(data) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i15.WorkspaceMemberRole?>()) {
+      return (data != null ? _i15.WorkspaceMemberRole.fromJson(data) : null)
+          as T;
+    }
+    if (t == _i1.getType<_i16.WorkspaceResultDto?>()) {
+      return (data != null ? _i16.WorkspaceResultDto.fromJson(data) : null)
+          as T;
+    }
+    if (t == List<_i13.WorkspaceDto>) {
+      return (data as List)
+              .map((e) => deserialize<_i13.WorkspaceDto>(e))
+              .toList()
+          as T;
+    }
+    if (t == _i1.getType<List<_i13.WorkspaceDto>?>()) {
+      return (data != null
+              ? (data as List)
+                    .map((e) => deserialize<_i13.WorkspaceDto>(e))
+                    .toList()
+              : null)
+          as T;
     }
     try {
       return _i3.Protocol().deserialize<T>(data, t);
@@ -197,12 +375,18 @@ class Protocol extends _i1.SerializationManagerServer {
   static String? getClassNameForType(Type type) {
     return switch (type) {
       _i4.DevtasksSession => 'DevtasksSession',
-      _i5.MeResultDto => 'MeResultDto',
-      _i6.SignInDto => 'SignInDto',
-      _i7.SignInResultDto => 'SignInResultDto',
-      _i8.SignOutResultDto => 'SignOutResultDto',
-      _i9.SignUpDto => 'SignUpDto',
-      _i10.SignUpResultDto => 'SignUpResultDto',
+      _i5.DevtasksWorkspace => 'DevtasksWorkspace',
+      _i6.DevtasksWorkspaceMember => 'DevtasksWorkspaceMember',
+      _i7.MeResultDto => 'MeResultDto',
+      _i8.SignInDto => 'SignInDto',
+      _i9.SignInResultDto => 'SignInResultDto',
+      _i10.SignOutResultDto => 'SignOutResultDto',
+      _i11.SignUpDto => 'SignUpDto',
+      _i12.SignUpResultDto => 'SignUpResultDto',
+      _i13.WorkspaceDto => 'WorkspaceDto',
+      _i14.WorkspaceListResultDto => 'WorkspaceListResultDto',
+      _i15.WorkspaceMemberRole => 'WorkspaceMemberRole',
+      _i16.WorkspaceResultDto => 'WorkspaceResultDto',
       _ => null,
     };
   }
@@ -219,18 +403,30 @@ class Protocol extends _i1.SerializationManagerServer {
     switch (data) {
       case _i4.DevtasksSession():
         return 'DevtasksSession';
-      case _i5.MeResultDto():
+      case _i5.DevtasksWorkspace():
+        return 'DevtasksWorkspace';
+      case _i6.DevtasksWorkspaceMember():
+        return 'DevtasksWorkspaceMember';
+      case _i7.MeResultDto():
         return 'MeResultDto';
-      case _i6.SignInDto():
+      case _i8.SignInDto():
         return 'SignInDto';
-      case _i7.SignInResultDto():
+      case _i9.SignInResultDto():
         return 'SignInResultDto';
-      case _i8.SignOutResultDto():
+      case _i10.SignOutResultDto():
         return 'SignOutResultDto';
-      case _i9.SignUpDto():
+      case _i11.SignUpDto():
         return 'SignUpDto';
-      case _i10.SignUpResultDto():
+      case _i12.SignUpResultDto():
         return 'SignUpResultDto';
+      case _i13.WorkspaceDto():
+        return 'WorkspaceDto';
+      case _i14.WorkspaceListResultDto():
+        return 'WorkspaceListResultDto';
+      case _i15.WorkspaceMemberRole():
+        return 'WorkspaceMemberRole';
+      case _i16.WorkspaceResultDto():
+        return 'WorkspaceResultDto';
     }
     className = _i2.Protocol().getClassNameForObject(data);
     if (className != null) {
@@ -252,23 +448,41 @@ class Protocol extends _i1.SerializationManagerServer {
     if (dataClassName == 'DevtasksSession') {
       return deserialize<_i4.DevtasksSession>(data['data']);
     }
+    if (dataClassName == 'DevtasksWorkspace') {
+      return deserialize<_i5.DevtasksWorkspace>(data['data']);
+    }
+    if (dataClassName == 'DevtasksWorkspaceMember') {
+      return deserialize<_i6.DevtasksWorkspaceMember>(data['data']);
+    }
     if (dataClassName == 'MeResultDto') {
-      return deserialize<_i5.MeResultDto>(data['data']);
+      return deserialize<_i7.MeResultDto>(data['data']);
     }
     if (dataClassName == 'SignInDto') {
-      return deserialize<_i6.SignInDto>(data['data']);
+      return deserialize<_i8.SignInDto>(data['data']);
     }
     if (dataClassName == 'SignInResultDto') {
-      return deserialize<_i7.SignInResultDto>(data['data']);
+      return deserialize<_i9.SignInResultDto>(data['data']);
     }
     if (dataClassName == 'SignOutResultDto') {
-      return deserialize<_i8.SignOutResultDto>(data['data']);
+      return deserialize<_i10.SignOutResultDto>(data['data']);
     }
     if (dataClassName == 'SignUpDto') {
-      return deserialize<_i9.SignUpDto>(data['data']);
+      return deserialize<_i11.SignUpDto>(data['data']);
     }
     if (dataClassName == 'SignUpResultDto') {
-      return deserialize<_i10.SignUpResultDto>(data['data']);
+      return deserialize<_i12.SignUpResultDto>(data['data']);
+    }
+    if (dataClassName == 'WorkspaceDto') {
+      return deserialize<_i13.WorkspaceDto>(data['data']);
+    }
+    if (dataClassName == 'WorkspaceListResultDto') {
+      return deserialize<_i14.WorkspaceListResultDto>(data['data']);
+    }
+    if (dataClassName == 'WorkspaceMemberRole') {
+      return deserialize<_i15.WorkspaceMemberRole>(data['data']);
+    }
+    if (dataClassName == 'WorkspaceResultDto') {
+      return deserialize<_i16.WorkspaceResultDto>(data['data']);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);
@@ -298,6 +512,10 @@ class Protocol extends _i1.SerializationManagerServer {
     switch (t) {
       case _i4.DevtasksSession:
         return _i4.DevtasksSession.t;
+      case _i5.DevtasksWorkspace:
+        return _i5.DevtasksWorkspace.t;
+      case _i6.DevtasksWorkspaceMember:
+        return _i6.DevtasksWorkspaceMember.t;
     }
     return null;
   }

@@ -4,3 +4,8 @@ auth:
   - signOut:
 me:
   - me:
+workspace:
+  - create:
+  - update:
+  - list:
+  - getById:

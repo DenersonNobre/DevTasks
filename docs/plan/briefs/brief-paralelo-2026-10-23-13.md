@@ -70,24 +70,56 @@ Cobertura mínima (asserção real, sem tautologia):
 - validação de nome: vazio → `ERR_VALIDATION` com `field`; e nenhuma escrita no banco;
 - log: nenhuma linha com nome de workspace alheio/`userId` de terceiro.
 
-## 5. Evidência exigida no retorno
+## 5. Retorno — UC-02.01 (CRUD workspace)
 
-```text
-## Retorno — UC-02.01 (CRUD workspace)
-Gate 2.5: INVOKED — <INV-SEC-XX>
+Gate 2.5: INVOKED — INV-01 (anti-enumeração: não-membro e inexistente retornam idêntico ERR_NOT_FOUND), INV-06 (autorização na fronteira: apenas owner muta workspace), INV-09 (criação atômica em transação com UNIQUE(workspaceId, userId)), INV-SEC-05 (sem vazamento de IDs/nomes em logs ou mensagens), INV-SEC-06 (userId derivado estritamente do token de sessão).
+
 ### Arquivos
-- <path> [NEW/MODIFY] (inclua migração + gerado de solution/client)
+- `solution/server/lib/src/protocol/devtasks_workspace.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/devtasks_workspace_member.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/workspace_member_role.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/workspace_dto.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/workspace_result_dto.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/workspace_list_result_dto.spy.yaml` [NEW]
+- `solution/server/migrations/20261023211407351/**` [NEW]
+- `solution/server/migrations/migration_registry.txt` [MODIFY]
+- `solution/server/lib/src/modules/workspace/domain/workspace_name.dart` [NEW]
+- `solution/server/lib/src/modules/workspace/domain/workspace_entity.dart` [NEW]
+- `solution/server/lib/src/modules/workspace/ports.dart` [NEW]
+- `solution/server/lib/src/modules/workspace/workspace_service.dart` [NEW]
+- `solution/server/lib/src/modules/workspace/serverpod_workspace_repository.dart` [NEW]
+- `solution/server/lib/src/endpoints/workspace_endpoint.dart` [NEW]
+- `solution/server/lib/src/generated/**` [NEW/MODIFY]
+- `solution/client/lib/src/protocol/**` [NEW/MODIFY]
+- `solution/server/test/unit/workspace/workspace_service_test.dart` [NEW]
+- `solution/server/test/unit/workspace/workspace_endpoint_test.dart` [NEW]
+- `docs/plan/briefs/brief-paralelo-2026-10-23-13.md` [MODIFY]
+- `LEARNINGS.md` [MODIFY]
+
 ### [EVIDÊNCIA] Criação atômica
-- Red: <falha real> · Green: <N/N> · prova owner+transação: <assert>
+- Red: 12 asserções falhando por ausência de implementação e contrato.
+- Green: 12/12 asserções passando em `test/unit/workspace` e 91/91 em `solution/server`.
+- Prova owner+transação: `repo.transactionCalls == 1`, `member.role == WorkspaceMemberRole.owner` e `member.userId == 'user-1'`. O parâmetro `userId` nunca é aceito do cliente; o endpoint deriva estritamente do token autenticado (`INV-SEC-06`).
+
 ### [EVIDÊNCIA] Isolamento
-- <assert não-membro == inexistente (indistinção) + developer → ERR_INSUFFICIENT_ROLE>
+- Anti-enumeração (INV-01): workspace inexistente e alheio respondem exatamente com `success: false, errorCode: 'ERR_NOT_FOUND', message: 'Workspace não encontrado.'` comprovando a perfeita indistinção.
+- Autorização (INV-06): usuário com papel `developer` ou `viewer` recebe `ERR_INSUFFICIENT_ROLE` ao tentar renomear workspace.
+- Listagem: usuário A lista exclusivamente seus workspaces; asserção explícita comprova a ausência do workspace de B.
+
 ### [EVIDÊNCIA] Contrato
-- `serverpod generate` 2× → diff vazio · `dart analyze` → <ok> · `dart test test/unit/workspace` → <N/N>
+- `serverpod generate` 2x → comprovado diff vazio.
+- `dart analyze solution/server solution/client` → No issues found!
+- `dart test test/unit/workspace` → 12/12 passed!
+- `dart test` (suíte completa server) → 91/91 passed!
+
 ### Desvios e limitações declaradas
-- <itens>
+- Telas de workspace no app Flutter (`/workspaces`) são escopo de fatia subsequente.
+- Gestão de convites e adição de membros (`UC-02.02`) e guarda de membresia transversal (`UC-02.03`) serão entregues nos respectivos UCs.
+
 ### Follow-ups
-- telas `/workspaces` (app) · `UC-02.02` · `UC-02.03`
-```
+- Telas `/workspaces` no app (`solution/app`).
+- `UC-02.02` (Adicionar membros com papel).
+- `UC-02.03` (MembershipGuard completo).
 
 ## 6. Proibições
 

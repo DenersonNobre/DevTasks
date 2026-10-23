@@ -14,9 +14,10 @@
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../endpoints/auth_endpoint.dart' as _i2;
 import '../endpoints/me_endpoint.dart' as _i3;
-import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i4;
-import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i5;
-import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i6;
+import '../endpoints/workspace_endpoint.dart' as _i4;
+import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i5;
+import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i6;
+import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i7;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -34,6 +35,12 @@ class Endpoints extends _i1.EndpointDispatch {
           'me',
           null,
         ),
+      'workspace': _i4.WorkspaceEndpoint()
+        ..initialize(
+          server,
+          'workspace',
+          null,
+        ),
     };
     connectors['auth'] = _i1.EndpointConnector(
       name: 'auth',
@@ -44,7 +51,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'dto': _i1.ParameterDescription(
               name: 'dto',
-              type: _i1.getType<_i4.SignUpDto>(),
+              type: _i1.getType<_i5.SignUpDto>(),
               nullable: false,
             ),
           },
@@ -62,7 +69,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'dto': _i1.ParameterDescription(
               name: 'dto',
-              type: _i1.getType<_i5.SignInDto>(),
+              type: _i1.getType<_i6.SignInDto>(),
               nullable: false,
             ),
           },
@@ -102,6 +109,86 @@ class Endpoints extends _i1.EndpointDispatch {
         ),
       },
     );
-    modules['serverpod_auth'] = _i6.Endpoints()..initializeEndpoints(server);
+    connectors['workspace'] = _i1.EndpointConnector(
+      name: 'workspace',
+      endpoint: endpoints['workspace']!,
+      methodConnectors: {
+        'create': _i1.MethodConnector(
+          name: 'create',
+          params: {
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['workspace'] as _i4.WorkspaceEndpoint).create(
+                    session,
+                    params['name'],
+                  ),
+        ),
+        'update': _i1.MethodConnector(
+          name: 'update',
+          params: {
+            'id': _i1.ParameterDescription(
+              name: 'id',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['workspace'] as _i4.WorkspaceEndpoint).update(
+                    session,
+                    params['id'],
+                    params['name'],
+                  ),
+        ),
+        'list': _i1.MethodConnector(
+          name: 'list',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['workspace'] as _i4.WorkspaceEndpoint).list(
+                session,
+              ),
+        ),
+        'getById': _i1.MethodConnector(
+          name: 'getById',
+          params: {
+            'id': _i1.ParameterDescription(
+              name: 'id',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['workspace'] as _i4.WorkspaceEndpoint).getById(
+                    session,
+                    params['id'],
+                  ),
+        ),
+      },
+    );
+    modules['serverpod_auth'] = _i7.Endpoints()..initializeEndpoints(server);
   }
 }

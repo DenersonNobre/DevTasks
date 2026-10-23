@@ -19,8 +19,11 @@ import 'package:devtasks_client/src/protocol/sign_in_result_dto.dart' as _i5;
 import 'package:devtasks_client/src/protocol/sign_in_dto.dart' as _i6;
 import 'package:devtasks_client/src/protocol/sign_out_result_dto.dart' as _i7;
 import 'package:devtasks_client/src/protocol/me_result_dto.dart' as _i8;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i9;
-import 'protocol.dart' as _i10;
+import 'package:devtasks_client/src/protocol/workspace_result_dto.dart' as _i9;
+import 'package:devtasks_client/src/protocol/workspace_list_result_dto.dart'
+    as _i10;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i11;
+import 'protocol.dart' as _i12;
 
 /// Endpoint de autenticação (cadastro, login e logout).
 ///
@@ -81,12 +84,64 @@ class EndpointMe extends _i1.EndpointRef {
       );
 }
 
+/// Endpoint de gerenciamento de Workspaces (UC-02.01).
+///
+/// Segurança (Gate 2.5):
+/// - Autenticação obrigatória via `SessionAuthenticator` (INV-SEC-16);
+/// - Identidade do autor (`userId`) extraída exclusivamente da sessão (INV-SEC-06);
+/// - Isolamento multi-tenant: não-membro recebe ERR_NOT_FOUND indistinguível (INV-01);
+/// - Autorização por papel: apenas owner muta workspace (INV-06).
+/// {@category Endpoint}
+class EndpointWorkspace extends _i1.EndpointRef {
+  EndpointWorkspace(_i1.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'workspace';
+
+  /// Cria um novo workspace e vincula o usuário autenticado como owner.
+  _i2.Future<_i9.WorkspaceResultDto> create(String name) =>
+      caller.callServerEndpoint<_i9.WorkspaceResultDto>(
+        'workspace',
+        'create',
+        {'name': name},
+      );
+
+  /// Renomeia um workspace existente (apenas owner).
+  _i2.Future<_i9.WorkspaceResultDto> update(
+    int id,
+    String name,
+  ) => caller.callServerEndpoint<_i9.WorkspaceResultDto>(
+    'workspace',
+    'update',
+    {
+      'id': id,
+      'name': name,
+    },
+  );
+
+  /// Lista workspaces pertencentes ao usuário autenticado.
+  _i2.Future<_i10.WorkspaceListResultDto> list() =>
+      caller.callServerEndpoint<_i10.WorkspaceListResultDto>(
+        'workspace',
+        'list',
+        {},
+      );
+
+  /// Consulta detalhes de um workspace específico.
+  _i2.Future<_i9.WorkspaceResultDto> getById(int id) =>
+      caller.callServerEndpoint<_i9.WorkspaceResultDto>(
+        'workspace',
+        'getById',
+        {'id': id},
+      );
+}
+
 class Modules {
   Modules(Client client) {
-    auth = _i9.Caller(client);
+    auth = _i11.Caller(client);
   }
 
-  late final _i9.Caller auth;
+  late final _i11.Caller auth;
 }
 
 class Client extends _i1.ServerpodClientShared {
@@ -109,7 +164,7 @@ class Client extends _i1.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i10.Protocol(),
+         _i12.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,
@@ -120,6 +175,7 @@ class Client extends _i1.ServerpodClientShared {
        ) {
     auth = EndpointAuth(this);
     me = EndpointMe(this);
+    workspace = EndpointWorkspace(this);
     modules = Modules(this);
   }
 
@@ -127,12 +183,15 @@ class Client extends _i1.ServerpodClientShared {
 
   late final EndpointMe me;
 
+  late final EndpointWorkspace workspace;
+
   late final Modules modules;
 
   @override
   Map<String, _i1.EndpointRef> get endpointRefLookup => {
     'auth': auth,
     'me': me,
+    'workspace': workspace,
   };
 
   @override

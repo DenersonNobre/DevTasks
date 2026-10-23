@@ -1,0 +1,11 @@
+class: DevtasksWorkspaceMember
+table: devtasks_workspace_member
+fields:
+  workspaceId: int
+  userId: String
+  role: WorkspaceMemberRole
+indexes:
+  devtasks_workspace_member_unique_idx:
+    fields: workspaceId, userId
+    unique: true
+
