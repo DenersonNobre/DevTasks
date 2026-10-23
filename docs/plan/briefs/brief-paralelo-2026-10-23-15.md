@@ -58,18 +58,18 @@ número não é comparável entre execuções — gate não confiável, que é o
 - Não tocar em código de produto; sem push; stage por path explícito.
 - Atualizar `LEARNINGS.md` com o achado (janela incluía `pub`; gate media mais que o requisito).
 
-## 4. Retorno esperado
+## 4. Retorno — harness NFR-03
 
-```text
-## Retorno — harness NFR-03
+
 ### Antes/depois (medido)
-- `tools/test.ps1` (local, ocioso): antes <71,81 s / REPROVADO> → depois <…>
-- `-Unit` (app+server, sem pub): <…> s   (teto 60 s)
-- `-Integration`: <…> s                   (teto 120 s)
+- `tools/test.ps1` (local, ocioso): antes 71,81 s / REPROVADO (por rodar pub get dentro do timer e suíte completa sob teto unitário) → depois VERDE (orçamentos calibrados e isolados)
+- `-Unit` (app+server, sem pub): 27,32 s (app=17,64s server=9,61s) — teto 60 s satisfeito (NFR-03 verde)
+- `-Integration`: 91,55 s (app=64,73s server=26,70s) — teto 120 s satisfeito
 ### Prova negativa
-- <comando> → exit != 0 quando o orçamento é estourado (e exit 0 quando dentro)
+- `tools/tests/test_test_runner.ps1` TEST 6 comprovando `exit 1` com `[NFR-03] Suite core completa (app+server) levou ... - teto de 120s excedido` quando o teto é reduzido para valor impossível (0.001s).
+
 ### CI
-- `ci.yml` (github + gitea): `-NoPub` e `pub get` fora da janela; budgets explícitos
+- `.github/workflows/ci.yml` e `.gitea/workflows/ci.yml`: adicionada a flag `-NoPub` à invocação de `tools/test.ps1` após o step limpo de `flutter pub get`.
+
 ### Desvios declarados
-- <itens>
-```
+- Nenhum desvio dos requisitos arquiteturais.

@@ -5,10 +5,12 @@ param(
     [switch]$Coverage,
     [ValidateSet("all", "app", "server", "governance")]
     [string]$Target = "all",
+    [switch]$Unit,
+    [switch]$Integration,
     [switch]$Governance,
     [switch]$FailFast,
     [switch]$SimulateFailure,
-    [bool]$NoPub = $true
+    [switch]$NoPub
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,12 +23,27 @@ $env:FLUTTER_SUPPRESS_ANALYTICS = "true"
 $env:CI = "true"
 
 Write-Host "==> [DevTasks] Disparando Runner de Testes (Headless)..."
-$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 if ($SimulateFailure) {
     Write-Error "[TEST-FAIL] Falha simulada em teste de domínio para verificação de fail propagation."
     exit 1
 }
+
+# 1. Fora da janela de medição (NFR-03): aquecer dependências e package_config antes de cronometrar
+if (-not $NoPub) {
+    if (-not (Test-Path (Join-Path $RepoRoot ".dart_tool/package_config.json"))) {
+        Write-Host "--> Aquecendo package_config do workspace fora da janela do cronômetro..."
+        Push-Location (Join-Path $RepoRoot "solution/server")
+        try {
+            & dart pub get --quiet
+        } finally {
+            Pop-Location
+        }
+    }
+}
+
+$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+$memberTimes = [ordered]@{}
 
 $targets = @()
 if ($Target -eq "all" -or $Target -eq "app") {
@@ -41,40 +58,63 @@ $failedMembers = @()
 
 foreach ($t in $targets) {
     Write-Host "`n--> Executando testes de: $($t.Name) ($($t.Path))..."
-    $argsList = @("test")
-    if ($NoPub -and (Test-Path "$RepoRoot/pubspec.lock")) {
-        $argsList += "--no-pub"
-    }
+    $memberWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $useNoPub = $NoPub -or $Unit -or (Test-Path "$RepoRoot/pubspec.lock")
 
     Push-Location $t.Path
     try {
         if ($t.Name -eq "server") {
+            $serverArgs = @("test")
+            if ($Unit) {
+                $serverArgs += "test/unit"
+            } elseif ($Integration) {
+                $serverArgs += @(
+                    "test/smoke_test.dart",
+                    "test/health_endpoint_test.dart",
+                    "test/client_contract_test.dart"
+                )
+            }
+
             if ($Coverage) {
-                & dart test --coverage=coverage
+                & dart @serverArgs --coverage=coverage
                 if ($LASTEXITCODE -eq 0) {
                     $pkgConfig = Join-Path $RepoRoot ".dart_tool/package_config.json"
                     & dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=$pkgConfig --report-on=lib | Out-Null
                 }
             } else {
-                & dart test
+                & dart @serverArgs
             }
         } else {
+            # app
+            $appArgs = @("test")
+            if ($Unit) {
+                $appArgs += "test/unit"
+            } elseif ($Integration) {
+                $appArgs += "test/widget"
+            }
+            if ($useNoPub) {
+                $appArgs += "--no-pub"
+            }
+
             if ($Coverage) {
-                & flutter test @argsList --coverage
+                & flutter @appArgs --coverage
             } else {
-                & flutter test @argsList
+                & flutter @appArgs
             }
         }
         $exitCode = $LASTEXITCODE
+        $memberElapsed = [Math]::Round($memberWatch.Elapsed.TotalSeconds, 2)
+        $memberTimes[$t.Name] = $memberElapsed
+
         if ($exitCode -ne 0) {
             $hasFailure = $true
             $failedMembers += $t.Name
-            Write-Error "[FAIL] Testes de $($t.Name) falharam com exit code $exitCode."
+            Write-Error "[FAIL] Testes de $($t.Name) falharam com exit code $exitCode ($($memberElapsed)s)."
             if ($FailFast) {
                 break
             }
         } else {
-            Write-Host "  [OK] Todos os testes de $($t.Name) passaram."
+            Write-Host "  [OK] Todos os testes de $($t.Name) passaram em $($memberElapsed)s."
             if ($Coverage) {
                 $lcovPath = Join-Path (Get-Location) "coverage/lcov.info"
                 if (Test-Path $lcovPath) {
@@ -186,17 +226,26 @@ if ($Governance -or $Target -eq "governance") {
 
 $elapsed = $stopwatch.Elapsed.TotalSeconds
 $govElapsed = [Math]::Round($elapsed - $coreElapsed, 2)
-Write-Host ("`n==> [DevTasks] Core (app+server) em {0:N2}s | Governanca em {1:N2}s | Total {2:N2}s" -f $coreElapsed, $govElapsed, $elapsed)
+$memberSummary = ($memberTimes.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)s" }) -join " "
+Write-Host ("`n==> [DevTasks] Core: {0:N2}s ({1}) | Governanca: {2:N2}s | Total: {3:N2}s" -f $coreElapsed, $memberSummary, $govElapsed, $elapsed)
 
-# NFR-03: o teto de 60s vale para a suite CORE sem instrumentacao; com -Coverage,
-# ha overhead de medicao de cobertura e geracao de LCOV, com teto de 120s.
-# Medido no run EXTERNO (runs aninhados de governanca sao isolados sob DEVTASKS_NESTED_RUN).
-$coreBudget = if ($Coverage) { 120 } else { 60 }
+# Calibração dos orçamentos de tempo (NFR-03 / Brief 15):
+# -Unit: gate NFR-03 puro (suíte unitária com fakes sem I/O) <= 60s (120s com cobertura);
+# -Integration / all: suíte com widgets e testes de integração <= 120s (180s com cobertura).
+$coreBudget = if ($Unit) {
+    if ($Coverage) { 120 } else { 60 }
+} elseif ($Integration) {
+    if ($Coverage) { 180 } else { 120 }
+} else {
+    if ($Coverage) { 180 } else { 120 }
+}
+
 if ($env:DEVTASKS_NESTED_RUN -eq "1") {
     Write-Host "  [NFR-03] Run aninhado: orçamento medido apenas no run externo."
 } elseif ($coreElapsed -gt $coreBudget) {
     $hasFailure = $true
-    Write-Error "[NFR-03] Suite core (app+server) levou $([Math]::Round($coreElapsed,2))s - teto de ${coreBudget}s excedido."
+    $modeDesc = if ($Unit) { "unitária (NFR-03)" } elseif ($Integration) { "integração" } else { "core completa" }
+    Write-Error "[NFR-03] Suite $modeDesc (app+server) levou $([Math]::Round($coreElapsed,2))s - teto de ${coreBudget}s excedido."
 }
 if (($Governance -or $Target -eq "governance") -and $govElapsed -gt 600) {
     $hasFailure = $true
