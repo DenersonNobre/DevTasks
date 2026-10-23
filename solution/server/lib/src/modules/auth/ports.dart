@@ -102,3 +102,8 @@ enum SignInErrorCode {
 
   final String wireCode;
 }
+
+/// Porta de validação de sessão (token → usuário autenticado | `null`).
+abstract interface class SessionAuthenticator {
+  Future<AuthenticatedUser?> authenticate(String token);
+}

@@ -18,6 +18,8 @@ import 'package:devtasks_server/src/generated/sign_up_result_dto.dart' as _i4;
 import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i5;
 import 'package:devtasks_server/src/generated/sign_in_result_dto.dart' as _i6;
 import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i7;
+import 'package:devtasks_server/src/generated/me_result_dto.dart' as _i8;
+import 'package:devtasks_server/src/generated/me_dto.dart' as _i9;
 import 'package:devtasks_server/src/generated/protocol.dart';
 import 'package:devtasks_server/src/generated/endpoints.dart';
 export 'package:serverpod_test/serverpod_test_public_exports.dart';
@@ -133,6 +135,8 @@ void withServerpod(
 
 class TestEndpoints {
   late final _AuthEndpoint auth;
+
+  late final _MeEndpoint me;
 }
 
 class _InternalTestEndpoints extends TestEndpoints
@@ -143,6 +147,10 @@ class _InternalTestEndpoints extends TestEndpoints
     _i2.EndpointDispatch endpoints,
   ) {
     auth = _AuthEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    me = _MeEndpoint(
       endpoints,
       serializationManager,
     );
@@ -214,6 +222,48 @@ class _AuthEndpoint {
                   _localCallContext.arguments,
                 )
                 as _i3.Future<_i6.SignInResultDto>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
+class _MeEndpoint {
+  _MeEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _i2.EndpointDispatch _endpointDispatch;
+
+  final _i2.SerializationManager _serializationManager;
+
+  _i3.Future<_i8.MeResultDto> me(
+    _i1.TestSessionBuilder sessionBuilder,
+    _i9.MeDto dto,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'me',
+            method: 'me',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'me',
+          methodName: 'me',
+          parameters: _i1.testObjectToJson({'dto': dto}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i8.MeResultDto>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

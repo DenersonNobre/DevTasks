@@ -1,0 +1,3 @@
+class: MeDto
+fields:
+  token: String?

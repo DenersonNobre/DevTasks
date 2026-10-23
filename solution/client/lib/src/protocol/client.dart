@@ -17,8 +17,10 @@ import 'package:devtasks_client/src/protocol/sign_up_result_dto.dart' as _i3;
 import 'package:devtasks_client/src/protocol/sign_up_dto.dart' as _i4;
 import 'package:devtasks_client/src/protocol/sign_in_result_dto.dart' as _i5;
 import 'package:devtasks_client/src/protocol/sign_in_dto.dart' as _i6;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i7;
-import 'protocol.dart' as _i8;
+import 'package:devtasks_client/src/protocol/me_result_dto.dart' as _i7;
+import 'package:devtasks_client/src/protocol/me_dto.dart' as _i8;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i9;
+import 'protocol.dart' as _i10;
 
 /// Endpoint de autenticação (cadastro e login).
 /// {@category Endpoint}
@@ -43,12 +45,28 @@ class EndpointAuth extends _i1.EndpointRef {
       );
 }
 
+/// Endpoint privado de referência: exige sessão válida (guard de F1.3).
+/// {@category Endpoint}
+class EndpointMe extends _i1.EndpointRef {
+  EndpointMe(_i1.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'me';
+
+  _i2.Future<_i7.MeResultDto> me(_i8.MeDto dto) =>
+      caller.callServerEndpoint<_i7.MeResultDto>(
+        'me',
+        'me',
+        {'dto': dto},
+      );
+}
+
 class Modules {
   Modules(Client client) {
-    auth = _i7.Caller(client);
+    auth = _i9.Caller(client);
   }
 
-  late final _i7.Caller auth;
+  late final _i9.Caller auth;
 }
 
 class Client extends _i1.ServerpodClientShared {
@@ -71,7 +89,7 @@ class Client extends _i1.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i8.Protocol(),
+         _i10.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,
@@ -81,15 +99,21 @@ class Client extends _i1.ServerpodClientShared {
              disconnectStreamsOnLostInternetConnection,
        ) {
     auth = EndpointAuth(this);
+    me = EndpointMe(this);
     modules = Modules(this);
   }
 
   late final EndpointAuth auth;
 
+  late final EndpointMe me;
+
   late final Modules modules;
 
   @override
-  Map<String, _i1.EndpointRef> get endpointRefLookup => {'auth': auth};
+  Map<String, _i1.EndpointRef> get endpointRefLookup => {
+    'auth': auth,
+    'me': me,
+  };
 
   @override
   Map<String, _i1.ModuleEndpointCaller> get moduleLookup => {

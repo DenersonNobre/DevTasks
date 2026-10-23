@@ -1,3 +1,5 @@
 auth:
   - signUp:
   - signIn:
+me:
+  - me:

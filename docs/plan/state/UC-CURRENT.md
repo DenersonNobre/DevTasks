@@ -1,105 +1,78 @@
 # UC-CURRENT — DevTasks
 
-> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-01-autenticacao.md` §F1.2.
+> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-01-autenticacao.md` §F1.3.
 > Ordem de leitura ao retomar: `CHECKPOINT.md` → este arquivo → código.
 
 ## UC corrente
 
-**UC-01.02** — Login & Sessão Persistente (EPIC-01 · F1.2 · `US-1.2.1`).
+**UC-01.03** — Logout & Guarda de Rotas Privadas (EPIC-01 · F1.3 · `US-1.3.1`).
 
-**Gate 2.5: INVOKED** — mesma superfície de auth do `UC-01.01` (credenciais, sessão/token, PII).
-Achados aplicáveis: `INV-SEC-04` (**mensagem única** `ERR_INVALID_CREDENTIALS`, sem enumerar campo;
-verificação de senha **sempre** executada), `INV-SEC-05` (zero PII/segredo em log — `sessionLogs` off),
-`INV-SEC-06` (token só em header/cookie, nunca em body/URL), `INV-SEC-07` (rate limit → `UC-01.04`).
-Rate limit permanece **fora deste UC**.
+**Gate 2.5: INVOKED** — reutiliza a análise de auth do ciclo; aplicáveis: `INV-SEC-06` (token só em
+header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a trava de exposição
+(rate limit ainda em `UC-01.04`).
 
-## Escopo (DoD da F1.2)
+## Escopo (DoD da F1.3)
 
-- **DoD**: sessão sobrevive a restart do app (teste com store injetado) · `ERR_INVALID_CREDENTIALS`
-  **não** enumera o campo.
-- **TASK-01**: teste Red do guard de sessão + erro único.
-- **TASK-02**: verificação de credenciais no server + persistência de sessão no cliente (porta de
-  armazenamento injetável).
-- **TASK-03**: tela `/login` + Riverpod — só se o DoD fechar com folga; senão declarar.
+- **DoD**: teste prova que **cada endpoint privado sem sessão** responde falha tipada de sessão
+  (`ERR_NOT_AUTHENTICATED`) — **contrato, não UI**; logout limpa o estado local.
+- **TASK-01**: teste Red do guard de sessão (servidor) + guarda de rota (app).
+- **TASK-02**: guard no servidor + primeiro endpoint privado de referência (`MeEndpoint`).
+- **TASK-03**: logout no app (já existe `SessionController.signOut`) + decisão de rota.
 
-## Decisões de fatia (mesma trilha do UC-01.01 — infraestrutura ainda ausente)
+## Decisões de fatia (infra ainda ausente — mesmo padrão dos UCs anteriores)
 
-1. **Server**: porta `PasswordVerifier` (novo método na porta de hash ou porta própria) +
-   `SignInHandler` puro (falso-positivo nenhum: se e-mail não existe, **verifica contra um hash dummy**
-   para equalizar custo) + `SignInService`/endpoint `auth.signIn` devolvendo `SignInResultDto`
-   (`success`, `token?`, `errorCode`, `message`, `field?`). Sem IDP/hasher público em 3.4.13, o
-   adaptador real fica declarado como follow-up (responder `ERR_INFRA_FAILURE`, como no sign-up).
-2. **App**: porta `SessionStore` (leitura/escrita/limpeza) + provider Riverpod
-   (`SessionController`) com estado `authenticated/signedOut`, restaurando do store na construção —
-   **prova de "restart"** = novo container/provider lendo o mesmo store falso.
-3. **Token**: o contrato carrega `token?`; a emissão real (opaca, header-only) é do adapter/IDP →
-   follow-up. Não inventar JWT.
+1. **Server**: porta `SessionAuthenticator` (token → usuário | null) + `SessionGuard` **puro**
+   (token vazio/nulo ou inválido → falha `ERR_NOT_AUTHENTICATED`). O `MeEndpoint` é o **endpoint
+   privado de referência** (padrão que os endpoints da EPIC-02+ adotam).
+2. **App**: `RouteGuard` **puro** (rota privada + sessão ausente → redireciona ao login; autenticado →
+   permite). O roteador real (go_router) é decisão do slice de UI — não adiciono dependência aqui.
+3. **HTTP 401**: o RPC devolve código tipado; o mapeamento para status HTTP pertence à fachada REST
+   (mesma decisão registrada nos UCs anteriores).
 
 ## Interfaces
 
-- `SignInHandler(repository, verifier)` → `SignInOutcome` (`user` | `failure`; **sem token** neste
-  slice — emissão de sessão é follow-up).
-- `SessionStore` (app, **porta em `domain/`**): `read()/write(token)/clear()`.
-- `SessionController` (**ChangeNotifier**, testável sem framework): `restore()`, `signIn(token)`,
-  `signOut()`. Provider **Riverpod (D-03)** é pendência declarada do slice de UI.
+- `SessionGuard(authenticator).requireSession(token)` → `GuardOutcome` (`user` | `code`).
+- `MeService(guard?)` → `MeResultDto` (sem guard → `ERR_INFRA_FAILURE`, não finge).
+- `RouteGuard.decide({requiresSession, session})` → `RouteDecision.allow | redirectToLogin`.
 
 ## Arquivos-alvo
 
-- `solution/server/lib/src/modules/auth/**` (verifier/handler/service) + `endpoints/auth_endpoint.dart` [MODIFY]
-- `solution/server/lib/src/protocol/sign_in_*.spy.yaml` [NEW] (gerados)
-- `solution/app/lib/modules/auth/{infrastructure,presentation}/**` + `global/session/**` [NEW]
+- `solution/server/lib/src/modules/auth/{ports,session_guard,me_service}.dart` [NEW/MODIFY]
+- `solution/server/lib/src/endpoints/me_endpoint.dart` + `protocol/me_*.spy.yaml` [NEW]
+- `solution/app/lib/global/router/route_guard.dart` [NEW]
 - `solution/server/test/unit/auth/**`, `solution/app/test/unit/auth/**` [NEW]
 
 ## Estado de execução
 
-> **Nota de integridade (árvore compartilhada)**: durante a fatia 1, um `git add` amplo do outro agente
-> varreu estes arquivos para um commit de docs (`35cff70`); ele **desfez o commit** (`reset --mixed`),
-> os arquivos voltaram à árvore e foram então commitados com a assinatura `(UC-01.02)`. **Sem perda de
-> conteúdo**; o registro fica para auditoria da concorrência (não reescrevi commit alheio).
-
-- Claim: **ativo** — `UC-01.02`, owner `coder` (paths `solution/app`, `solution/server`, hand-off).
-- Modelo do Coder: `opencode/deepseek-v4.1-flash-free`.
-- Implementação: **fatias 1–2 implementadas** (sign-in no server; sessão no app). Gate 3 rodada 1
-  **rejeitada** por evidência sobredeclarada/asserções ausentes; correções aplicadas (mensagem única
-  asserida, hash dummy asserido, teste de round-trip, `SignInService` testado, porta movida para
-  `domain/`); **rodada 2 pendente**.
+- Claim: **ativo** — `UC-01.03`, owner `coder` (paths `solution/app`, `solution/server`, hand-off).
+- Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (os 2 coder anteriores estouraram passos →
+  implementação conduzida pelo orquestrador, gates independentes).
+- Implementação: **não iniciada**.
 
 ## Evidência
 
-### Fatia 1 — sign-in no server (fatia concluída)
-- **Red**: `dart test test/unit/auth/sign_in_handler_test.dart` → exit 1 (arquivo do handler ausente).
-- **Green**: **6 testes novos** (credencial válida; senha errada → `ERR_INVALID_CREDENTIALS` com `field`
-  nulo; e-mail inexistente → **mesmo erro e verifier chamado 1×** com hash dummy; normalização;
-  validação de e-mail/senha) · suíte do server **25 testes** verdes · `analyze` limpo.
-- **Decisão de contrato**: porta própria `CredentialRepository` (+ `PasswordVerifier`) em vez de
-  estender a do sign-up — ISP e o hash não vaza para o handler de cadastro.
-- `serverpod generate` (CLI **3.4.13**) → exit 0; `SignInDto`/`SignInResultDto` gerados
-  (`sessionToken` presente no contrato, `null` neste slice — emissão real é follow-up).
-- **Lacuna declarada**: sem IDP/hasher público em 3.4.13, o `AuthEndpoint.signIn` sem adaptadores
-  responde `ERR_INFRA_FAILURE` (não finge sucesso).
+### Fatia 1 — guard no server (endpoint privado de referência)
+- **Red**: `dart test test/unit/auth/session_guard_test.dart` → exit 1 (`session_guard.dart`/porta ausentes).
+- **Green**: **4 testes** — token nulo **sem consultar** o authenticator, token vazio, token inválido →
+  `ERR_NOT_AUTHENTICATED`; token válido → usuário autorizado.
+- `MeEndpoint`/`MeService` = **padrão de referência** para endpoints privados (EPIC-02+); sem guard
+  responde `ERR_INFRA_FAILURE` (não finge). DTOs `MeDto`/`MeResultDto` gerados.
 
-### Fatia 2 — sessão no app (fatia concluída)
-- **Red**: `flutter test test/unit/auth/session_controller_test.dart` → exit 1 (porta/controlador ausentes).
-- **Green**: **5 testes** (sem token → `signedOut`; **restaura token de store preenchido = prova de
-  restart**; `signIn` persiste; `signOut` limpa; notificações aos ouvintes) · `analyze` limpo.
-- **Interfaces**: `SessionStore` (porta DIP) + `SessionController` (`ChangeNotifier`).
-- **Declarado**: adaptador real de armazenamento, **provider Riverpod (D-03)** e tela `/login`
-  (TASK-03) ficam para o slice de UI — o DoD da F1.2 não os exige.
+### Fatia 2 — guarda de rota no app
+- **Red**: `flutter test test/unit/auth/route_guard_test.dart` → exit 1 (arquivo ausente).
+- **Green**: **4 testes** — rota privada sem sessão → `redirectToLogin`; autenticada → `allow`;
+  pública → `allow`; **após `signOut` volta a redirecionar** (logout integrado ao `SessionController`).
+
+- **Suítes**: server **33 testes** · app auth **24** · `analyze` limpo nos dois · `serverpod generate`
+  (CLI 3.4.13) exit 0.
+- **Declarado**: roteador real (go_router) e mapeamento HTTP 401 pertencem à fachada/UI (follow-up).
 
 ## Pendências / coordenação
 
-- **`tools/**` está com o outro agente** (claim `UC-00.06`). Não editar.
-- **S1 (herdado do Gate 3)**: `SignInHandler.dummyHash` é um placeholder — o adapter real deve usar
-  hash **válido** de valor aleatório gerado no boot (senão vira oráculo de enumeração por exceção/timing).
-- **S3 (Gap 3 do Gate 3)**: `DESIGN.md` (D-ENG-04) manda a sessão do cliente ser gerida pelo
-  `SessionManager` do Serverpod; a abstração própria (`SessionStore`/`SessionController`) é desvio
-  consciente — registrar no DESIGN ou trocar pelo framework; **Riverpod (D-03)** ainda não plugado.
-- **S4**: `SignInDto.toString()` (gerado) serializa `password` em claro — mesma classe do gap do
-  `UC-01.01`; regex de e-mail agora tem **3ª cópia** (extração pendente).
-- **Herdadas do `UC-01.01`** (continuam válidas): persistência/`UNIQUE`/TOCTOU, adapter de hash,
-  teste de log, limite de nome, fonte única das regras, colisão `auth`, Reds não versionados, UI.
-- Rate limit (`SEC-02`) → `UC-01.04`; verificação de e-mail (`INV-SEC-01`) → pós-MVP.
+- **`tools/**` + persistência/hash** estão com o outro agente (brief 07). Não editar.
+- Persistência real, token emitido e roteador (go_router)/UI seguem como follow-up declarado.
+- Rate limit (`SEC-02`) → `UC-01.04`.
 
 ## Próximo UC
 
-- `UC-01.03` (Logout & Guarda de Rotas) — depende deste.
+- `UC-01.04` (Hardening de auth: rate limit + validação na fronteira).

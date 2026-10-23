@@ -13,9 +13,11 @@
 
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../endpoints/auth_endpoint.dart' as _i2;
-import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i3;
-import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i4;
-import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i5;
+import '../endpoints/me_endpoint.dart' as _i3;
+import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i4;
+import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i5;
+import 'package:devtasks_server/src/generated/me_dto.dart' as _i6;
+import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i7;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -25,6 +27,12 @@ class Endpoints extends _i1.EndpointDispatch {
         ..initialize(
           server,
           'auth',
+          null,
+        ),
+      'me': _i3.MeEndpoint()
+        ..initialize(
+          server,
+          'me',
           null,
         ),
     };
@@ -37,7 +45,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'dto': _i1.ParameterDescription(
               name: 'dto',
-              type: _i1.getType<_i3.SignUpDto>(),
+              type: _i1.getType<_i4.SignUpDto>(),
               nullable: false,
             ),
           },
@@ -55,7 +63,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'dto': _i1.ParameterDescription(
               name: 'dto',
-              type: _i1.getType<_i4.SignInDto>(),
+              type: _i1.getType<_i5.SignInDto>(),
               nullable: false,
             ),
           },
@@ -70,6 +78,30 @@ class Endpoints extends _i1.EndpointDispatch {
         ),
       },
     );
-    modules['serverpod_auth'] = _i5.Endpoints()..initializeEndpoints(server);
+    connectors['me'] = _i1.EndpointConnector(
+      name: 'me',
+      endpoint: endpoints['me']!,
+      methodConnectors: {
+        'me': _i1.MethodConnector(
+          name: 'me',
+          params: {
+            'dto': _i1.ParameterDescription(
+              name: 'dto',
+              type: _i1.getType<_i6.MeDto>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['me'] as _i3.MeEndpoint).me(
+                session,
+                params['dto'],
+              ),
+        ),
+      },
+    );
+    modules['serverpod_auth'] = _i7.Endpoints()..initializeEndpoints(server);
   }
 }
