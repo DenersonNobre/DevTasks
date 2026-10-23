@@ -48,9 +48,9 @@ header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a
 - Claim: **ativo** — `UC-01.03`, owner `coder` (paths `solution/app`, `solution/server`, hand-off).
 - Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (os 2 coder anteriores estouraram passos →
   implementação conduzida pelo orquestrador, gates independentes).
-- Implementação: **fatias 1–2 implementadas**. Gate 3 rodada 1 **rejeitou** (guard era código morto
-  em produção; token no body; hand-off stale) → corrigido: authenticator padrão vivo, token **fora do
-  body** (lido da sessão/header), `MeService` testado; **rodada 2 pendente**.
+- Implementação: **fatias 1–2 implementadas**. Gate 3: rodada 1 **rejeitou** (guard morto em produção;
+  token no body; hand-off stale) → corrigido (`81ecc7f`); rodada 2 **rejeitou** (hand-off desatualizado +
+  falta de Red do teste novo) → corrigido com prova por mutação (`9c0a943`); **rodada 3 em curso**.
 
 ## Evidência
 
@@ -58,8 +58,9 @@ header/cookie; nunca em URL), `INV-SEC-04` (respostas de auth não enumeram) e a
 - **Red**: `dart test test/unit/auth/session_guard_test.dart` → exit 1 (`session_guard.dart`/porta ausentes).
 - **Green**: **4 testes** — token nulo **sem consultar** o authenticator, token vazio, token inválido →
   `ERR_NOT_AUTHENTICATED`; token válido → usuário autorizado.
-- `MeEndpoint`/`MeService` = **padrão de referência** para endpoints privados (EPIC-02+); sem guard
-  responde `ERR_INFRA_FAILURE` (não finge). DTOs `MeDto`/`MeResultDto` gerados.
+- `MeEndpoint`/`MeService` = **padrão de referência** para endpoints privados (EPIC-02+); o guard é
+  **obrigatório** no `MeService` e o `MeEndpoint()` monta um guard vivo por padrão. DTOs: só
+  `MeResultDto` (o `MeDto` foi removido — token fora do body).
 
 ### Fatia 2 — guarda de rota no app
 - **Red**: `flutter test test/unit/auth/route_guard_test.dart` → exit 1 (arquivo ausente).
