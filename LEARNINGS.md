@@ -15,6 +15,17 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-23 — Mitigação de TOCTOU na persistência com SQLSTATE 23505 e Hasher Argon2id (UC-01.01)
+
+- **Sintoma**: Risco de condição de corrida (TOCTOU) no cadastro concorrente de usuários caso a validação se baseasse unicamente em pré-checagem (`existsByEmail`) ou parsing textual frágil de strings de exceção (`toString().contains('unique')`), além de risco de enumeração/timing attack em credenciais sem hash dummy canônico válido.
+- **Causa raiz**: Drivers relacionais disparam códigos SQLSTATE padronizados (`23505` para `unique_violation` no PostgreSQL), enquanto mensagens de erro variam com idioma e versão do Postgres. No domínio, lançar exceção para falha esperada obrigava `try/catch` impuro violando a regra arquitetural ("falha esperada = resultado tipado").
+- **Fix**:
+  1. Criada a sealed class `CreateUserOutcome` (`UserCreated` e `EmailTaken`), mantendo o `SignUpHandler` puro via pattern matching exhaustivo `switch (outcome)`.
+  2. Implementado `ServerpodUserRepository` capturando deterministicamente `DatabaseQueryException` com código `23505` e convertendo para `EmailTaken()`.
+  3. Adicionado `Argon2PasswordHasher` com `pointycastle: 4.0.0` (Argon2id, OWASP 19 MiB / 2 passadas / salt 16 bytes via CSPRNG `Random.secure()`, PHC string format) e `dummyHash` canônico válido exposto para blindar `SignInHandler` contra timing attacks (INV-SEC-04).
+  4. Mapeamento de persistência isolado no adaptador de infraestrutura sobre `UserInfo` e `EmailAuth` do `serverpod_auth_server` legado (`emailVerified = false`).
+- **Prevenção**: Tratamento de unicidade sempre via SQLSTATE determinístico (`23505`), retorno tipado selado para falhas esperadas de domínio e testes unitários puros com fakes sem I/O executando em < 1s.
+
 ## 2026-10-23 — Drift da CLI do Serverpod gerou código para a API errada (UC-01.01)
 
 - **Sintoma**: `serverpod generate` saía **0**, mas `flutter analyze solution/server` passou a acusar

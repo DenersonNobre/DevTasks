@@ -12,6 +12,7 @@ dependencies:
   # pubspec.lock versionado (INV-SEC-11); o gerador rejeita ranges.
   serverpod: 3.4.13
   serverpod_auth_server: 3.4.13
+  pointycastle: 4.0.0
 
 dev_dependencies:
   serverpod_test: 3.4.13

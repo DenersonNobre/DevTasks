@@ -14,16 +14,18 @@ class _Repo implements UserRepository {
       existing.contains(normalizedEmail);
 
   @override
-  Future<RegisteredUser> create({
+  Future<CreateUserOutcome> create({
     required String name,
     required String email,
     required String passwordHash,
   }) async =>
-      RegisteredUser(
-        id: 'user-1',
-        name: name,
-        email: email,
-        emailVerified: false,
+      UserCreated(
+        RegisteredUser(
+          id: 'user-1',
+          name: name,
+          email: email,
+          emailVerified: false,
+        ),
       );
 }
 

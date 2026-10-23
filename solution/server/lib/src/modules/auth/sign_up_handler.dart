@@ -82,12 +82,22 @@ class SignUpHandler {
       );
     }
 
-    final user = await _repository.create(
+    final outcome = await _repository.create(
       name: name,
       email: email,
       passwordHash: passwordHash,
     );
-    return SignUpOutcome.success(user);
+
+    return switch (outcome) {
+      UserCreated(:final user) => SignUpOutcome.success(user),
+      EmailTaken() => SignUpOutcome.failureOf(
+          const SignUpFailure(
+            SignUpErrorCode.emailAlreadyTaken,
+            'Este e-mail já está em uso.',
+            field: 'email',
+          ),
+        ),
+    };
   }
 
   SignUpOutcome _validation(String message, String field) =>

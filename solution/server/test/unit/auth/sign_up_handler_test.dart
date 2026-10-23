@@ -15,9 +15,13 @@ class _Created {
 }
 
 class _FakeUserRepository implements UserRepository {
-  _FakeUserRepository({this.existingEmails = const {}});
+  _FakeUserRepository({
+    this.existingEmails = const {},
+    this.failOnCreateEmails = const {},
+  });
 
   final Set<String> existingEmails;
+  final Set<String> failOnCreateEmails;
   final List<_Created> created = [];
 
   @override
@@ -25,11 +29,15 @@ class _FakeUserRepository implements UserRepository {
       existingEmails.contains(normalizedEmail);
 
   @override
-  Future<RegisteredUser> create({
+  Future<CreateUserOutcome> create({
     required String name,
     required String email,
     required String passwordHash,
   }) async {
+    if (failOnCreateEmails.contains(email)) {
+      return const EmailTaken();
+    }
+
     final user = RegisteredUser(
       id: 'user-${created.length + 1}',
       name: name,
@@ -37,7 +45,7 @@ class _FakeUserRepository implements UserRepository {
       emailVerified: false,
     );
     created.add(_Created(name: name, email: email, passwordHash: passwordHash));
-    return user;
+    return UserCreated(user);
   }
 }
 
@@ -84,6 +92,27 @@ void main() {
       expect(repository.created, isEmpty);
       expect(hasher.hashCalls, 1,
           reason: 'hash precisa rodar também no caminho de duplicata (timing)');
+    });
+
+    test(
+        'corrida TOCTOU (existsByEmail passa, mas create colide) devolve emailAlreadyTaken',
+        () async {
+      // Simula condição de corrida: existsByEmail retorna false, mas uma requisição
+      // concorrente inseriu primeiro e o banco disparou violação de unicidade (SQLSTATE 23505).
+      // A prova ponta-a-ponta com PostgreSQL real fica no CI.
+      final repository = _FakeUserRepository(
+        existingEmails: {},
+        failOnCreateEmails: {'bia@ex.com'},
+      );
+      final hasher = _SpyPasswordHasher();
+      final handler = SignUpHandler(repository, hasher);
+
+      final outcome = await handler.execute(_command(email: 'bia@ex.com'));
+
+      expect(outcome.isSuccess, isFalse);
+      expect(outcome.failure!.code, SignUpErrorCode.emailAlreadyTaken);
+      expect(outcome.failure!.message, 'Este e-mail já está em uso.');
+      expect(outcome.failure!.field, 'email');
     });
 
     test('e-mail sem formato válido falha com validação e sem hash', () async {

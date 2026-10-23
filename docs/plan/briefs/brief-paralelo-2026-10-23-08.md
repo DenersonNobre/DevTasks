@@ -69,3 +69,52 @@ está aprovado como base. Assim que o `UC-01.03` fechar, o orquestrador fatia co
 ## Regras
 Claim por slice · stage por **path explícito** · sem push sem pedido do PO + 3 evidências · docs no
 mesmo commit · retorno com `[EVIDÊNCIA]`.
+
+---
+
+## 5. Retorno — Conclusão dos Itens A e B (Commit Atômico UC-01.01)
+
+### [EVIDÊNCIA] Item B — `Argon2PasswordHasher` com PointyCastle Argon2id
+- **Implementação**: `solution/server/lib/src/modules/auth/argon2_password_hasher.dart`
+  - Implementa as portas `PasswordHasher` e `PasswordVerifier` (`ports.dart`).
+  - Parâmetros OWASP Password Storage documentados:
+    - Memória: $19456\text{ KiB}$ (19 MiB)
+    - Iterações: $2$ passadas
+    - Paralelismo: $1$ lane
+    - Comprimento da chave: $32$ bytes (256 bits)
+    - Versão: Argon2 v13 ($19$ / 0x13)
+  - Salt de 16 bytes gerado via CSPRNG `Random.secure()` (`INV-SEC-10`).
+  - Formato serializado versionado autodescritivo (PHC / RFC 9106):
+    `$argon2id$v=19$m=19456,t=2,p=1$<saltB64>$<hashB64>`
+  - Blindagem de Timing Attack (`INV-SEC-04`):
+    - `dummyHash` canônico válido pré-computado e exposto para `SignInHandler`:
+      `r'$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA==$XuWpLPw6ty350Ater6UtNshJdgMODNFLeD6eZt3/hL0='`
+    - Comparação em tempo constante `_constantTimeEquals` com XOR acumulado.
+  - Dependência `pointycastle: 4.0.0` fixada com pin exato em `solution/server/pubspec.yaml` (validado por `tools/pin-gate.ps1`).
+- **Testes**: `solution/server/test/unit/auth/argon2_password_hasher_test.dart` (7 testes verdes).
+
+### [EVIDÊNCIA] Item A — Persistência M1 & Mitigação do TOCTOU via SQLSTATE `23505`
+- **Tipos Reais e Falha Esperada**:
+  - `ports.dart`: Definida a sealed class `CreateUserOutcome` com subtipos `UserCreated(RegisteredUser)` e `EmailTaken()`.
+  - `ports.dart`: `CredentialRepository.findByEmail(String normalizedEmail)` retornando `Future<CredentialRecord?>`.
+  - `SignUpHandler`: Tratamento de falha esperada via pattern matching puro `switch (outcome)` retornando `SignUpErrorCode.emailAlreadyTaken` sem blocos `try/catch`.
+- **Adaptador Serverpod**:
+  - `solution/server/lib/src/modules/auth/serverpod_user_repository.dart`: Implementa `UserRepository` e `CredentialRepository`.
+  - Mapeamento sobre tabelas do `serverpod_auth_server` legado:
+    - `UserInfo`: Inserido com `userIdentifier = email`, `userName = name`, `email = email`, `emailVerified = false` (semântica padrão do modelo).
+    - `EmailAuth`: Inserido com `userId` vinculado e o hash seguro gerado.
+  - Mitigação de TOCTOU:
+    - Captura `DatabaseQueryException` verificando `e.code == '23505'` (PostgreSQL unique_violation SQLSTATE).
+    - Converte deterministicamente em `const EmailTaken()` independente de idioma/locale de mensagens do PostgreSQL.
+    - Re-lança outras exceções imprevistas.
+- **Testes Unitários sem Postgres Local**:
+  - `solution/server/test/unit/auth/serverpod_user_repository_test.dart` (7 testes verdes com fake de operações de banco e sessão mock).
+  - `solution/server/test/unit/auth/sign_up_handler_test.dart` (teste específico de corrida TOCTOU onde `existsByEmail` passa mas `create` colide).
+  - Prova ponta a ponta com container PostgreSQL real reservada para os jobs de CI.
+
+### [EVIDÊNCIA] Cadeia de Verificação Integrada
+1. `dart test solution/server/test/unit/auth/`: **46 testes passando com sucesso** (0 falhas).
+2. `dart analyze solution/server`: **No issues found!** (0 errors, 0 warnings, 0 infos).
+3. `tools/pin-gate.ps1`: **[OK]** Todos os pacotes críticos com pin exato e lockfile sincronizado.
+4. `serverpod generate`: **✓ Done** e idempotente (árvore de trabalho limpa sem drifts).
+

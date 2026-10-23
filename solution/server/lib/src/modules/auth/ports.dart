@@ -43,13 +43,29 @@ class RegisteredUser {
   final bool emailVerified;
 }
 
+/// Resultado tipado da criação de usuário (falha esperada é valor, não exceção).
+sealed class CreateUserOutcome {
+  const CreateUserOutcome();
+}
+
+/// Usuário criado e persistido com sucesso.
+final class UserCreated extends CreateUserOutcome {
+  const UserCreated(this.user);
+  final RegisteredUser user;
+}
+
+/// Conflito de unicidade de e-mail (TOCTOU mitigado na persistência).
+final class EmailTaken extends CreateUserOutcome {
+  const EmailTaken();
+}
+
 /// Porta de persistência de usuários.
 abstract interface class UserRepository {
   /// `true` quando já existe usuário com o e-mail **já normalizado**.
   Future<bool> existsByEmail(String normalizedEmail);
 
-  /// Persiste o usuário com `emailVerified = false` e devolve a entidade criada.
-  Future<RegisteredUser> create({
+  /// Persiste o usuário com `emailVerified = false` e devolve o resultado tipado.
+  Future<CreateUserOutcome> create({
     required String name,
     required String email,
     required String passwordHash,

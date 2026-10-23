@@ -1,3 +1,4 @@
+import 'argon2_password_hasher.dart';
 import 'ports.dart';
 
 /// Comando de login (dados crus da fronteira; o handler normaliza o e-mail).
@@ -44,9 +45,9 @@ class SignInHandler {
 
   /// Hash de descarte: garante custo de verificação mesmo sem usuário (timing).
   ///
-  /// Formato placeholder — o adapter real deve usar um hash **válido** de valor
-  /// aleatório gerado no boot (ver pendência declarada no hand-off).
-  static const String dummyHash = 'argon2id::dummy-not-a-real-hash';
+  /// Hash canônico válido com parâmetros OWASP gerado por [Argon2PasswordHasher],
+  /// blindando o side-channel de timing (INV-SEC-04).
+  static const String dummyHash = Argon2PasswordHasher.dummyHash;
 
   static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
