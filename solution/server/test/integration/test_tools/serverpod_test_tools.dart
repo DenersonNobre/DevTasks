@@ -18,7 +18,8 @@ import 'package:devtasks_server/src/generated/sign_up_result_dto.dart' as _i4;
 import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i5;
 import 'package:devtasks_server/src/generated/sign_in_result_dto.dart' as _i6;
 import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i7;
-import 'package:devtasks_server/src/generated/me_result_dto.dart' as _i8;
+import 'package:devtasks_server/src/generated/sign_out_result_dto.dart' as _i8;
+import 'package:devtasks_server/src/generated/me_result_dto.dart' as _i9;
 import 'package:devtasks_server/src/generated/protocol.dart';
 import 'package:devtasks_server/src/generated/endpoints.dart';
 export 'package:serverpod_test/serverpod_test_public_exports.dart';
@@ -227,6 +228,37 @@ class _AuthEndpoint {
       }
     });
   }
+
+  _i3.Future<_i8.SignOutResultDto> signOut(
+    _i1.TestSessionBuilder sessionBuilder, [
+    String? token,
+  ]) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'auth',
+            method: 'signOut',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'auth',
+          methodName: 'signOut',
+          parameters: _i1.testObjectToJson({'token': token}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i8.SignOutResultDto>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
 }
 
 class _MeEndpoint {
@@ -239,7 +271,7 @@ class _MeEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<_i8.MeResultDto> me(_i1.TestSessionBuilder sessionBuilder) async {
+  _i3.Future<_i9.MeResultDto> me(_i1.TestSessionBuilder sessionBuilder) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
           (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
@@ -259,7 +291,7 @@ class _MeEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i8.MeResultDto>);
+                as _i3.Future<_i9.MeResultDto>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

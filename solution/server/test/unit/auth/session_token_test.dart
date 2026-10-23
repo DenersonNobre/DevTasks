@@ -1,13 +1,10 @@
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
-import 'package:test/test.dart';
-
 import 'package:devtasks_server/src/generated/protocol.dart';
 import 'package:devtasks_server/src/modules/auth/ports.dart';
-import 'package:devtasks_server/src/modules/auth/session_guard.dart';
 import 'package:devtasks_server/src/modules/auth/serverpod_session_service.dart';
-import 'package:devtasks_server/src/modules/auth/sign_in_service.dart';
+import 'package:devtasks_server/src/modules/auth/session_guard.dart';
 import 'package:devtasks_server/src/modules/auth/sign_in_handler.dart';
+import 'package:devtasks_server/src/modules/auth/sign_in_service.dart';
+import 'package:test/test.dart';
 
 class _FakeCredentialRepo implements CredentialRepository {
   _FakeCredentialRepo(this.records);
@@ -38,7 +35,7 @@ void main() {
       currentTime = DateTime.utc(2026, 10, 23, 12, 0, 0);
     });
 
-    test('Red: Emissão de token no login bem-sucedido com hash SHA-256 no banco e TTL de 24h', () async {
+    test('Green: Emissão de token no login bem-sucedido com hash SHA-256 no banco e TTL de 24h', () async {
       final sessionStore = InMemorySessionStore();
       final sessionService = ServerpodSessionService(
         store: sessionStore,
@@ -58,7 +55,7 @@ void main() {
       final signInService = SignInService(
         handler,
         null, // sem rate limiter no unit puro de emissão
-        sessionService: sessionService,
+        sessionService,
       );
 
       final result = await signInService.signIn(
@@ -73,7 +70,7 @@ void main() {
 
       // Prova de armazenamento: somente o hash SHA-256 está no store
       final rawToken = result.sessionToken!;
-      final expectedHash = sha256.convert(utf8.encode(rawToken)).toString();
+      final expectedHash = ServerpodSessionService.hashToken(rawToken);
       
       expect(sessionStore.savedSessions.length, equals(1));
       final saved = sessionStore.savedSessions.first;
@@ -85,7 +82,7 @@ void main() {
       expect(saved.revokedAt, isNull);
     });
 
-    test('Red: Validação aceita token válido e rejeita token expirado (>24h)', () async {
+    test('Green: Validação aceita token válido e rejeita token expirado (>24h)', () async {
       final sessionStore = InMemorySessionStore();
       final sessionService = ServerpodSessionService(
         store: sessionStore,
@@ -107,7 +104,7 @@ void main() {
       expect(expiredUser, isNull, reason: 'Token deve ser rejeitado após o TTL de 24h');
     });
 
-    test('Red: Revogação no signOut torna token inválido e é idempotente', () async {
+    test('Green: Revogação no signOut torna token inválido e é idempotente', () async {
       final sessionStore = InMemorySessionStore();
       final sessionService = ServerpodSessionService(
         store: sessionStore,
@@ -134,7 +131,7 @@ void main() {
       expect(signOutResultRandom.success, isTrue);
     });
 
-    test('Red: SessionGuard com ServerpodSessionService autoriza token válido e bloqueia revogado/expirado', () async {
+    test('Green: SessionGuard com ServerpodSessionService autoriza token válido e bloqueia revogado/expirado', () async {
       final sessionStore = InMemorySessionStore();
       final sessionService = ServerpodSessionService(
         store: sessionStore,

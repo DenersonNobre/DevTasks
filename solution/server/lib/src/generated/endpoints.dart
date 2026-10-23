@@ -75,6 +75,24 @@ class Endpoints extends _i1.EndpointDispatch {
                 params['dto'],
               ),
         ),
+        'signOut': _i1.MethodConnector(
+          name: 'signOut',
+          params: {
+            'token': _i1.ParameterDescription(
+              name: 'token',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['auth'] as _i2.AuthEndpoint).signOut(
+                session,
+                params['token'],
+              ),
+        ),
       },
     );
     connectors['me'] = _i1.EndpointConnector(

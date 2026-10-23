@@ -2,25 +2,36 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 import '../modules/auth/me_service.dart';
+import '../modules/auth/serverpod_session_service.dart';
 import '../modules/auth/session_guard.dart';
 
 /// Endpoint privado de referência: exige sessão válida (guard de F1.3).
 ///
-/// O token é lido da **sessão/header** (nunca do corpo — INV-SEC-06). Enquanto a
-/// emissão de token não existe (follow-up), a leitura devolve `null` e o guard
-/// responde `ERR_NOT_AUTHENTICATED` — comportamento correto e **vivo** em produção.
+/// O token é lido do header `Authorization: Bearer <token>` (nunca do corpo — INV-SEC-06).
+/// Com `ServerpodSessionService` conectado, o guard valida o token contra a tabela
+/// `devtasks_session` rejeitando tokens expirados ou revogados.
 class MeEndpoint extends Endpoint {
-  MeEndpoint([MeService? service])
-      : _service =
-            service ?? MeService(SessionGuard(const NoSessionAuthenticator()));
+  MeEndpoint([MeService? service]) : _service = service;
 
-  final MeService _service;
+  final MeService? _service;
 
-  Future<MeResultDto> me(Session session) => _service.me(_readToken(session));
+  Future<MeResultDto> me(Session session) {
+    final service = _service ??
+        MeService(
+          SessionGuard(
+            ServerpodSessionService(store: ServerpodSessionStore(session)),
+          ),
+        );
+    return service.me(_readToken(session));
+  }
 
   String? _readToken(Session session) {
-    // Integração com header/`session.authenticated` do Serverpod: follow-up
-    // declarado (o auth module não é usado; emissão de token ainda inexistente).
+    try {
+      final authHeader = session.request?.headers['authorization']?.firstOrNull;
+      if (authHeader != null && authHeader.toLowerCase().startsWith('bearer ')) {
+        return authHeader.substring(7).trim();
+      }
+    } catch (_) {}
     return null;
   }
 }

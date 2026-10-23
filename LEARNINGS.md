@@ -15,6 +15,18 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-23 — Emissão e Validação de Token de Sessão Opaco e Persistência Serverpod (UC-01.07)
+
+- **Sintoma**: Necessidade de autenticar chamadas de API e manter sessões ativas com token de segurança opaco (bearer token), sem reutilizar a tabela `AuthKey` do `serverpod_auth_server-3.4.13` (que carece de TTL e revogação explícita).
+- **Causa raiz**: O modelo legado `AuthKey` do Serverpod valida `sha256(secret + token)` com salt default hardcoded `'salty'`, sem suporte a expiração nem revogação granular. Além disso, persistir token cru em banco ou log viola `INV-SEC-05` e timing attack na comparação de hashes viola boas práticas de segurança.
+- **Fix**:
+  1. Criada tabela dedicada `devtasks_session` (`userId`, `tokenHash` único, `createdAt`, `expiresAt`, `revokedAt?`) e gerada migração via Serverpod CLI 3.4.13.
+  2. Implementado `ServerpodSessionService` gerando tokens opacos de 32 bytes (256 bits) via CSPRNG `Random.secure()`, persistindo apenas o hash SHA-256 canônico computado via `PointyCastle` (sem dependências externas adicionais no pubspec).
+  3. Comparação de integridade em tempo constante (`constantTimeCompare`) para mitigar timing attacks.
+  4. Suporte a TTL (24 horas) com relógio injetável e revogação idempotente no `signOut` (`revokedAt = now`).
+  5. Atualizado `AuthEndpoint` (`signOut` e emissão em `signIn`) e `MeEndpoint` integrando o `SessionGuard` contra a tabela de sessões.
+- **Prevenção**: Tokens opacos sempre têm apenas o hash persistido no DB (`INV-SEC-05`), tokens nunca são expostos em logs nem URLs (`INV-SEC-06`), verificação com tempo constante e cobertura TDD completa com fakes em memória.
+
 ## 2026-10-23 — Rate Limiting de Autenticação, Evicção LRU e Transporte RPC no Serverpod (UC-01.04)
 
 - **Sintoma**: Necessidade de proteger endpoints de autenticação (`signIn` e `signUp`) contra brute-force e exaustão de CPU criptográfica (Argon2id), evitando DoS de memória no limiter e mantendo compatibilidade com a geração tipada de código RPC do Serverpod 3.4.13.

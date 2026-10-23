@@ -1,5 +1,6 @@
 auth:
   - signUp:
   - signIn:
+  - signOut:
 me:
   - me:

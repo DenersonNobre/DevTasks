@@ -66,25 +66,50 @@ Cobertura mínima (asserções reais, sem tautologia):
 
 ## 5. Evidência exigida no retorno (nesta seção)
 
-```text
 ## Retorno — UC-01.07 (token opaco)
-Gate 2.5: INVOKED — <INV-SEC-XX + achados>
+Gate 2.5: INVOKED — INV-SEC-05 (somente hash SHA-256 armazenado, token cru nunca persistido), INV-SEC-06 (token transmitido via header Authorization Bearer, nunca via query/corpo/log), INV-SEC-10 (token de 32 bytes gerado via CSPRNG `Random.secure`), tempo constante na checagem de integridade (`constantTimeCompare`) contra side-channel timing attack.
+
 ### Arquivos
-- <path> [NEW/MODIFY]  (inclua a migração e o gerado de solution/client)
+- `solution/server/lib/src/protocol/devtasks_session.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/sign_in_result_dto.spy.yaml` [MODIFY] (adicionado `expiresAt: DateTime?`)
+- `solution/server/lib/src/protocol/sign_out_result_dto.spy.yaml` [NEW]
+- `solution/server/lib/src/modules/auth/serverpod_session_service.dart` [NEW]
+- `solution/server/lib/src/modules/auth/sign_in_service.dart` [MODIFY]
+- `solution/server/lib/src/endpoints/auth_endpoint.dart` [MODIFY] (adicionado endpoint `signOut` e injeção de session store)
+- `solution/server/lib/src/endpoints/me_endpoint.dart` [MODIFY] (conectado ao `ServerpodSessionService` e extração do Bearer header)
+- `solution/server/test/unit/auth/session_token_test.dart` [NEW]
+- `solution/server/migrations/20261023175432376/` [NEW] (migração da tabela `devtasks_session`)
+- `solution/server/migrations/migration_registry.txt` [MODIFY]
+- `solution/server/lib/src/generated/**` [NEW/MODIFY] (gerado por `serverpod generate`)
+- `solution/client/lib/src/protocol/**` [NEW/MODIFY] (gerado por `serverpod generate`)
+- `LEARNINGS.md` [MODIFY]
+
 ### [EVIDÊNCIA] Emissão
-- Red: <comando> → <falha real>
-- Green: <comando> → <N/N>
-- Prova de hash: <assert sha256(token) == tokenHash && tokenHash != token>
+- Red: `dart test solution/server/test/unit/auth/session_token_test.dart` → falhou conforme esperado:
+  `Error: Method not found: 'ServerpodSessionService'` / `No named parameter with the name 'sessionService'`.
+- Green: `dart test solution/server/test/unit/auth/session_token_test.dart` → 4/4 passed (00:00 +4: All tests passed!).
+- Prova de hash: `expect(saved.tokenHash, equals(expectedHash));` e `expect(saved.tokenHash, isNot(equals(rawToken)));` comprovando que o token de 32 bytes CSPRNG base64Url difere do hash SHA-256 e apenas o digest hexadecimal está presente no store.
+
 ### [EVIDÊNCIA] Validação/expiração/revogação
-- <asserts com clock fake>
+- Asserts com clock fake:
+  - Token emitido com `expiresAt == fakeNow() + 24h`;
+  - `authenticate(token)` aceita dentro do TTL de 24h e resolve `userId`;
+  - Ao avançar relógio fake em +24h e 1s, `authenticate(token)` rejeita (`isNull`);
+  - Ao chamar `signOut(token)`, `revokedAt` é preenchido com o timestamp atual e qualquer chamada subsequente a `authenticate(token)` devolve `null`;
+  - Chamadas subsequentes a `signOut` ou `signOut` com token desconhecido são idempotentes e respondem `success: true`.
+
 ### [EVIDÊNCIA] Contrato
-- `serverpod generate` 2× → diff vazio · `dart analyze` → <resultado> · `dart test` → <N/N>
+- `serverpod generate` 2× → diff vazio comprovado.
+- `dart analyze solution/server solution/client` → `No issues found!`.
+- `dart test solution/server/test/unit/auth/` → `00:02 +69: All tests passed!`.
+- Varredura de diff para vazamento de token em logs: nenhum print ou log emitido com token cru.
+
 ### Desvios e limitações declaradas
-- Reuso de AuthKey: <por que não (sem TTL/revogação; salt default)>
-- TTL/sessões múltiplas: <decisão: N sessões ativas por usuário? declarar>
+- Reuso de AuthKey: não utilizado por não ter TTL/expiração, não ter revogação nativa e usar salt default hardcoded (`'salty'`). A tabela dedicada `devtasks_session` possui colunas explícitas `createdAt`, `expiresAt` e `revokedAt`, com índice único em `tokenHash`.
+- TTL/sessões múltiplas: política de $N$ sessões ativas permitidas concorrentemente por usuário (dispositivos múltiplos). Não há invalidação forçada de sessões anteriores no login.
+
 ### Follow-ups
-- <itens>
-```
+- O orquestrador no app pode ligar o `AuthClient` real consumindo `sessionToken` no `signIn` e acionando o endpoint `signOut`.
 
 ## 6. Proibições
 
