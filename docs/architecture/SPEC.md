@@ -79,6 +79,8 @@ pode criar ID novo fora desta tabela — achado sem ID vira follow-up declarado.
 | `INV-SEC-13` | Throttling executa **antes** de hash/verify: a 11ª tentativa não consome custo de senha | Gate 2.5 (`UC-01.04`, 2026-10-23) |
 | `INV-SEC-14` | IP só existe em memória efêmera do processo: **nunca** é logado nem persistido (LGPD) | Gate 2.5 (`UC-01.04`, 2026-10-23) |
 | `INV-SEC-15` | `X-Forwarded-For`/`Forwarded` não são fonte de identidade sem proxy reverso confiável declarado | Gate 2.5 (`UC-01.04`, 2026-10-23) |
+| `INV-SEC-16` | Token de sessão trafega **somente** no header `Authorization: Bearer` — proibido em corpo de RPC, query string, URL ou log | Gate 2.5 (`UC-01.07`, 2026-10-23) |
+| `INV-SEC-17` | Segredo de sessão em repouso existe **somente** como digest (SHA-256) com índice único; o valor cru nunca é persistido e o modelo de sessão é `serverOnly` (não cruza para o cliente) | Gate 2.5 (`UC-01.07`, 2026-10-23) |
 
 > IDs `INV-SEC-01/03/06` aparecem apenas como referência em briefs antigos, sem definição normativa
 > rastreável: estão **reservados** e não podem ser reutilizados sem definição aqui.
