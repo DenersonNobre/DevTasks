@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:devtasks_app/global/router/app_routes.dart';
-import 'package:devtasks_app/modules/auth/.presentation.dart';
+import 'package:devtasks_app/global/theme/tokens.dart';
 import 'package:devtasks_app/modules/auth/presentation/register/register_view_model.dart';
+import 'package:devtasks_app/modules/auth/presentation/widgets/auth_form_widgets.dart';
 
 /// Tela de cadastro (D-07): renderiza o estado do ViewModel e despacha intents.
 /// Não valida nem chama rede — apenas apresenta e delega.
@@ -39,40 +40,49 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
       appBar: AppBar(title: const Text('Criar conta')),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.space6),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: authFormMaxWidth),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextField(
-                  key: const Key('register-name'),
+                _AuthTextField(
+                  fieldKey: const Key('register-name'),
                   controller: _name,
+                  label: 'Nome',
+                  errorText: state.nameError,
                   textCapitalization: TextCapitalization.words,
                   autofillHints: const [AutofillHints.name],
-                  decoration: InputDecoration(labelText: 'Nome', errorText: state.nameError),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  key: const Key('register-email'),
+                const SizedBox(height: AppSpacing.space4),
+                _AuthTextField(
+                  fieldKey: const Key('register-email'),
                   controller: _email,
+                  label: 'E-mail',
+                  errorText: state.emailError,
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
-                  decoration: InputDecoration(labelText: 'E-mail', errorText: state.emailError),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  key: const Key('register-password'),
+                const SizedBox(height: AppSpacing.space4),
+                _AuthTextField(
+                  fieldKey: const Key('register-password'),
                   controller: _password,
+                  label: 'Senha',
+                  errorText: state.passwordError,
                   obscureText: true,
-                  autocorrect: false,
-                  enableSuggestions: false,
                   autofillHints: const [AutofillHints.newPassword],
-                  decoration: InputDecoration(labelText: 'Senha', errorText: state.passwordError),
                 ),
-                _FormMessage(message: state.message),
-                const SizedBox(height: 24),
-                _SubmitButton(state: state, onSubmit: _submit),
+                AuthFormMessage(
+                  message: state.message,
+                  errorKey: const Key('register-form-error'),
+                ),
+                const SizedBox(height: AppSpacing.space6),
+                AuthSubmitButton(
+                  isLoading: state.isLoading,
+                  label: 'Criar conta',
+                  submitKey: const Key('register-submit'),
+                  onSubmit: _submit,
+                ),
                 TextButton(
                   key: const Key('register-go-login'),
                   onPressed: state.isLoading ? null : _goToLogin,
@@ -100,42 +110,38 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   }
 }
 
-final class _FormMessage extends StatelessWidget {
-  const _FormMessage({required this.message});
+/// Campo de texto do cadastro, sobre o tema de `F1.5`.
+class _AuthTextField extends StatelessWidget {
+  const _AuthTextField({
+    required this.fieldKey,
+    required this.controller,
+    required this.label,
+    required this.errorText,
+    this.obscureText = false,
+    this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
+    this.autofillHints,
+  });
 
-  final String? message;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = message;
-    if (text == null) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Text(
-        text,
-        key: const Key('register-form-error'),
-        style: TextStyle(color: Theme.of(context).colorScheme.error),
-      ),
-    );
-  }
-}
-
-final class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({required this.state, required this.onSubmit});
-
-  final RegisterState state;
-  final VoidCallback onSubmit;
+  final Key fieldKey;
+  final TextEditingController controller;
+  final String label;
+  final String? errorText;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final TextCapitalization textCapitalization;
+  final Iterable<String>? autofillHints;
 
   @override
-  Widget build(BuildContext context) => FilledButton(
-        key: const Key('register-submit'),
-        onPressed: state.isLoading ? null : onSubmit,
-        child: state.isLoading
-            ? const SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Text('Criar conta'),
+  Widget build(BuildContext context) => TextField(
+        key: fieldKey,
+        controller: controller,
+        obscureText: obscureText,
+        autocorrect: !obscureText,
+        enableSuggestions: !obscureText,
+        keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
+        autofillHints: autofillHints,
+        decoration: InputDecoration(labelText: label, errorText: errorText),
       );
 }

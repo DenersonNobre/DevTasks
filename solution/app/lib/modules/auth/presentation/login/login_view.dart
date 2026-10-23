@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:devtasks_app/global/router/app_routes.dart';
-import 'package:devtasks_app/modules/auth/.presentation.dart';
+import 'package:devtasks_app/global/theme/tokens.dart';
 import 'package:devtasks_app/modules/auth/presentation/login/login_view_model.dart';
+import 'package:devtasks_app/modules/auth/presentation/widgets/auth_form_widgets.dart';
 
 /// Tela de login (D-07): renderiza o estado do ViewModel e despacha intents.
 /// Não valida nem chama rede — apenas apresenta e delega.
@@ -37,18 +38,40 @@ class _LoginViewState extends ConsumerState<LoginView> {
       appBar: AppBar(title: const Text('Entrar')),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.space6),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: authFormMaxWidth),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _EmailField(controller: _email, errorText: state.emailError),
-                const SizedBox(height: 16),
-                _PasswordField(controller: _password, errorText: state.passwordError),
-                _FormMessage(message: state.message),
-                const SizedBox(height: 24),
-                _SubmitButton(state: state, onSubmit: _submit),
+                _AuthTextField(
+                  fieldKey: const Key('login-email'),
+                  controller: _email,
+                  label: 'E-mail',
+                  errorText: state.emailError,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                ),
+                const SizedBox(height: AppSpacing.space4),
+                _AuthTextField(
+                  fieldKey: const Key('login-password'),
+                  controller: _password,
+                  label: 'Senha',
+                  errorText: state.passwordError,
+                  obscureText: true,
+                  autofillHints: const [AutofillHints.password],
+                ),
+                AuthFormMessage(
+                  message: state.message,
+                  errorKey: const Key('login-form-error'),
+                ),
+                const SizedBox(height: AppSpacing.space6),
+                AuthSubmitButton(
+                  isLoading: state.isLoading,
+                  label: 'Entrar',
+                  submitKey: const Key('login-submit'),
+                  onSubmit: _submit,
+                ),
                 TextButton(
                   key: const Key('login-go-register'),
                   onPressed: state.isLoading ? null : _goToRegister,
@@ -75,76 +98,35 @@ class _LoginViewState extends ConsumerState<LoginView> {
   }
 }
 
-final class _EmailField extends StatelessWidget {
-  const _EmailField({required this.controller, required this.errorText});
+/// Campo de texto do formulário de autenticação (senha fica obscura por padrão).
+class _AuthTextField extends StatelessWidget {
+  const _AuthTextField({
+    required this.fieldKey,
+    required this.controller,
+    required this.label,
+    required this.errorText,
+    this.obscureText = false,
+    this.keyboardType,
+    this.autofillHints,
+  });
 
+  final Key fieldKey;
   final TextEditingController controller;
+  final String label;
   final String? errorText;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final Iterable<String>? autofillHints;
 
   @override
   Widget build(BuildContext context) => TextField(
-        key: const Key('login-email'),
+        key: fieldKey,
         controller: controller,
-        keyboardType: TextInputType.emailAddress,
-        autofillHints: const [AutofillHints.email],
-        decoration: InputDecoration(labelText: 'E-mail', errorText: errorText),
-      );
-}
-
-final class _PasswordField extends StatelessWidget {
-  const _PasswordField({required this.controller, required this.errorText});
-
-  final TextEditingController controller;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) => TextField(
-        key: const Key('login-password'),
-        controller: controller,
-        obscureText: true,
-        autocorrect: false,
-        enableSuggestions: false,
-        autofillHints: const [AutofillHints.password],
-        decoration: InputDecoration(labelText: 'Senha', errorText: errorText),
-      );
-}
-
-final class _FormMessage extends StatelessWidget {
-  const _FormMessage({required this.message});
-
-  final String? message;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = message;
-    if (text == null) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Text(
-        text,
-        key: const Key('login-form-error'),
-        style: TextStyle(color: Theme.of(context).colorScheme.error),
-      ),
-    );
-  }
-}
-
-final class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({required this.state, required this.onSubmit});
-
-  final LoginState state;
-  final VoidCallback onSubmit;
-
-  @override
-  Widget build(BuildContext context) => FilledButton(
-        key: const Key('login-submit'),
-        onPressed: state.isLoading ? null : onSubmit,
-        child: state.isLoading
-            ? const SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Text('Entrar'),
+        obscureText: obscureText,
+        autocorrect: !obscureText,
+        enableSuggestions: !obscureText,
+        keyboardType: keyboardType,
+        autofillHints: autofillHints,
+        decoration: InputDecoration(labelText: label, errorText: errorText),
       );
 }

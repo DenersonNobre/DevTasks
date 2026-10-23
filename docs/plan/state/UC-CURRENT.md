@@ -71,14 +71,40 @@ coberta pela decisão **D-03** (gerência de estado local, sem superfície de re
 ## Evidência
 
 ```text
-[EVIDÊNCIA]
-- Leitura: login_view_model.dart:28-60 → valida com VOs (Email/Password), chama a porta e persiste
-  a sessão via SessionController; nenhum BuildContext/I/O no VM (D-07).
-- Verificação: flutter analyze solution/app/lib solution/app/test → "No issues found!" (2 items, 8.5 s)
-- Confirmação: flutter test (app completo) → 62/62 passed; nos arquivos da fatia → 42/42 passed.
-- Prova negativa (mutação controlada): remover a persistência da sessão no login + early-return no
-  submit do cadastro → 5 falhas reais (ex.: `Expected: 'tok-123'  Actual: <null>`), restaurado → verde.
+[EVIDÊNCIA] (corrigida após Gate 3 — ver §Gate 3 abaixo)
+- Leitura: login_view_model.dart:1-55 → valida com VOs, chama a porta e delega a persistência ao
+  SessionController (global/); LoginState NÃO carrega token (D-07 §12.1 regra 4).
+- Verificação: flutter analyze solution/app/lib solution/app/test → "No issues found!" (5.1 s)
+- Confirmação: flutter test (app completo) → 66/66 passed.
+- Prova negativa reproduzível (3 mutações isoladas, restauração byte-a-byte):
+  M1 remover `sessionController.signIn(...)` no login → 2 falhas
+     (unit "sucesso persiste a sessão" + widget "completed: navega e persiste o token")
+  M2 `return;` no início de RegisterViewModel.submit → 9 falhas (5 unit + 3 widget de cadastro + loading)
+  M3 remover `signOut()` no PrivateAreaView → 1 falha (widget "sair limpa a sessão e volta ao login")
+- NOTA: a evidência anterior ("5 falhas") estava ERRADA e foi retirada — a contagem correta é a lista acima.
 ```
+
+## Gate 3 (veredito e correções)
+
+**Veredito original: REJEITADO (confiança Alta)** — 4 bloqueantes, todos corrigidos nesta fatia:
+
+1. `LoginState.session` duplicava o estado transversal e mantinha o token vivo após logout →
+   campo **removido**; o sucesso é `status: completed` e a prova é `store.token` +
+   `SessionController.state`; teste novo cobre logout limpando a sessão global.
+2. DoD incompleto (loading do cadastro + logout sem teste) → adicionados: unit + widget de `loading`
+   no cadastro e widget de logout em `PrivateAreaView`.
+3. Inversão de camada (`global/session` importava `modules/auth/domain`) → porta `SessionStore`
+   **movida** para `global/session/session_store.dart` e reexportada em `.session.dart`; `global/`
+   não importa mais `modules/`.
+4. Prova negativa sobredeclarada → lista de mutações acima, com contagem real (2/9/1).
+
+Não-bloqueantes aplicados: números mágicos → `AppSpacing`/constantes; `_FormMessage`/`_SubmitButton`
+duplicados → `presentation/widgets/auth_form_widgets.dart` (DRY); `InfraFailure` cru na tela →
+`authFailureMessage()` com mensagem genérica; rótulo `'Nome'` no VO; barrels movidos para **dentro**
+da camada (`.`-prefixed) conforme correção do agente paralelo.
+
+Não corrigidos (declarados): `RouteGuard` ainda não consultado no `main.dart` (wiring de roteador é
+follow-up); providers lançam `UnimplementedError` até a borda injetar adaptadores reais.
 
 ## Desvios e follow-ups declarados
 

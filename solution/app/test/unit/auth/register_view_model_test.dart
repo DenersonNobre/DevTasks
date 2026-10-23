@@ -1,3 +1,5 @@
+﻿import 'dart:async';
+
 import 'package:devtasks_app/global/kernel/.kernel.dart';
 import 'package:devtasks_app/global/session/.session.dart';
 import 'package:devtasks_app/modules/auth/.auth.dart';
@@ -41,7 +43,7 @@ void main() {
       );
 
       expect(readState().status, AuthFormStatus.idle);
-      expect(readState().nameError, 'nome não pode ser vazio.');
+      expect(readState().nameError, 'Nome não pode ser vazio.');
       expect(client.signUpCalls, 0);
     });
 
@@ -97,6 +99,24 @@ void main() {
       expect(store.token, isNull);
       expect(client.lastName, _validName);
       expect(client.lastEmail, _validEmail);
+    });
+
+    test('enquanto a porta responde o estado é loading', () async {
+      client.pendingSignUp = Completer<IResult<int, IFailure>>();
+
+      final pending = viewModel().submit(
+        rawName: _validName,
+        rawEmail: _validEmail,
+        rawPassword: _validPassword,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(readState().status, AuthFormStatus.loading);
+
+      client.pendingSignUp!.complete(const Success(42));
+      await pending;
+
+      expect(readState().status, AuthFormStatus.completed);
     });
   });
 }

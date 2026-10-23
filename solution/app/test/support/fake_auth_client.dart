@@ -10,6 +10,7 @@ final class FakeAuthClient implements AuthClient {
   IResult<AuthSession, IFailure>? signInResult;
   IResult<int, IFailure>? signUpResult;
   Completer<IResult<AuthSession, IFailure>>? pendingSignIn;
+  Completer<IResult<int, IFailure>>? pendingSignUp;
 
   int signInCalls = 0;
   int signUpCalls = 0;
@@ -42,6 +43,10 @@ final class FakeAuthClient implements AuthClient {
     lastName = name;
     lastEmail = email;
     lastPassword = password;
+
+    final pending = pendingSignUp;
+    if (pending != null) return pending.future;
+
     return Future.value(signUpResult ?? Failure(const InfraFailure('sem adaptador')));
   }
 }

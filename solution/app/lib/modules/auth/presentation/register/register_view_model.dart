@@ -1,9 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:devtasks_app/global/kernel/.kernel.dart';
-import 'package:devtasks_app/modules/auth/.domain.dart';
-import 'package:devtasks_app/modules/auth/.infrastructure.dart';
-import 'package:devtasks_app/modules/auth/.presentation.dart';
+import 'package:devtasks_app/modules/auth/domain/.domain.dart';
+import 'package:devtasks_app/modules/auth/infrastructure/.infrastructure.dart';
+import 'package:devtasks_app/modules/auth/presentation/.presentation.dart';
+import 'package:devtasks_app/modules/auth/presentation/auth_failure_message.dart';
 
 /// ViewModel do cadastro (D-07): valida com VOs, chama a porta e conclui.
 /// Puro: sem `BuildContext`, sem I/O próprio.
@@ -20,7 +21,7 @@ final class RegisterViewModel extends Notifier<RegisterState> {
     required String rawEmail,
     required String rawPassword,
   }) async {
-    final name = NonEmptyString.create(rawName, 'nome');
+    final name = NonEmptyString.create(rawName, 'Nome');
     final email = Email.parse(rawEmail);
     final password = Password.parse(rawPassword);
     final validName = name.valueOrNull;
@@ -45,7 +46,10 @@ final class RegisterViewModel extends Notifier<RegisterState> {
 
     switch (result) {
       case Failure(:final failure):
-        state = RegisterState(status: AuthFormStatus.error, message: failure.message);
+        state = RegisterState(
+          status: AuthFormStatus.error,
+          message: authFailureMessage(failure),
+        );
         return;
       case Success(:final value):
         state = RegisterState(status: AuthFormStatus.completed, userId: value);

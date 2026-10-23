@@ -1,4 +1,4 @@
-// solution/app/lib/global/session/session_providers.dart
+﻿// solution/app/lib/global/session/session_providers.dart
 // Composição do estado transversal de sessão (D-07 regra 4).
 // SRP: ligar a porta [SessionStore] ao [SessionController].
 // NÃO faz: escolher o mecanismo de armazenamento (adaptador entra pela borda).
@@ -6,7 +6,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'session_controller.dart';
-import '../../modules/auth/.domain.dart';
+import 'session_store.dart';
 
 /// O adaptador real (armazenamento local) é injetado na borda do app;
 /// enquanto não existir, exige override explícito (testes e boot futuro).

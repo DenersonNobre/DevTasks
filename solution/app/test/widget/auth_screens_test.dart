@@ -169,5 +169,40 @@ void main() {
 
       expect(find.byKey(const Key('login-submit')), findsOneWidget);
     });
+
+    testWidgets('loading: indicador visível e botão desabilitado', (tester) async {
+      client.pendingSignUp = Completer<IResult<int, IFailure>>();
+      await tester.pumpWidget(
+        _harness(home: const RegisterView(), client: client, store: store),
+      );
+      await _fillRegister(tester);
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(
+        tester.widget<FilledButton>(find.byKey(const Key('register-submit'))).onPressed,
+        isNull,
+      );
+
+      client.pendingSignUp!.complete(const Success(42));
+      await tester.pumpAndSettle();
+    });
+  });
+
+  group('PrivateAreaView — logout (DoD F1.6)', () {
+    testWidgets('sair limpa a sessão e volta ao login', (tester) async {
+      store.token = 'tok-ativo';
+      await tester.pumpWidget(
+        _harness(home: const PrivateAreaView(), client: client, store: store),
+      );
+
+      await tester.tap(find.byKey(const Key('private-logout')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('login-submit')), findsOneWidget);
+      expect(store.token, isNull);
+      expect(store.clears, 1);
+    });
   });
 }

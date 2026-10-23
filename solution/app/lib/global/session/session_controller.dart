@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../../modules/auth/domain/session_store.dart';
+import 'session_store.dart';
 
 /// Estado de autenticação observável pelo app.
 enum SessionStatus { signedOut, authenticated }

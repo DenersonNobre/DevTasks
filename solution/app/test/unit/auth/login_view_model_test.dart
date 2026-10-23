@@ -60,7 +60,6 @@ void main() {
 
       expect(readState().status, AuthFormStatus.error);
       expect(readState().message, 'E-mail ou senha incorretos.');
-      expect(readState().session, isNull);
       expect(store.token, isNull);
     });
 
@@ -70,8 +69,8 @@ void main() {
       await viewModel().submit(rawEmail: '  USER@Example.COM ', rawPassword: _validPassword);
 
       expect(readState().status, AuthFormStatus.completed);
-      expect(readState().session?.token, 'tok-123');
       expect(store.token, 'tok-123');
+      expect(container.read(sessionControllerProvider).state.token, 'tok-123');
       expect(client.lastEmail, _validEmail);
       expect(client.lastPassword, _validPassword);
     });
@@ -88,6 +87,16 @@ void main() {
       await pending;
 
       expect(readState().status, AuthFormStatus.completed);
+    });
+
+    test('logout limpa a sessão global (o slice não retém token)', () async {
+      client.signInResult = const Success(AuthSession(userId: 7, token: 'tok-123'));
+      await viewModel().submit(rawEmail: _validEmail, rawPassword: _validPassword);
+
+      await container.read(sessionControllerProvider).signOut();
+
+      expect(store.token, isNull);
+      expect(container.read(sessionControllerProvider).state.isAuthenticated, isFalse);
     });
   });
 }

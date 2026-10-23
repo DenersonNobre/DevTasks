@@ -1,4 +1,4 @@
-import 'package:devtasks_app/modules/auth/domain/session_store.dart';
+import 'package:devtasks_app/global/session/.session.dart';
 
 /// Store em memória: prova o round-trip de sessão sem tocar no dispositivo.
 final class InMemorySessionStore implements SessionStore {

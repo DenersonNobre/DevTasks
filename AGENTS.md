@@ -19,8 +19,11 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
 - **Barrels pontuados** (`.<dir>.dart` — ex.: `modules/auth/.domain.dart`, `global/session/.session.dart`)
   com `show`/`hide` para reduzir imports. Regras: (a) um arquivo **nunca** importa o barrel que o
   exporta (ciclo); (b) caminhos de `export` são relativos à **posição do barrel**, não da camada
-  (barrel na raiz do módulo → `domain/email.dart`); (c) barrels de camada só exportam o que a camada
-  de cima consome (VMs não entram no barrel de estados).
+  (o barrel na raiz do módulo exporta `domain/email.dart`; o que vive dentro da camada exporta `email.dart`); (c) barrels de camada só exportam o que a camada
+  de cima consome (VMs não entram no barrel de estados); (d) o barrel vive **dentro** do diretório que
+  agrega (`global/kernel/.kernel.dart`, `modules/auth/domain/.domain.dart`, `global/session/.session.dart`)
+  com `export` relativo a esse diretório — a raiz do módulo só tem o barrel de superfície (`.auth.dart`);
+  (e) `global/` **não** importa `modules/` (a porta transversal `SessionStore` mora em `global/session/`).
 - Falha de negócio esperada → `Result`/erro tipado capturado na fronteira; exceção só para falha impredizável.
 - Fonte de verdade do contrato client↔server: modelos Serverpod (`serverpod generate`), não OpenAPI manual.
 

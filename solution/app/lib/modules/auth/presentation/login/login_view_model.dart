@@ -1,12 +1,14 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:devtasks_app/global/kernel/.kernel.dart';
 import 'package:devtasks_app/global/session/.session.dart';
-import 'package:devtasks_app/modules/auth/.domain.dart';
-import 'package:devtasks_app/modules/auth/.infrastructure.dart';
-import 'package:devtasks_app/modules/auth/.presentation.dart';
+import 'package:devtasks_app/modules/auth/domain/.domain.dart';
+import 'package:devtasks_app/modules/auth/infrastructure/.infrastructure.dart';
+import 'package:devtasks_app/modules/auth/presentation/.presentation.dart';
+import 'package:devtasks_app/modules/auth/presentation/auth_failure_message.dart';
 
-/// ViewModel do login (D-07): valida com os VOs, chama a porta e persiste a sessão.
+/// ViewModel do login (D-07): valida com os VOs, chama a porta e delega a
+/// persistência da sessão ao estado transversal (`global/`).
 /// Puro: sem `BuildContext`, sem I/O próprio (portas injetadas via Riverpod).
 final loginViewModelProvider =
     NotifierProvider<LoginViewModel, LoginState>(LoginViewModel.new);
@@ -38,11 +40,14 @@ final class LoginViewModel extends Notifier<LoginState> {
 
     switch (result) {
       case Failure(:final failure):
-        state = LoginState(status: AuthFormStatus.error, message: failure.message);
+        state = LoginState(
+          status: AuthFormStatus.error,
+          message: authFailureMessage(failure),
+        );
         return;
       case Success(:final value):
         await ref.read(sessionControllerProvider).signIn(value.token);
-        state = LoginState(status: AuthFormStatus.completed, session: value);
+        state = const LoginState(status: AuthFormStatus.completed);
     }
   }
 }
