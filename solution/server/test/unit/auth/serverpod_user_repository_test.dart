@@ -74,6 +74,19 @@ class _FakeServerpodAuthDbOperations implements ServerpodAuthDbOperations {
   }
 
   @override
+  Future<UserInfo?> findUserInfoById(Session session, int userId) async {
+    return UserInfo(
+      id: userId,
+      userIdentifier: 'user-$userId@ex.com',
+      userName: 'User $userId',
+      email: 'user-$userId@ex.com',
+      created: DateTime.now().toUtc(),
+      scopeNames: const [],
+      blocked: false,
+    );
+  }
+
+  @override
   Future<UserInfo> insertUserInfo(Session session, UserInfo userInfo) async {
     if (throwOnInsertUserInfo != null) {
       throw throwOnInsertUserInfo!;

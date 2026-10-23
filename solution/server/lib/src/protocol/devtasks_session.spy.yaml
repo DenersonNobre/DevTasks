@@ -1,5 +1,6 @@
 class: DevtasksSession
 table: devtasks_session
+serverOnly: true
 fields:
   userId: String
   tokenHash: String
@@ -10,4 +11,3 @@ indexes:
   devtasks_session_token_hash_idx:
     fields: tokenHash
     unique: true
-

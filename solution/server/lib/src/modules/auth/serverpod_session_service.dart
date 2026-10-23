@@ -2,78 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:pointycastle/digests/sha256.dart';
-import 'package:serverpod/serverpod.dart';
 
-import '../../generated/protocol.dart';
 import 'ports.dart';
-
-/// Abstração para persistência de sessões (`devtasks_session`).
-abstract interface class SessionStore {
-  Future<void> save(DevtasksSession session);
-  Future<DevtasksSession?> findByTokenHash(String tokenHash);
-  Future<void> revokeByTokenHash(String tokenHash, DateTime revokedAt);
-}
-
-/// Implementação em memória de [SessionStore] para testes puros e isolamento sem DB.
-class InMemorySessionStore implements SessionStore {
-  final List<DevtasksSession> savedSessions = [];
-
-  @override
-  Future<void> save(DevtasksSession session) async {
-    savedSessions.add(session);
-  }
-
-  @override
-  Future<DevtasksSession?> findByTokenHash(String tokenHash) async {
-    try {
-      return savedSessions.firstWhere((s) => s.tokenHash == tokenHash);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  @override
-  Future<void> revokeByTokenHash(String tokenHash, DateTime revokedAt) async {
-    for (var i = 0; i < savedSessions.length; i++) {
-      if (savedSessions[i].tokenHash == tokenHash) {
-        final existing = savedSessions[i];
-        savedSessions[i] = existing.copyWith(revokedAt: revokedAt);
-      }
-    }
-  }
-}
-
-/// Adaptador Serverpod para [SessionStore] que interage com a tabela `devtasks_session`.
-class ServerpodSessionStore implements SessionStore {
-  const ServerpodSessionStore(this._session);
-
-  final Session _session;
-
-  @override
-  Future<void> save(DevtasksSession session) async {
-    await DevtasksSession.db.insertRow(_session, session);
-  }
-
-  @override
-  Future<DevtasksSession?> findByTokenHash(String tokenHash) async {
-    return DevtasksSession.db.findFirstRow(
-      _session,
-      where: (t) => t.tokenHash.equals(tokenHash),
-    );
-  }
-
-  @override
-  Future<void> revokeByTokenHash(String tokenHash, DateTime revokedAt) async {
-    final existing = await findByTokenHash(tokenHash);
-    if (existing != null) {
-      await DevtasksSession.db.updateRow(
-        _session,
-        existing.copyWith(revokedAt: revokedAt),
-        columns: (t) => [t.revokedAt],
-      );
-    }
-  }
-}
 
 /// Par de credencial emitido (token opaco puro retornado ao cliente + metadados).
 class IssuedSession {
@@ -83,65 +13,99 @@ class IssuedSession {
     required this.userId,
   });
 
-  /// Token opaco devolvido uma única vez ao cliente (INV-SEC-05).
+  /// Token opaco devolvido uma única vez ao cliente (INV-SEC-10).
   final String token;
   final DateTime expiresAt;
   final String userId;
 }
 
-/// Serviço de emissão, validação e revogação de tokens de sessão opacos.
-class ServerpodSessionService implements SessionAuthenticator {
-  ServerpodSessionService({
-    required this.store,
-    DateTime Function()? now,
-    Random? random,
-  })  : _now = now ?? DateTime.now,
-        _random = random ?? Random.secure();
+/// Gerador criptográfico seguro de tokens opacos (INV-SEC-10).
+class TokenGenerator {
+  const TokenGenerator([Random? random]) : _random = random;
 
-  final SessionStore store;
-  final DateTime Function() _now;
-  final Random _random;
-
-  /// TTL padrão de 24 horas para tokens de sessão.
-  static const Duration defaultTtl = Duration(hours: 24);
+  final Random? _random;
 
   /// Gera um token opaco criptograficamente seguro com 32 bytes (256 bits).
-  String _generateSecureToken() {
-    final values = List<int>.generate(32, (_) => _random.nextInt(256));
+  String generate() {
+    final rng = _random ?? Random.secure();
+    final values = List<int>.generate(32, (_) => rng.nextInt(256));
     return base64Url.encode(values);
   }
 
   /// Calcula o hash SHA-256 canônico em hexadecimal do token opaco via PointyCastle.
-  static String hashToken(String token) {
+  static String hash(String token) {
     final digest = SHA256Digest();
     final bytes = utf8.encode(token);
     final hashBytes = digest.process(Uint8List.fromList(bytes));
     return hashBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
+}
 
-  /// Compara dois hashes em tempo constante para mitigar side-channel de timing (Gate 2.5).
-  static bool constantTimeCompare(String a, String b) {
-    if (a.length != b.length) {
-      return false;
-    }
-    var result = 0;
-    for (var i = 0; i < a.length; i++) {
-      result |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
-    }
-    return result == 0;
-  }
+/// Registro imutável de sessão para persistência.
+class SessionRecord {
+  const SessionRecord({
+    required this.userId,
+    required this.tokenHash,
+    required this.createdAt,
+    required this.expiresAt,
+    this.revokedAt,
+  });
+
+  final String userId;
+  final String tokenHash;
+  final DateTime createdAt;
+  final DateTime expiresAt;
+  final DateTime? revokedAt;
+
+  bool isExpired(DateTime now) => !now.isBefore(expiresAt);
+  bool get isRevoked => revokedAt != null;
+}
+
+/// Abstração de persistência para registros de sessão (DIP/ISP).
+abstract interface class SessionRepository {
+  Future<void> save(SessionRecord session);
+  Future<SessionRecord?> findByTokenHash(String tokenHash);
+  Future<void> revokeByTokenHash(String tokenHash, DateTime revokedAt);
+}
+
+/// Serviço de emissão, validação e revogação de tokens de sessão opacos.
+///
+/// Aplica Object Calisthenics:
+/// - 1 nível de indentação por método;
+/// - Early-return para evitar cláusulas 'else' ou aninhamentos;
+/// - SRP: delega geração criptográfica para [TokenGenerator] e persistência para [SessionRepository].
+///
+/// Segurança (Gate 2.5):
+/// - A integridade e segurança temporal repousam no índice UNIQUE em `tokenHash` (256 bits SHA-256, INV-SEC-17);
+/// - Rejeição estrita fail-closed para tokens com formato inválido, expirados ou revogados.
+class ServerpodSessionService implements SessionAuthenticator {
+  ServerpodSessionService({
+    required this.repository,
+    this.credentialRepository,
+    DateTime Function()? now,
+    TokenGenerator? tokenGenerator,
+  })  : _now = now ?? DateTime.now,
+        _generator = tokenGenerator ?? const TokenGenerator();
+
+  final SessionRepository repository;
+  final CredentialRepository? credentialRepository;
+  final DateTime Function() _now;
+  final TokenGenerator _generator;
+
+  /// TTL padrão de 24 horas para tokens de sessão.
+  static const Duration defaultTtl = Duration(hours: 24);
 
   /// Cria e persiste uma nova sessão com token opaco.
   Future<IssuedSession> createSession({
     required String userId,
     Duration ttl = defaultTtl,
   }) async {
-    final rawToken = _generateSecureToken();
-    final tokenHash = hashToken(rawToken);
+    final rawToken = _generator.generate();
+    final tokenHash = TokenGenerator.hash(rawToken);
     final createdAt = _now();
     final expiresAt = createdAt.add(ttl);
 
-    final sessionRecord = DevtasksSession(
+    final record = SessionRecord(
       userId: userId,
       tokenHash: tokenHash,
       createdAt: createdAt,
@@ -149,7 +113,7 @@ class ServerpodSessionService implements SessionAuthenticator {
       revokedAt: null,
     );
 
-    await store.save(sessionRecord);
+    await repository.save(record);
 
     return IssuedSession(
       token: rawToken,
@@ -160,40 +124,44 @@ class ServerpodSessionService implements SessionAuthenticator {
 
   @override
   Future<AuthenticatedUser?> authenticate(String token) async {
-    final tokenHash = hashToken(token);
-    final sessionRecord = await store.findByTokenHash(tokenHash);
+    if (token.isEmpty) {
+      return null;
+    }
 
+    final tokenHash = TokenGenerator.hash(token);
+    final sessionRecord = await repository.findByTokenHash(tokenHash);
     if (sessionRecord == null) {
       return null;
     }
 
-    // Validação de tempo constante do hash
-    if (!constantTimeCompare(sessionRecord.tokenHash, tokenHash)) {
+    if (sessionRecord.isRevoked) {
       return null;
     }
 
-    // Rejeita sessão revogada
-    if (sessionRecord.revokedAt != null) {
-      return null;
-    }
-
-    // Rejeita sessão expirada (TTL)
     final now = _now();
-    if (now.isAfter(sessionRecord.expiresAt)) {
+    if (sessionRecord.isExpired(now)) {
       return null;
+    }
+
+    String? email;
+    final credRepo = credentialRepository;
+    if (credRepo != null) {
+      email = await credRepo.findEmailById(sessionRecord.userId);
     }
 
     return AuthenticatedUser(
       id: sessionRecord.userId,
-      email: '', // O email pode ser carregado sob demanda se necessário
+      email: email ?? '',
     );
   }
 
   /// Revoga o token atual (idempotente: token já revogado ou ausente retorna sucesso).
-  Future<SignOutResultDto> signOut(String token) async {
-    final tokenHash = hashToken(token);
+  Future<void> revokeSession(String token) async {
+    if (token.isEmpty) {
+      return;
+    }
+    final tokenHash = TokenGenerator.hash(token);
     final now = _now();
-    await store.revokeByTokenHash(tokenHash, now);
-    return SignOutResultDto(success: true);
+    await repository.revokeByTokenHash(tokenHash, now);
   }
 }

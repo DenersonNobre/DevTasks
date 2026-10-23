@@ -230,9 +230,8 @@ class _AuthEndpoint {
   }
 
   _i3.Future<_i8.SignOutResultDto> signOut(
-    _i1.TestSessionBuilder sessionBuilder, [
-    String? token,
-  ]) async {
+    _i1.TestSessionBuilder sessionBuilder,
+  ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
           (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
@@ -244,7 +243,7 @@ class _AuthEndpoint {
           createSessionCallback: (_) => _localUniqueSession,
           endpointPath: 'auth',
           methodName: 'signOut',
-          parameters: _i1.testObjectToJson({'token': token}),
+          parameters: _i1.testObjectToJson({}),
           serializationManager: _serializationManager,
         );
         var _localReturnValue =

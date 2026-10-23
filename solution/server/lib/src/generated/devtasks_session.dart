@@ -96,15 +96,7 @@ abstract class DevtasksSession
 
   @override
   Map<String, dynamic> toJsonForProtocol() {
-    return {
-      '__className__': 'DevtasksSession',
-      if (id != null) 'id': id,
-      'userId': userId,
-      'tokenHash': tokenHash,
-      'createdAt': createdAt.toJson(),
-      'expiresAt': expiresAt.toJson(),
-      if (revokedAt != null) 'revokedAt': revokedAt?.toJson(),
-    };
+    return {};
   }
 
   static DevtasksSessionInclude include() {

@@ -7,6 +7,7 @@ import 'ports.dart';
 abstract interface class ServerpodAuthDbOperations {
   Future<bool> emailAuthExists(Session session, String normalizedEmail);
   Future<EmailAuth?> findEmailAuth(Session session, String normalizedEmail);
+  Future<UserInfo?> findUserInfoById(Session session, int userId);
   Future<UserInfo> insertUserInfo(Session session, UserInfo userInfo);
   Future<EmailAuth> insertEmailAuth(Session session, EmailAuth emailAuth);
 }
@@ -32,6 +33,11 @@ class _DefaultServerpodAuthDbOperations implements ServerpodAuthDbOperations {
       session,
       where: (t) => t.email.equals(normalizedEmail),
     );
+  }
+
+  @override
+  Future<UserInfo?> findUserInfoById(Session session, int userId) async {
+    return UserInfo.db.findById(session, userId);
   }
 
   @override
@@ -74,6 +80,16 @@ class ServerpodUserRepository implements UserRepository, CredentialRepository {
   @override
   Future<bool> existsByEmail(String normalizedEmail) =>
       _ops.emailAuthExists(session, normalizedEmail);
+
+  @override
+  Future<String?> findEmailById(String userId) async {
+    final parsedId = int.tryParse(userId);
+    if (parsedId == null) {
+      return null;
+    }
+    final info = await _ops.findUserInfoById(session, parsedId);
+    return info?.email;
+  }
 
   @override
   Future<CreateUserOutcome> create({

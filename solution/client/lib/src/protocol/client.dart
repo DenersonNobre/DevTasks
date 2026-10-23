@@ -23,6 +23,11 @@ import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i9;
 import 'protocol.dart' as _i10;
 
 /// Endpoint de autenticação (cadastro, login e logout).
+///
+/// Aplica Object Calisthenics:
+/// - 1 nível de indentação por método;
+/// - Early-return;
+/// - Sem argumentos de token no corpo do signOut (INV-SEC-16).
 /// {@category Endpoint}
 class EndpointAuth extends _i1.EndpointRef {
   EndpointAuth(_i1.EndpointCaller caller) : super(caller);
@@ -44,21 +49,21 @@ class EndpointAuth extends _i1.EndpointRef {
         {'dto': dto},
       );
 
-  /// Revoga a sessão ativa do usuário (INV-SEC-05/06).
+  /// Revoga a sessão ativa do usuário baseando-se estritamente no header `Authorization: Bearer` (INV-SEC-16).
   ///
-  /// O token pode ser fornecido diretamente ou extraído da requisição.
-  /// Operação idempotente que responde com sucesso sem vazar se o token existia.
-  _i2.Future<_i7.SignOutResultDto> signOut([String? token]) =>
+  /// Proibido aceitar token no corpo do RPC para mitigar vazamento e fixação de sessão.
+  /// Operação idempotente que responde com sucesso sem revelar estado.
+  _i2.Future<_i7.SignOutResultDto> signOut() =>
       caller.callServerEndpoint<_i7.SignOutResultDto>(
         'auth',
         'signOut',
-        {'token': token},
+        {},
       );
 }
 
 /// Endpoint privado de referência: exige sessão válida (guard de F1.3).
 ///
-/// O token é lido do header `Authorization: Bearer <token>` (nunca do corpo — INV-SEC-06).
+/// O token é lido exclusivamente do header `Authorization: Bearer <token>` (INV-SEC-16).
 /// Com `ServerpodSessionService` conectado, o guard valida o token contra a tabela
 /// `devtasks_session` rejeitando tokens expirados ou revogados.
 /// {@category Endpoint}

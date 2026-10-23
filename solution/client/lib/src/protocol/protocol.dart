@@ -12,15 +12,13 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
-import 'devtasks_session.dart' as _i2;
-import 'me_result_dto.dart' as _i3;
-import 'sign_in_dto.dart' as _i4;
-import 'sign_in_result_dto.dart' as _i5;
-import 'sign_out_result_dto.dart' as _i6;
-import 'sign_up_dto.dart' as _i7;
-import 'sign_up_result_dto.dart' as _i8;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i9;
-export 'devtasks_session.dart';
+import 'me_result_dto.dart' as _i2;
+import 'sign_in_dto.dart' as _i3;
+import 'sign_in_result_dto.dart' as _i4;
+import 'sign_out_result_dto.dart' as _i5;
+import 'sign_up_dto.dart' as _i6;
+import 'sign_up_result_dto.dart' as _i7;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i8;
 export 'me_result_dto.dart';
 export 'sign_in_dto.dart';
 export 'sign_in_result_dto.dart';
@@ -63,63 +61,56 @@ class Protocol extends _i1.SerializationManager {
       }
     }
 
-    if (t == _i2.DevtasksSession) {
-      return _i2.DevtasksSession.fromJson(data) as T;
+    if (t == _i2.MeResultDto) {
+      return _i2.MeResultDto.fromJson(data) as T;
     }
-    if (t == _i3.MeResultDto) {
-      return _i3.MeResultDto.fromJson(data) as T;
+    if (t == _i3.SignInDto) {
+      return _i3.SignInDto.fromJson(data) as T;
     }
-    if (t == _i4.SignInDto) {
-      return _i4.SignInDto.fromJson(data) as T;
+    if (t == _i4.SignInResultDto) {
+      return _i4.SignInResultDto.fromJson(data) as T;
     }
-    if (t == _i5.SignInResultDto) {
-      return _i5.SignInResultDto.fromJson(data) as T;
+    if (t == _i5.SignOutResultDto) {
+      return _i5.SignOutResultDto.fromJson(data) as T;
     }
-    if (t == _i6.SignOutResultDto) {
-      return _i6.SignOutResultDto.fromJson(data) as T;
+    if (t == _i6.SignUpDto) {
+      return _i6.SignUpDto.fromJson(data) as T;
     }
-    if (t == _i7.SignUpDto) {
-      return _i7.SignUpDto.fromJson(data) as T;
+    if (t == _i7.SignUpResultDto) {
+      return _i7.SignUpResultDto.fromJson(data) as T;
     }
-    if (t == _i8.SignUpResultDto) {
-      return _i8.SignUpResultDto.fromJson(data) as T;
+    if (t == _i1.getType<_i2.MeResultDto?>()) {
+      return (data != null ? _i2.MeResultDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i2.DevtasksSession?>()) {
-      return (data != null ? _i2.DevtasksSession.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i3.SignInDto?>()) {
+      return (data != null ? _i3.SignInDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i3.MeResultDto?>()) {
-      return (data != null ? _i3.MeResultDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i4.SignInResultDto?>()) {
+      return (data != null ? _i4.SignInResultDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i4.SignInDto?>()) {
-      return (data != null ? _i4.SignInDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i5.SignOutResultDto?>()) {
+      return (data != null ? _i5.SignOutResultDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i5.SignInResultDto?>()) {
-      return (data != null ? _i5.SignInResultDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i6.SignUpDto?>()) {
+      return (data != null ? _i6.SignUpDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i6.SignOutResultDto?>()) {
-      return (data != null ? _i6.SignOutResultDto.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i7.SignUpDto?>()) {
-      return (data != null ? _i7.SignUpDto.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i8.SignUpResultDto?>()) {
-      return (data != null ? _i8.SignUpResultDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i7.SignUpResultDto?>()) {
+      return (data != null ? _i7.SignUpResultDto.fromJson(data) : null) as T;
     }
     try {
-      return _i9.Protocol().deserialize<T>(data, t);
+      return _i8.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
     return super.deserialize<T>(data, t);
   }
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
-      _i2.DevtasksSession => 'DevtasksSession',
-      _i3.MeResultDto => 'MeResultDto',
-      _i4.SignInDto => 'SignInDto',
-      _i5.SignInResultDto => 'SignInResultDto',
-      _i6.SignOutResultDto => 'SignOutResultDto',
-      _i7.SignUpDto => 'SignUpDto',
-      _i8.SignUpResultDto => 'SignUpResultDto',
+      _i2.MeResultDto => 'MeResultDto',
+      _i3.SignInDto => 'SignInDto',
+      _i4.SignInResultDto => 'SignInResultDto',
+      _i5.SignOutResultDto => 'SignOutResultDto',
+      _i6.SignUpDto => 'SignUpDto',
+      _i7.SignUpResultDto => 'SignUpResultDto',
       _ => null,
     };
   }
@@ -134,22 +125,20 @@ class Protocol extends _i1.SerializationManager {
     }
 
     switch (data) {
-      case _i2.DevtasksSession():
-        return 'DevtasksSession';
-      case _i3.MeResultDto():
+      case _i2.MeResultDto():
         return 'MeResultDto';
-      case _i4.SignInDto():
+      case _i3.SignInDto():
         return 'SignInDto';
-      case _i5.SignInResultDto():
+      case _i4.SignInResultDto():
         return 'SignInResultDto';
-      case _i6.SignOutResultDto():
+      case _i5.SignOutResultDto():
         return 'SignOutResultDto';
-      case _i7.SignUpDto():
+      case _i6.SignUpDto():
         return 'SignUpDto';
-      case _i8.SignUpResultDto():
+      case _i7.SignUpResultDto():
         return 'SignUpResultDto';
     }
-    className = _i9.Protocol().getClassNameForObject(data);
+    className = _i8.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod_auth.$className';
     }
@@ -162,30 +151,27 @@ class Protocol extends _i1.SerializationManager {
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
     }
-    if (dataClassName == 'DevtasksSession') {
-      return deserialize<_i2.DevtasksSession>(data['data']);
-    }
     if (dataClassName == 'MeResultDto') {
-      return deserialize<_i3.MeResultDto>(data['data']);
+      return deserialize<_i2.MeResultDto>(data['data']);
     }
     if (dataClassName == 'SignInDto') {
-      return deserialize<_i4.SignInDto>(data['data']);
+      return deserialize<_i3.SignInDto>(data['data']);
     }
     if (dataClassName == 'SignInResultDto') {
-      return deserialize<_i5.SignInResultDto>(data['data']);
+      return deserialize<_i4.SignInResultDto>(data['data']);
     }
     if (dataClassName == 'SignOutResultDto') {
-      return deserialize<_i6.SignOutResultDto>(data['data']);
+      return deserialize<_i5.SignOutResultDto>(data['data']);
     }
     if (dataClassName == 'SignUpDto') {
-      return deserialize<_i7.SignUpDto>(data['data']);
+      return deserialize<_i6.SignUpDto>(data['data']);
     }
     if (dataClassName == 'SignUpResultDto') {
-      return deserialize<_i8.SignUpResultDto>(data['data']);
+      return deserialize<_i7.SignUpResultDto>(data['data']);
     }
     if (dataClassName.startsWith('serverpod_auth.')) {
       data['className'] = dataClassName.substring(15);
-      return _i9.Protocol().deserializeByClassName(data);
+      return _i8.Protocol().deserializeByClassName(data);
     }
     return super.deserializeByClassName(data);
   }
@@ -200,7 +186,7 @@ class Protocol extends _i1.SerializationManager {
       return null;
     }
     try {
-      return _i9.Protocol().mapRecordToJson(record);
+      return _i8.Protocol().mapRecordToJson(record);
     } catch (_) {}
     throw Exception('Unsupported record type ${record.runtimeType}');
   }

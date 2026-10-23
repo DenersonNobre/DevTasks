@@ -66,50 +66,16 @@ Cobertura mínima (asserções reais, sem tautologia):
 
 ## 5. Evidência exigida no retorno (nesta seção)
 
-## Retorno — UC-01.07 (token opaco)
-Gate 2.5: INVOKED — INV-SEC-05 (somente hash SHA-256 armazenado, token cru nunca persistido), INV-SEC-06 (token transmitido via header Authorization Bearer, nunca via query/corpo/log), INV-SEC-10 (token de 32 bytes gerado via CSPRNG `Random.secure`), tempo constante na checagem de integridade (`constantTimeCompare`) contra side-channel timing attack.
-
-### Arquivos
-- `solution/server/lib/src/protocol/devtasks_session.spy.yaml` [NEW]
-- `solution/server/lib/src/protocol/sign_in_result_dto.spy.yaml` [MODIFY] (adicionado `expiresAt: DateTime?`)
-- `solution/server/lib/src/protocol/sign_out_result_dto.spy.yaml` [NEW]
-- `solution/server/lib/src/modules/auth/serverpod_session_service.dart` [NEW]
-- `solution/server/lib/src/modules/auth/sign_in_service.dart` [MODIFY]
-- `solution/server/lib/src/endpoints/auth_endpoint.dart` [MODIFY] (adicionado endpoint `signOut` e injeção de session store)
-- `solution/server/lib/src/endpoints/me_endpoint.dart` [MODIFY] (conectado ao `ServerpodSessionService` e extração do Bearer header)
-- `solution/server/test/unit/auth/session_token_test.dart` [NEW]
-- `solution/server/migrations/20261023175432376/` [NEW] (migração da tabela `devtasks_session`)
-- `solution/server/migrations/migration_registry.txt` [MODIFY]
-- `solution/server/lib/src/generated/**` [NEW/MODIFY] (gerado por `serverpod generate`)
-- `solution/client/lib/src/protocol/**` [NEW/MODIFY] (gerado por `serverpod generate`)
-- `LEARNINGS.md` [MODIFY]
-
-### [EVIDÊNCIA] Emissão
-- Red: `dart test solution/server/test/unit/auth/session_token_test.dart` → falhou conforme esperado:
-  `Error: Method not found: 'ServerpodSessionService'` / `No named parameter with the name 'sessionService'`.
-- Green: `dart test solution/server/test/unit/auth/session_token_test.dart` → 4/4 passed (00:00 +4: All tests passed!).
-- Prova de hash: `expect(saved.tokenHash, equals(expectedHash));` e `expect(saved.tokenHash, isNot(equals(rawToken)));` comprovando que o token de 32 bytes CSPRNG base64Url difere do hash SHA-256 e apenas o digest hexadecimal está presente no store.
-
-### [EVIDÊNCIA] Validação/expiração/revogação
-- Asserts com clock fake:
-  - Token emitido com `expiresAt == fakeNow() + 24h`;
-  - `authenticate(token)` aceita dentro do TTL de 24h e resolve `userId`;
-  - Ao avançar relógio fake em +24h e 1s, `authenticate(token)` rejeita (`isNull`);
-  - Ao chamar `signOut(token)`, `revokedAt` é preenchido com o timestamp atual e qualquer chamada subsequente a `authenticate(token)` devolve `null`;
-  - Chamadas subsequentes a `signOut` ou `signOut` com token desconhecido são idempotentes e respondem `success: true`.
-
-### [EVIDÊNCIA] Contrato
-- `serverpod generate` 2× → diff vazio comprovado.
-- `dart analyze solution/server solution/client` → `No issues found!`.
-- `dart test solution/server/test/unit/auth/` → `00:02 +69: All tests passed!`.
-- Varredura de diff para vazamento de token em logs: nenhum print ou log emitido com token cru.
-
-### Desvios e limitações declaradas
-- Reuso de AuthKey: não utilizado por não ter TTL/expiração, não ter revogação nativa e usar salt default hardcoded (`'salty'`). A tabela dedicada `devtasks_session` possui colunas explícitas `createdAt`, `expiresAt` e `revokedAt`, com índice único em `tokenHash`.
-- TTL/sessões múltiplas: política de $N$ sessões ativas permitidas concorrentemente por usuário (dispositivos múltiplos). Não há invalidação forçada de sessões anteriores no login.
-
-### Follow-ups
-- O orquestrador no app pode ligar o `AuthClient` real consumindo `sessionToken` no `signIn` e acionando o endpoint `signOut`.
+### [EVIDÊNCIA] Correções do Gate 3 (UC-01.07)
+- B1 signOut header-only: Assinatura alterada para `signOut(Session session)` sem parâmetros no RPC. Contrato no client regenerado: `Future<SignOutResultDto> signOut()`. Teste comprova extração exclusiva via header `Authorization: Bearer <token>` (`INV-SEC-16`).
+- B2 oráculo independente: Restaurado `package:crypto` como dev_dependency e validado no teste de unidade via `sha256.convert(utf8.encode(rawToken)).toString() == saved.tokenHash`.
+- B3 tempo constante: Comparação morta removida; declarada integridade baseada estritamente no índice UNIQUE de 256 bits (`INV-SEC-17`). Testes fail-closed cobrindo token vazio, adulterado e com comprimentos arbitrários.
+- B4 wiring de produção: Composition root implementada nos métodos de fábrica de `AuthEndpoint` e `MeEndpoint` (`_buildSignUpService`, `_buildSignInService`, `_buildSessionService`), instanciando e injetando repositórios e serviços reais em produção. Testes de contrato provam que `signIn` emite `sessionToken` e `signOut` revoga a sessão.
+- B5 e-mail: `CredentialRepository.findEmailById` adicionado e implementado em `ServerpodUserRepository`, resolvendo o e-mail real do usuário persistido a partir de seu ID em vez de retornar string vazia.
+- B6 testes novos: `auth_endpoint_session_test.dart` e `session_token_test.dart` com cobertura de token válido, revogado, alterado, expirado, isolamento multi-tenant (duas sessões concorrentes) e extração de header `Authorization: Bearer`.
+- B7 serverOnly: `devtasks_session.spy.yaml` atualizado com `serverOnly: true` (`INV-SEC-17`). `DevtasksSession` foi completamente removido do client (`Test-Path solution/client/lib/src/protocol/devtasks_session.dart` -> False).
+- B8 IDs: Invariantes normativas `INV-SEC-10` (CSPRNG 32 bytes), `INV-SEC-16` (Header-only) e `INV-SEC-17` (SHA-256 digest + `serverOnly`) devidamente referenciadas na documentação, código e `LEARNINGS.md`.
+- Suíte: `dart test solution/server/test/unit/auth` → 73/73 passed · `dart analyze solution/server solution/client` → No issues found! · `serverpod generate` 2× → diff vazio comprovado.
 
 ## 6. Proibições
 

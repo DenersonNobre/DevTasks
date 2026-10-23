@@ -19,6 +19,9 @@ class _Credentials implements CredentialRepository {
       passwordHash: hash,
     );
   }
+
+  @override
+  Future<String?> findEmailById(String userId) async => 'user-1@ex.com';
 }
 
 class _Verifier implements PasswordVerifier {

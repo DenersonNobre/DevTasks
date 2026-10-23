@@ -93,6 +93,7 @@ class CredentialRecord {
 /// Porta de leitura de credenciais (o handler de cadastro não depende do hash).
 abstract interface class CredentialRepository {
   Future<CredentialRecord?> findByEmail(String normalizedEmail);
+  Future<String?> findEmailById(String userId);
 }
 
 /// Porta de verificação de senha contra um hash armazenado.
