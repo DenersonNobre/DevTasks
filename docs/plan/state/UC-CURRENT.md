@@ -21,18 +21,23 @@ coberta pela decisão **D-03** (gerência de estado local, sem superfície de re
 
 ## Decisões de fatia
 
-1. **Porta `AuthClient`** (app): `signIn(email, password)` / `signUp(name, email, password)` devolvendo
+1. **Padrão de apresentação: D-07** (`DESIGN` §12/§12.1, commit `fcac2ba`) — **MVVM por slice,
+   unidirecional**: 1 caso de uso = 1 ViewModel com estado imutável + intents; View renderiza/despacha;
+   Riverpod (D-03) é o **mecanismo**. VM sem `BuildContext`/I/O; sessão em `global/` (o VM observa).
+2. **Porta `AuthClient`** (app): `signIn(email, password)` / `signUp(name, email, password)` devolvendo
    os DTOs do contrato ou um `AuthFailure` tipado. O **cliente gerado do Serverpod** é o adaptador real
    (wiring com URL/token = follow-up declarado, pois a emissão de token ainda não existe).
-2. **Riverpod (D-03)**: providers sobre um `AuthController` (`Notifier`) reutilizando o
-   `SessionController` (persistência local já entregue em F1.2).
 3. **Roteador**: manter o `RouteGuard` puro como contrato; o router real (go_router) é dependência nova
    → **não** entra neste UC sem decisão explícita (o DoD não exige; o guard já é testável).
+4. **Qualidade (DoD de código)**: enxuto e otimizado — 1 nível de indentação por método, sem `else` de
+   validação, sem números/strings mágicos, VOs para primitivos de negócio, zero comentário-ruído;
+   Object Calisthenics + SOLID + Clean Code auditados no Gate 3.
 
 ## Interfaces
 
-- `AuthClient` (porta) · `AuthState` (`idle|loading|error(failure)|authenticated(token)`) ·
-  `authControllerProvider` · reuso de `SessionController`/`SessionStore`.
+- `LoginViewModel` / `RegisterViewModel` (`Notifier`, estado imutável + intents) ·
+  `LoginState`/`RegisterState` (`idle|loading|error(failure)|authenticated`) · `AuthClient` (porta) ·
+  reuso de `SessionController`/`SessionStore` (global).
 
 ## Arquivos-alvo
 
@@ -46,6 +51,7 @@ coberta pela decisão **D-03** (gerência de estado local, sem superfície de re
 - Claim: **ativo** — `UC-01.06`, owner `coder` (paths `solution/app`, hand-off).
 - **Implementação: não iniciada** — segurando para não disputar o `pubspec.lock` do workspace com o
   brief 08 do outro agente (que adicionará `pointycastle` no server). Liberar quando ele fechar.
+- D-07 registrada em `DESIGN` §12/§12.1 + `AGENTS.md` + F1.6 (commit `fcac2ba`) **antes** do código.
 - Modelo do Coder: `opencode/deepseek-v4.1-flash-free` (os anteriores estouraram passos; orquestrador
   conduz a implementação e os Gates 3/4 auditam).
 
