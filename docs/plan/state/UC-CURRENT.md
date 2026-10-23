@@ -146,6 +146,13 @@ explícita) e registro do **export órfão** no barrel como 5ª referência.
   "medições contaminadas" já registrado em `LEARNINGS.md`. **Não se recalibra o teto com medição suja.**
 - **Ação**: re-executar o harness com a máquina ociosa; se persistir, medir a decomposição app×server e
   **otimizar a suíte** — afrouxar o gate é a última opção e exige evidência limpa.
+- **Achado (leitura de `tools/test.ps1`)**: a janela medida vai de `L24` (início) a `L90` (`coreElapsed`) e
+  **inclui a resolução implícita de dependências** de `flutter test`/`dart test` (o script só passa
+  `--no-pub` para o app quando `-NoPub` é usado; o server não tem equivalente). Logo o número mede
+  **setup + suíte**, não só a suíte. Evidência de suporte: execuções isoladas do app deram **13–27 s** com
+  cache quente, contra **113,53 s** no harness sob carga.
+  **Proposta (dono: harness, não este UC)**: imprimir tempo **por membro** e mover `pub get` para fora da
+  janela (`--no-pub` no CI, com `pub get` num passo anterior); recalibrar só com medição limpa.
 
 ## Desvios e follow-ups declarados
 
