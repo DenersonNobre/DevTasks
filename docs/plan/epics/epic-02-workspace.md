@@ -1,6 +1,6 @@
 # Epic 02 — Workspace & Membresias (workspace)
 
-> Status: 🔄 Em execução | Prioridade: Alta | Dependências: EPIC-00 ✅, EPIC-01 ✅
+> Status: ✅ Concluída | Prioridade: Alta | Dependências: EPIC-00 ✅, EPIC-01 ✅
 
 ## 1. Objetivo e Valor de Negócio
 
@@ -16,8 +16,8 @@ e o **único ponto de checagem de isolamento** (`MembershipGuard`). É aqui que 
 | # | Feature | UCs/Histórias | Independência / Risco | Status |
 |:---|:---|:---:|:---|:---:|
 | F2.1 | CRUD de workspace | 1 | Base do tenancy | ✅ |
-| F2.2 | Membresias (adição por e-mail + papéis) | 1 | INV-06, INV-09 | ⏳ |
-| F2.3 | MembershipGuard — isolamento multi-tenant | 1 | **Core de risco**: INV-01/INV-02 | ⏳ |
+| F2.2 | Membresias (adição por e-mail + papéis) | 1 | INV-06, INV-09 | ✅ |
+| F2.3 | MembershipGuard — isolamento multi-tenant | 1 | **Core de risco**: INV-01/INV-02 | ✅ |
 
 ---
 
