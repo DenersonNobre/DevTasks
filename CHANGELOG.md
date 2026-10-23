@@ -8,6 +8,13 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ### Adicionado
 
+- **`UC-01.02` — login & sessão persistente**: `SignInHandler` com erro **único**
+  (`ERR_INVALID_CREDENTIALS`, sem enumerar campo) e verificação **sempre** executada (hash dummy
+  asserido — anti-enumeração por timing) + `SignInService`/`auth.signIn` com `SignInDto`/
+  `SignInResultDto` gerados (idempotente com CLI 3.4.13); no app, porta `SessionStore` (em `domain/`)
+  e `SessionController` (`ChangeNotifier`) restaurando a sessão no boot — **prova de restart por
+  round-trip**. Gates 3 (2 rodadas) e 4 aprovados com ressalvas não-bloqueadoras; persistência/hasher
+  reais, token emitido e UI/Riverpod ficam declarados como follow-up.
 - **`UC-01.01` — cadastro de usuário (fatias 1–2, TDD)**: VOs `Email`/`Password` no app (normalização
   INV-08 + política 12–128 com maiúscula/minúscula/dígito), handler de sign-up no server com portas DIP
   (`UserRepository`/`PasswordHasher`, hash executado também no caminho de duplicata), endpoint

@@ -21,21 +21,28 @@ Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
     corrigido, ver `LEARNINGS.md`); migração `20261023024432194` (**21 tabelas framework/auth**);
   - **Gates**: review rodada 1 rejeitada (evidência sobredeclarada) → rodada 2 **aprovada com
     ressalvas** → QA **aprovado com ressalvas, zero bloqueadores**; matriz bate com o disco.
+- **`UC-01.02` (F1.2 — login & sessão) ✅ CONSOLIDADO** (`81f2a16`, `b92cbe4`, `29c95c4`, `11db98a`):
+  `SignInHandler` com **erro único** (`ERR_INVALID_CREDENTIALS`, sem enumerar campo) e hash dummy
+  **asserido** (anti-timing) · `auth.signIn` + DTOs (token `null`, declarado) · app: `SessionStore`
+  (porta em `domain/`) + `SessionController` com **prova de restart (round-trip)**;
+  **29 testes** no server, **20** de auth no app; Gates 3 (2 rodadas) e 4 aprovados.
 - **Follow-ups declarados** (não fingidos): persistência com `UNIQUE(email)` + **TOCTOU** +
-  `emailVerified` default · adapter de hash (`allowUnsecureRandom`) · **sessão no cadastro →
-  `UC-01.02`** · UI `/register` · teste de log (INV-SEC-05) · limite de nome (SPEC) · fonte única das
-  regras (app × server) · colisão `auth` (endpoint × módulo) · Reds não versionados.
-- **R-01 ABERTO**: teto de governança **712,91 s × 600 s** (suítes funcionais verdes) — brief 05.
-- **CI**: verde em `dcc3e2a` (último publicado); **commits locais** deste ciclo não publicados.
-- Claim `UC-01.01`: liberado na consolidação.
+  `emailVerified` default · adapter de hash (dummy placeholder vira hash válido) · **token/sessão
+  emitida** · UI `/login` + **Riverpod (D-03)** · teste de log (INV-SEC-05) · limite de nome (SPEC) ·
+  fonte única das regras (3ª cópia do regex) · colisão `auth` · Reds não versionados.
+- **R-01 RESOLVIDO** pelo outro agente (governança **268 s**, 9/9 suítes) — resta um achado de
+  **fronteira**: core com `-Coverage` mediu **60,98 s** (0,98 acima do teto) sob carga; sem `-Coverage`
+  fica em 18–21 s. Dono: harness (brief 05/06).
+- **Em execução pelo outro agente**: `UC-01.05` (tema/WCAG, `3042406`) e evidências de Red.
+- Claim `UC-01.02`: liberado na consolidação.
 
-## Próximo passo (`UC-01.02` — Login & Sessão Persistente)
+## Próximo passo (`UC-01.03` — Logout & Guarda de Rotas Privadas)
 
-1. Claim + hand-off: **Gate 2.5 já invocado** para auth (reutilizar; cobrir sessão/token na resposta
-   e `ERR_INVALID_CREDENTIALS` único sem enumerar campo).
-2. TDD: guard de sessão, persistência local no app e mensagem única; depois `UC-01.03` (logout/rotas)
-   e `UC-01.04` (rate limit + hardening).
-3. Antes de declarar a EPIC-01 saudável: fechar **R-01** e decidir os follow-ups de persistência/hash.
+1. Claim + hand-off: **Gate 2.5 já cobre** a superfície de auth (sessão/rotas) — incrementar com
+   `INV-SEC-06` (token header-only) e `ERR_NOT_AUTHENTICATED` → 401 em **toda** rota privada (contrato, não UI).
+2. TDD: guard no servidor (middleware/endpoint) + guard do roteador no app usando o
+   `SessionController` existente; logout limpa o store.
+3. Seguir para `UC-01.04` (rate limit/hardening) e então os follow-ups de persistência/hash.
 
 ## Travas vivas
 
