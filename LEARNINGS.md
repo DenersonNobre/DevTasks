@@ -128,3 +128,10 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 - **Causa raiz**: os barrels foram criados na **raiz do módulo** (`modules/auth/.domain.dart`) mas os `export` usavam caminhos da **camada** (`'email.dart'`), que resolvem a partir do diretório do barrel -> `modules/auth/email.dart` (inexistente). O analyzer denuncia no próprio barrel (`Target of URI doesn't exist`); no consumidor o sintoma aparece como símbolo indefinido.
 - **Fix**: `export 'domain/email.dart' ...` (relativo à posição do barrel). Validação barata: `dart analyze <barrel>` mostra `uri_does_not_exist` antes de rodar a suíte.
 - **Prevenção**: barrel nunca exporta o arquivo que o importa (ciclo) e barrel de camada não exporta ViewModels que o importam; rodar `dart analyze` no barrel ao criá-lo.
+
+## 2026-10-23 — Harness de mutação: backup de nome fixo pode REINTRODUZIR a mutação depois do commit
+
+- **Sintoma**: com a suíte verde (66/66) e o slice commitado, a árvore reapareceu com a mutação M2 aplicada (`return;` no início do `submit` do cadastro) e sem BOM — um arquivo que o commit `e88e2c4` NÃO continha (HEAD conferido: limpo).
+- **Causa raiz**: o harness de mutação gravava o backup em caminho fixo (`%TEMP%\mut_<arquivo>.bak`). Uma execução anterior deixou ali a cópia **já mutada**; uma restauração posterior (`Copy-Item`) reintroduziu a mutação na árvore de trabalho. O commit estava correto — o dano era só na árvore, mas contaminaria o próximo stage.
+- **Fix**: `git show HEAD:<path>` para confirmar o que foi commitado e `git checkout -- <path>` para restaurar; suíte revalidada (46/46 auth+widget; app completo 66/66).
+- **Prevenção**: no harness de mutação (1) backup **único por execução** (`<arquivo>.<guid>.bak`) removido em `finally`; (2) após restaurar, validar o **hash** do arquivo contra o estado pré-mutação — não confiar em "a suíte passou"; (3) `git status --porcelain` vazio antes de qualquer `git add`.
