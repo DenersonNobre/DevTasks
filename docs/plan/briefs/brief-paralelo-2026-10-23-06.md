@@ -75,3 +75,25 @@ mesmo commit · retorno com `[EVIDÊNCIA]` (Leitura → Verificação → Confir
 - `flutter test solution/app/test/unit/theme`: **12/12 testes verdes** (exit code 0).
 - `flutter analyze solution/app/lib/global/theme solution/app/lib/main.dart solution/app/test/unit/theme`: **0 issues** (limpo).
 - **Módulo `auth` preservado**: Nenhum arquivo em `solution/app/lib/modules/auth/**` ou `solution/server/**` foi tocado ou modificado.
+
+---
+
+## 6. Retorno — Item B: Artefatos de Evidência Red/Green (A5 do Laudo)
+
+### Entregas Concluídas
+Criado o diretório `docs/plan/reviews/evidence/` contendo 10 artefatos históricos com rastreabilidade estrita aos dados reais de `LEARNINGS.md`, `qa-review-v0.1.0.md` e histórico de commits Git:
+
+1. [`UC-00.01.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-00.01.md): Saneamento de topologia do workspace monorepo.
+2. [`UC-00.02.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-00.02.md): Preflight da toolchain, fail-fast de ambiente e geração de artefato compilado.
+3. [`UC-00.03.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-00.03.md): Test harness headless, orçamento de tempo core <= 60s e propagação de falha real.
+4. [`UC-00.04.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-00.04.md): Hooks Git (commit-msg, pre-commit com encoding UTF-8) e claims atômicos.
+5. [`UC-00.05.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-00.05.md): Manifestos Docker multi-stage e comprovação de build verde no CI.
+6. [`UC-00.06.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-00.06.md): CI/CD workflows (.github e .gitea) e DAG precedence gate.
+7. [`UC-00.07.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-00.07.md): Kernel de domínio puro com tipagem Result e DIP gate com provas negativas.
+8. [`UC-00.08.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-00.08.md): Governança documental executável e Doc Gate.
+9. [`UC-01.00.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-01.00.md): Wiring do Serverpod com contrato versionado do client e resolução de workspace.
+10. [`UC-01.01.md`](file:///a:/Projetos/flutter/portfolio/devtasks/docs/plan/reviews/evidence/UC-01.01.md): Cadastro de usuário, anti-enumeração, timing equivalente e 19 testes de domínio aprovados.
+
+### [EVIDÊNCIA]
+- Todos os 10 arquivos versionados em `docs/plan/reviews/evidence/`.
+- Nenhuma saída artificial inventada; lacunas históricas de bootstrap assinaladas com "não registrado formalmente em log".
