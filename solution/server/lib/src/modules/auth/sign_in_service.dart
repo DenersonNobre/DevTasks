@@ -11,6 +11,19 @@ class SignInService {
   final RateLimiter? _limiter;
 
   Future<SignInResultDto> signIn(SignInDto dto, {String? clientIp}) async {
+    // 1. Rate limit roda ANTES de qualquer computação de hash/verify (INV-SEC-12)
+    if (_limiter != null && clientIp != null && clientIp.isNotEmpty) {
+      final rateOutcome = _limiter.check('signin:$clientIp');
+      if (!rateOutcome.isAllowed) {
+        return SignInResultDto(
+          success: false,
+          errorCode: 'ERR_RATE_LIMITED',
+          message:
+              'Muitas tentativas de autenticação. Tente novamente mais tarde.',
+        );
+      }
+    }
+
     final handler = _handler;
     if (handler == null) {
       return SignInResultDto(
@@ -26,7 +39,6 @@ class SignInService {
 
     final user = outcome.user;
     if (user != null) {
-      // Emissão real de sessão (token opaco, header-only) é do adapter/IDP — follow-up.
       return SignInResultDto(success: true, userId: user.id);
     }
 

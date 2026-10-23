@@ -87,26 +87,42 @@ Ordem de commits (a mensagem do 2º leva `(UC-01.04)`, com claim ativo):
 
 ## 6. Retorno — preencher nesta seção
 
-```text
 ## Retorno — UC-01.04
-Gate 2.5: INVOKED — <INV-SEC-XX + achados>
+Gate 2.5: INVOKED — INV-SEC-12 (pre-crypto throttling), INV-SEC-13 (ephemeral in-memory IP/LGPD), INV-SEC-14 (untrusted X-Forwarded-For avoidance), INV-SEC-15 (opaque uniform rate limit response)
 
 ### Arquivos
-- <path> [NEW/MODIFY]
+- `solution/server/lib/src/modules/auth/rate_limiter.dart` [NEW]
+- `solution/server/lib/src/modules/auth/domain/email.dart` [NEW]
+- `solution/server/lib/src/modules/auth/domain/password.dart` [NEW]
+- `solution/server/lib/src/endpoints/auth_endpoint.dart` [MODIFY]
+- `solution/server/lib/src/modules/auth/sign_in_service.dart` [MODIFY]
+- `solution/server/lib/src/modules/auth/sign_up_service.dart` [MODIFY]
+- `solution/server/lib/src/modules/auth/sign_in_handler.dart` [MODIFY]
+- `solution/server/lib/src/modules/auth/sign_up_handler.dart` [MODIFY]
+- `solution/server/test/unit/auth/rate_limiter_test.dart` [NEW]
+- `solution/server/test/unit/auth/domain_vo_test.dart` [NEW]
 
 ### [EVIDÊNCIA] Rate limit
-- Red: <comando> → <falha real>
-- Green: <comando> → <N/N passed>
-- Prova de "sem custo de senha": <assert>
+- Red: `dart test solution/server/test/unit/auth/rate_limiter_test.dart` → Falhou com Expected: <9> Actual: <10> e Expected: 'ERR_RATE_LIMITED' Actual: 'ERR_INVALID_CREDENTIALS' (commit `aa4e1bc`).
+- Green: `dart test solution/server/test/unit/auth/rate_limiter_test.dart` → 6/6 passed (0 falhas). Suíte completa de auth: 62/62 passed.
+- Prova de "sem custo de senha":
+  - Em login: 11ª tentativa bloqueada por rate limit mantém `verifier.verifyCalls == 10` (custo computacional zero para o PasswordVerifier).
+  - Em signup: 11ª tentativa bloqueada por rate limit mantém `hasher.hashCalls == 10` (custo computacional zero para o PasswordHasher).
 
 ### [EVIDÊNCIA] Validação de fronteira
-- <assert ERR_VALIDATION + field + hasher não chamado>
+- E-mail malformado ou senha fora da política de complexidade (12..128, maiúscula/minúscula/dígito via VOs canônicos Email e Password) devolve `ERR_VALIDATION` com `field` correspondente e `hasher.hashCalls == 0`.
 
 ### Desvios e limitações declaradas
-- 429 vs Serverpod: <desvio + evidência>
-- Chave de IP: <origem real> / <limitação>
-- Multi-instância: <declaração>
+- 429 vs Serverpod:
+  - No Serverpod 3.4.13 (`package:serverpod/src/server/server.dart:204-237`), o pipeline de dispatch de métodos RPC de Endpoint serializa DTOs sobre HTTP 200 e mapeia exceções exclusivamente para 400 (`SerializableException`/`HeaderException`), 401/403 (`NotAuthorizedException`), 404 (`EndpointNotFoundException`) e 413 (`MaxBodySizeExceeded`). O framework não possui mecanismo para propagar status code HTTP 429 em chamadas de método de endpoint RPC sem violar o ciclo de vida do Serverpod.
+  - O desvio é resolvido de forma tipada e segura devolvendo `errorCode: 'ERR_RATE_LIMITED'` com HTTP 200 no DTO (`SignInResultDto` e `SignUpResultDto`).
+- Chave de IP:
+  - Origem real: `session.request?.connectionInfo.remote.address.toString()`. Acesso direto ao socket IP real da conexão de rede via `Relic` HTTP stack.
+  - Limitação: Cabeçalhos `X-Forwarded-For` e `Forwarded` não são usados como chave primária para prevenir IP spoofing (`INV-SEC-14`). Em ambientes sem proxy reverso confiável ou chamadas internas/testes, o fallback é `'local'`.
+- Multi-instância:
+  - `InMemoryRateLimiter` mantém o mapa efêmero na memória do processo local. Em deployments multi-instância (horizontal scaling), o contador não é compartilhado entre réplicas (necessário Redis/Valkey em fatia futura).
 
 ### Follow-ups
-- <itens>
-```
+- Persistência distribuída de rate limiter (Redis/Valkey) para deployments multi-réplica.
+- UI do app: tratamento visual de `ERR_RATE_LIMITED` nas telas de login/cadastro (`UC-01.06`).
+

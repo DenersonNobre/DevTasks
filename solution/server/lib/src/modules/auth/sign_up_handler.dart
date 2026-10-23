@@ -1,3 +1,5 @@
+import 'domain/email.dart';
+import 'domain/password.dart';
 import 'ports.dart';
 
 /// Comando de cadastro — dados crus da fronteira; a normalização é do handler.
@@ -35,19 +37,10 @@ class SignUpOutcome {
 class SignUpHandler {
   SignUpHandler(this._repository, this._hasher);
 
-  static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-  static final RegExp _lower = RegExp('[a-z]');
-  static final RegExp _upper = RegExp('[A-Z]');
-  static final RegExp _digit = RegExp('[0-9]');
-
-  static const int minPasswordLength = 12;
-  static const int maxPasswordLength = 128;
-
   final UserRepository _repository;
   final PasswordHasher _hasher;
 
   Future<SignUpOutcome> execute(SignUpCommand command) async {
-    final email = command.email.trim().toLowerCase();
     final name = command.name.trim();
 
     if (name.isEmpty) {
@@ -56,14 +49,14 @@ class SignUpHandler {
     if (name.length > 100) {
       return _validation('Nome deve ter no máximo 100 caracteres.', 'name');
     }
-    if (email.isEmpty) {
-      return _validation('E-mail é obrigatório.', 'email');
-    }
-    if (!_emailPattern.hasMatch(email)) {
-      return _validation('E-mail inválido.', 'email');
-    }
 
-    final passwordViolation = _passwordViolation(command.password);
+    final emailResult = Email.parse(command.email);
+    if (emailResult.error != null) {
+      return _validation(emailResult.error!, 'email');
+    }
+    final email = emailResult.email!.value;
+
+    final passwordViolation = Password.validate(command.password);
     if (passwordViolation != null) {
       return _validation(passwordViolation, 'password');
     }
@@ -104,23 +97,4 @@ class SignUpHandler {
       SignUpOutcome.failureOf(
         SignUpFailure(SignUpErrorCode.validation, message, field: field),
       );
-
-  String? _passwordViolation(String password) {
-    if (password.length < minPasswordLength) {
-      return 'A senha deve ter ao menos $minPasswordLength caracteres.';
-    }
-    if (password.length > maxPasswordLength) {
-      return 'A senha deve ter no máximo $maxPasswordLength caracteres.';
-    }
-    if (!_lower.hasMatch(password)) {
-      return 'A senha deve conter ao menos uma letra minúscula.';
-    }
-    if (!_upper.hasMatch(password)) {
-      return 'A senha deve conter ao menos uma letra maiúscula.';
-    }
-    if (!_digit.hasMatch(password)) {
-      return 'A senha deve conter ao menos um dígito.';
-    }
-    return null;
-  }
 }

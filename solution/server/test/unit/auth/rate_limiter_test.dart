@@ -3,6 +3,8 @@ import 'package:devtasks_server/src/modules/auth/ports.dart';
 import 'package:devtasks_server/src/modules/auth/rate_limiter.dart';
 import 'package:devtasks_server/src/modules/auth/sign_in_handler.dart';
 import 'package:devtasks_server/src/modules/auth/sign_in_service.dart';
+import 'package:devtasks_server/src/modules/auth/sign_up_handler.dart';
+import 'package:devtasks_server/src/modules/auth/sign_up_service.dart';
 import 'package:test/test.dart';
 
 class _FakeCredentials implements CredentialRepository {
@@ -31,6 +33,37 @@ class _CountingPasswordVerifier implements PasswordVerifier {
   }) async {
     verifyCalls++;
     return password == 'F0rtress!Pass2026' && passwordHash == 'valid-hash';
+  }
+}
+
+class _CountingPasswordHasher implements PasswordHasher {
+  int hashCalls = 0;
+
+  @override
+  Future<String> hash(String password) async {
+    hashCalls++;
+    return 'fake-hash::$password';
+  }
+}
+
+class _FakeUserRepository implements UserRepository {
+  @override
+  Future<bool> existsByEmail(String normalizedEmail) async => false;
+
+  @override
+  Future<CreateUserOutcome> create({
+    required String name,
+    required String email,
+    required String passwordHash,
+  }) async {
+    return UserCreated(
+      RegisteredUser(
+        id: 'user-new',
+        name: name,
+        email: email,
+        emailVerified: false,
+      ),
+    );
   }
 }
 
@@ -162,5 +195,94 @@ void main() {
       );
     });
   });
-}
 
+  group('Rate Limit no SignUpService — Prova de sem custo de senha (INV-SEC-12)', () {
+    test('11ª tentativa de cadastro bloqueada devolve ERR_RATE_LIMITED e NÃO chama o PasswordHasher',
+        () async {
+      var currentTime = DateTime.utc(2026, 10, 23, 12, 0, 0);
+      final limiter = InMemoryRateLimiter(
+        maxAttempts: 10,
+        window: const Duration(seconds: 60),
+        now: () => currentTime,
+      );
+
+      final hasher = _CountingPasswordHasher();
+      final handler = SignUpHandler(_FakeUserRepository(), hasher);
+      final service = SignUpService(handler, limiter);
+
+      const clientIp = '192.168.10.50';
+
+      // 10 cadastros válidos
+      for (var i = 1; i <= 10; i++) {
+        final result = await service.signUp(
+          SignUpDto(
+            name: 'User $i',
+            email: 'user$i@example.com',
+            password: 'F0rtress!Pass2026',
+          ),
+          clientIp: clientIp,
+        );
+        expect(result.success, isTrue);
+      }
+
+      expect(hasher.hashCalls, 10);
+
+      // 11ª tentativa pelo mesmo IP é bloqueada pelo rate limiter
+      final blockedResult = await service.signUp(
+        SignUpDto(
+          name: 'User 11',
+          email: 'user11@example.com',
+          password: 'F0rtress!Pass2026',
+        ),
+        clientIp: clientIp,
+      );
+
+      expect(blockedResult.success, isFalse);
+      expect(blockedResult.errorCode, 'ERR_RATE_LIMITED');
+      expect(
+        blockedResult.message,
+        'Muitas tentativas de cadastro. Tente novamente mais tarde.',
+      );
+
+      // Prova cabal: Hasher NÃO chamado na 11ª tentativa
+      expect(
+        hasher.hashCalls,
+        10,
+        reason: 'O PasswordHasher NÃO pode ser invocado na tentativa rate-limited (INV-SEC-12)',
+      );
+    });
+
+    test('dados inválidos na fronteira falham com ERR_VALIDATION sem invocar o PasswordHasher',
+        () async {
+      final hasher = _CountingPasswordHasher();
+      final handler = SignUpHandler(_FakeUserRepository(), hasher);
+      final service = SignUpService(handler);
+
+      // 1. E-mail malformado
+      final badEmailResult = await service.signUp(
+        SignUpDto(
+          name: 'User Bad',
+          email: 'not-an-email',
+          password: 'F0rtress!Pass2026',
+        ),
+      );
+      expect(badEmailResult.success, isFalse);
+      expect(badEmailResult.errorCode, 'ERR_VALIDATION');
+      expect(badEmailResult.field, 'email');
+      expect(hasher.hashCalls, 0);
+
+      // 2. Senha fora da política
+      final badPassResult = await service.signUp(
+        SignUpDto(
+          name: 'User Bad Pass',
+          email: 'user@example.com',
+          password: 'short',
+        ),
+      );
+      expect(badPassResult.success, isFalse);
+      expect(badPassResult.errorCode, 'ERR_VALIDATION');
+      expect(badPassResult.field, 'password');
+      expect(hasher.hashCalls, 0);
+    });
+  });
+}

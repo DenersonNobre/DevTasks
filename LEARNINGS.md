@@ -15,6 +15,17 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-23 — Rate Limiting de Autenticação e Limitações de Transporte RPC do Serverpod (UC-01.04)
+
+- **Sintoma**: Necessidade de proteger endpoints de autenticação (`signIn` e `signUp`) contra brute-force e exaustão de CPU criptográfica (Argon2id), mantendo conformidade de transporte com o Serverpod 3.4.13.
+- **Causa raiz**: No Serverpod 3.4.13, chamadas de método de endpoint RPC não suportam emissão do status code HTTP 429 (`HttpStatus.tooManyRequests`), pois o pipeline (`server.dart:204-237`) apenas despacha DTOs serializados em HTTP 200 ou mapeia exceções específicas para 400/401/403/404/413. Além disso, cabeçalhos de rede como `X-Forwarded-For` são inseguros contra spoofing se utilizados como chave de limitação sem proxy confiável.
+- **Fix**:
+  1. Implementado `InMemoryRateLimiter` com janela fixa de 60s, teto de 10 tentativas por chave `<op>:<ip>`, relógio injetado (`DateTime Function()`) sem sleep e evicção automática de memória (`INV-SEC-12/13`).
+  2. Rate limiter posicionado **antes** de qualquer computação de senha no `SignInService` e `SignUpService`, garantindo zero custo computacional do hasher/verifier na 11ª tentativa.
+  3. Desvio de transporte documentado: resposta de rate limit encapsulada de forma tipada em `SignInResultDto`/`SignUpResultDto` com `errorCode = 'ERR_RATE_LIMITED'`.
+  4. Extraídos Value Objects de domínio no server (`Email` e `Password`) espelhando as regras do app (DRY) e reutilizados nos handlers e na validação de fronteira sem duplicar regex.
+- **Prevenção**: Rate limit aplicado sempre na fronteira antes do hashing (`INV-SEC-12`), uso direto do socket IP da conexão para mitigar spoofing (`INV-SEC-14`) e testes com relógio injetado sem `sleep`.
+
 ## 2026-10-23 — Mitigação de TOCTOU na persistência com SQLSTATE 23505 e Hasher Argon2id (UC-01.01)
 
 - **Sintoma**: Risco de condição de corrida (TOCTOU) no cadastro concorrente de usuários caso a validação se baseasse unicamente em pré-checagem (`existsByEmail`) ou parsing textual frágil de strings de exceção (`toString().contains('unique')`), além de risco de enumeração/timing attack em credenciais sem hash dummy canônico válido.

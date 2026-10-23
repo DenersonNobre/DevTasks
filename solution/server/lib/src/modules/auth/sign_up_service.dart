@@ -1,14 +1,28 @@
 import '../../generated/protocol.dart';
 import 'ports.dart';
+import 'rate_limiter.dart';
 import 'sign_up_handler.dart';
 
 /// Núcleo do cadastro fora do `Endpoint` (testável sem `Session`).
 class SignUpService {
-  SignUpService([this._handler]);
+  SignUpService([this._handler, this._limiter]);
 
   final SignUpHandler? _handler;
+  final RateLimiter? _limiter;
 
-  Future<SignUpResultDto> signUp(SignUpDto dto) async {
+  Future<SignUpResultDto> signUp(SignUpDto dto, {String? clientIp}) async {
+    // 1. Rate limit roda ANTES de qualquer computação de senha/hash (INV-SEC-12)
+    if (_limiter != null && clientIp != null && clientIp.isNotEmpty) {
+      final rateOutcome = _limiter.check('signup:$clientIp');
+      if (!rateOutcome.isAllowed) {
+        return SignUpResultDto(
+          success: false,
+          errorCode: 'ERR_RATE_LIMITED',
+          message: 'Muitas tentativas de cadastro. Tente novamente mais tarde.',
+        );
+      }
+    }
+
     final handler = _handler;
     if (handler == null) {
       return SignUpResultDto(

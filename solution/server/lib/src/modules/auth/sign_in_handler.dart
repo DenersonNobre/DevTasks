@@ -1,4 +1,5 @@
 import 'argon2_password_hasher.dart';
+import 'domain/email.dart';
 import 'ports.dart';
 
 /// Comando de login (dados crus da fronteira; o handler normaliza o e-mail).
@@ -49,15 +50,13 @@ class SignInHandler {
   /// blindando o side-channel de timing (INV-SEC-04).
   static const String dummyHash = Argon2PasswordHasher.dummyHash;
 
-  static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-
   final CredentialRepository _credentials;
   final PasswordVerifier _verifier;
 
   Future<SignInOutcome> execute(SignInCommand command) async {
     final email = command.email.trim().toLowerCase();
 
-    if (email.isEmpty || !_emailPattern.hasMatch(email)) {
+    if (!Email.isValid(email)) {
       return _validation('E-mail inválido.', 'email');
     }
     if (command.password.isEmpty) {
