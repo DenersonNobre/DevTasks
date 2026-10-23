@@ -154,7 +154,6 @@ if ($Governance -or $Target -eq "governance") {
     $previousNested = $env:DEVTASKS_NESTED_RUN
     $env:DEVTASKS_NESTED_RUN = "1"
     $govSuites = @(
-        "tools/tests/test_build_scripts.ps1",
         "tools/tests/test_test_runner.ps1",
         "tools/tests/test_git_governance.ps1",
         "tools/tests/test_precommit_encoding.ps1",
@@ -162,7 +161,8 @@ if ($Governance -or $Target -eq "governance") {
         "tools/tests/test_pin_gate.ps1",
         "tools/tests/test_ci_pipeline.ps1",
         "tools/tests/test_doc_governance.ps1",
-        "docker/tests/test_docker_manifests.ps1"
+        "docker/tests/test_docker_manifests.ps1",
+        "tools/tests/test_build_scripts.ps1"
     )
 
     foreach ($suite in $govSuites) {

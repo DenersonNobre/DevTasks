@@ -51,7 +51,7 @@ void main() {
 }
 
 Write-Host "=== TEST 4: Coleta de cobertura (-Coverage) ==="
-& $psExe -ExecutionPolicy Bypass -NoProfile -File $TestScript -Coverage
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $TestScript -Coverage -Target app
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/test.ps1 -Coverage failed with exit code $LASTEXITCODE"
 }

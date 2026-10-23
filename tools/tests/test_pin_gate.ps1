@@ -50,6 +50,15 @@ try {
         throw "FAIL: Pin gate não reprovou divergência no lockfile!"
     }
     Write-Host "Pass: Pin gate reprovou divergência no lockfile com exit code $LASTEXITCODE (prova negativa 2 verde)."
+
+    Write-Host "`n=== TEST 5 (PROVA NEGATIVA 3): Divergência da versão da Serverpod CLI deve ser REPROVADA (exit 1) ==="
+    # Restaura lockfile
+    Copy-Item (Join-Path $RepoRoot "pubspec.lock") $tempLock -Force
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $PinGateScript -ServerPubspecPath $tempPubspec -LockfilePath $tempLock -SimulateCliVersion "4.0.4"
+    if ($LASTEXITCODE -eq 0) {
+        throw "FAIL: Pin gate não reprovou versão divergente da Serverpod CLI (4.0.4 vs 3.4.13)!"
+    }
+    Write-Host "Pass: Pin gate reprovou CLI divergente com exit code $LASTEXITCODE (prova negativa 3 verde)."
 } finally {
     if (Test-Path $tempDir) {
         Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue

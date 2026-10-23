@@ -4,6 +4,7 @@
 param(
     [switch]$PreflightOnly,
     [switch]$SimulateMissingFlutter,
+    [string]$SimulateServerpodCliVersion,
     [switch]$SkipClientGen,
     [switch]$SkipCompile
 )
@@ -150,7 +151,36 @@ if (-not $serverpod) {
     Write-Error "[FAIL-FAST] Serverpod CLI ausente. Provisione com 'dart pub global activate serverpod_cli 3.4.13' e garanta o binário no PATH (ou no pub cache)."
     exit 1
 }
-Write-Host "  [OK] Serverpod CLI: $($serverpod.Display)"
+$cliVersion = $null
+if ($SimulateServerpodCliVersion) {
+    $cliVersion = $SimulateServerpodCliVersion
+} else {
+    try {
+        $prefix = $serverpod.Prefix
+        $cliVersionOut = & $serverpod.Exe @prefix --version 2>&1 | Out-String
+        if ($cliVersionOut -match "Serverpod\s+version:\s*(\d+\.\d+\.\d+)") {
+            $cliVersion = $Matches[1]
+        }
+    } catch {
+        Write-Warning "Não foi possível obter a versão do Serverpod CLI via --version."
+    }
+}
+
+$expectedCliVersion = "3.4.13"
+$serverPubspecFile = Join-Path $RepoRoot "solution/server/pubspec.yaml"
+if (Test-Path $serverPubspecFile) {
+    $spContent = Get-Content $serverPubspecFile -Raw
+    if ($spContent -match "(?m)^\s*serverpod:\s*(\d+\.\d+\.\d+)") {
+        $expectedCliVersion = $Matches[1]
+    }
+}
+
+if ($cliVersion -and $cliVersion -ne $expectedCliVersion) {
+    Write-Error "[FAIL-FAST] Versão do Serverpod CLI ($cliVersion) diverge do pin exato ($expectedCliVersion) em solution/server/pubspec.yaml (INV-SEC-11). Atualize com: dart pub global activate serverpod_cli $expectedCliVersion"
+    exit 1
+}
+
+Write-Host "  [OK] Serverpod CLI: $($serverpod.Display) ($cliVersion)"
 
 $dockerCmd = Get-Command "docker" -ErrorAction SilentlyContinue
 if ($dockerCmd) {
@@ -173,23 +203,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "==> [DevTasks] Analisando membros do workspace..."
-& flutter analyze solution/app
+& flutter analyze solution/app solution/server solution/client
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "[BUILD-FAIL] 'flutter analyze solution/app' falhou."
+    Write-Error "[BUILD-FAIL] 'flutter analyze' falhou nos membros do workspace."
     exit $LASTEXITCODE
 }
 
-& flutter analyze solution/server
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "[BUILD-FAIL] 'flutter analyze solution/server' falhou."
-    exit $LASTEXITCODE
-}
 
-& flutter analyze solution/client
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "[BUILD-FAIL] 'flutter analyze solution/client' falhou."
-    exit $LASTEXITCODE
-}
+
 
 # 5. Geração do client Serverpod (TASK-02): o contrato gerado é entregue como
 # código versionado; gerar é passo obrigatório do build, não opcional.

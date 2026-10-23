@@ -8,7 +8,10 @@ param(
     [string]$ServerPubspecPath,
 
     [Parameter(Mandatory=$false)]
-    [string]$LockfilePath
+    [string]$LockfilePath,
+
+    [Parameter(Mandatory=$false)]
+    [string]$SimulateCliVersion
 )
 
 $ErrorActionPreference = "Stop"
@@ -69,6 +72,28 @@ foreach ($pkg in $criticalPins.Keys) {
         }
     } else {
         $violations += "Pacote '$pkg' ausente no pubspec.lock."
+    }
+
+    # 3. Se for serverpod, checa também a CLI no host para evitar drift de código gerado
+    if ($pkg -eq "serverpod") {
+        $cliVersion = $null
+        if ($SimulateCliVersion) {
+            $cliVersion = $SimulateCliVersion
+        } else {
+            $serverpodCmd = Get-Command "serverpod" -ErrorAction SilentlyContinue
+            if ($serverpodCmd) {
+                try {
+                    $cliOut = & $serverpodCmd.Source --version 2>&1 | Out-String
+                    if ($cliOut -match "Serverpod\s+version:\s*(\d+\.\d+\.\d+)") {
+                        $cliVersion = $Matches[1]
+                    }
+                } catch {}
+            }
+        }
+
+        if ($cliVersion -and $cliVersion -ne $expectedVer) {
+            $violations += "Serverpod CLI instalada no host está na versão '$cliVersion', divergindo do pin exato '$expectedVer' (INV-SEC-11). Execute 'dart pub global activate serverpod_cli $expectedVer' para evitar drift de código gerado."
+        }
     }
 }
 

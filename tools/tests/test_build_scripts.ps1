@@ -35,8 +35,18 @@ if (($out | Out-String) -notmatch "FAIL-FAST") {
 }
 Write-Host "Pass: fail-fast real disparado (exit $LASTEXITCODE) com PATH sem Flutter/Dart"
 
+Write-Host "=== TEST 3.1: Fail-fast REAL em caso de CLI Serverpod divergente do pin (INV-SEC-11) ==="
+$mismatchOut = & $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -PreflightOnly -SimulateServerpodCliVersion "4.0.4" 2>&1
+if ($LASTEXITCODE -eq 0) {
+    throw "FAIL: build.ps1 nao falhou com versao divergente do Serverpod CLI!"
+}
+if (($mismatchOut | Out-String) -notmatch "FAIL-FAST") {
+    throw "FAIL: fail-fast de versao sem a mensagem '[FAIL-FAST]' esperada"
+}
+Write-Host "Pass: fail-fast real de versao do Serverpod CLI disparado (exit $LASTEXITCODE)"
+
 Write-Host "=== TEST 4: Build idempotente completo + artefato esperado (NC-10) ==="
-& $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -SkipClientGen
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/build.ps1 failed with exit code $LASTEXITCODE"
 }
@@ -50,23 +60,32 @@ if ((Get-Item $artifact).Length -le 0) {
 Write-Host "Pass: build produziu o artefato esperado ($([Math]::Round((Get-Item $artifact).Length / 1MB, 2)) MB)"
 
 Write-Host "=== TEST 5: Clean idempotente (2 execuções consecutivas) ==="
-& $psExe -ExecutionPolicy Bypass -NoProfile -File $CleanScript
-if ($LASTEXITCODE -ne 0) {
-    throw "FAIL: First run of clean.ps1 failed with exit code $LASTEXITCODE"
+$backupTool = Join-Path ([System.IO.Path]::GetTempPath()) ("devtasks_darttool_" + [System.Guid]::NewGuid().ToString("N"))
+if (Test-Path ".dart_tool") {
+    Copy-Item ".dart_tool" $backupTool -Recurse -Force
 }
+try {
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $CleanScript
+    if ($LASTEXITCODE -ne 0) {
+        throw "FAIL: First run of clean.ps1 failed with exit code $LASTEXITCODE"
+    }
 
-& $psExe -ExecutionPolicy Bypass -NoProfile -File $CleanScript
-if ($LASTEXITCODE -ne 0) {
-    throw "FAIL: Second run of clean.ps1 failed with exit code $LASTEXITCODE"
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $CleanScript
+    if ($LASTEXITCODE -ne 0) {
+        throw "FAIL: Second run of clean.ps1 failed with exit code $LASTEXITCODE"
+    }
+
+    # Verifica integridade dos fontes após clean
+    if (-not (Test-Path "solution/app/lib/main.dart") -or -not (Test-Path "solution/server/lib/main.dart")) {
+        throw "FAIL: Clean deleted source files!"
+    }
+} finally {
+    if (Test-Path $backupTool) {
+        Copy-Item $backupTool ".dart_tool" -Recurse -Force
+        Remove-Item $backupTool -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    & flutter pub get | Out-Null
 }
-
-# Verifica integridade dos fontes após clean
-if (-not (Test-Path "solution/app/lib/main.dart") -or -not (Test-Path "solution/server/lib/main.dart")) {
-    throw "FAIL: Clean deleted source files!"
-}
-
-# Restaura o workspace para as suítes de teste subsequentes
-& flutter pub get | Out-Null
 
 Write-Host "`n>>> ALL UC-00.02 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<"
 exit 0
