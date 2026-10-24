@@ -1,6 +1,0 @@
-# Configuração do gerador de protocolo (`serverpod generate`).
-# `client_package_path` aponta para o pacote gerado e versionado que a app consome.
-type: server
-
-client_package_path: ../client
-server_test_tools_path: test/integration/test_tools

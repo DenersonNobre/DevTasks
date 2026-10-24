@@ -18,8 +18,7 @@ quadro Kanban, prazos/prioridades, colaboração assíncrona (comentários/atrib
 │   └── plan/                  # DAG de épicos e tracking de estado vivo
 ├── solution/
 │   ├── app/                   # Cliente Flutter (VSA: modules/* + global/kernel/)
-│   ├── server/                # Backend Serverpod + PostgreSQL
-│   └── client/                # Cliente tipado gerado por serverpod generate (F0.2+)
+│   └── api/                   # API HTTP em Dart/Shelf + PostgreSQL puro
 ├── docker/                    # Paridade de ambiente (Dockerfile multi-stage + compose)
 └── tools/                     # Toolchain de esteira, runners de teste e gates
 ```
@@ -39,7 +38,7 @@ Todos os fluxos operacionais são executados em 1 comando determinístico:
 | **Cobertura** | `pwsh tools/test.ps1 -Coverage` | Gera relatórios `lcov.info` nos membros do workspace |
 | **Gate de DAG** | `pwsh tools/dag-gate.ps1` | Valida precedência topológica estrita de épicos |
 | **Gate Documental**| `pwsh tools/doc-gate.ps1` | Valida hand-offs (`Gate 2.5:`), limites e integridade viva |
-| **Docker Local** | `docker compose -f docker/docker-compose.yml up -d` | Sobe PostgreSQL 16 e API Serverpod com healthchecks |
+| **Docker Local** | `docker compose -f docker/docker-compose.yml up -d` | Sobe PostgreSQL 16 e API Shelf com healthchecks |
 
 ---
 

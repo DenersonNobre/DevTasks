@@ -25,6 +25,7 @@ $prohibitedImports = @(
     "package:dio/",
     "package:sqflite",
     "package:serverpod",
+    "package:devtasks_client",
     "package:shared_preferences",
     "package:path_provider"
 )

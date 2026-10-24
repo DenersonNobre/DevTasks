@@ -1,7 +1,0 @@
-class: WorkspaceDto
-fields:
-  id: int
-  name: String
-  role: WorkspaceMemberRole
-  createdAt: DateTime
-

@@ -27,38 +27,29 @@ New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 try {
     $tempPubspec = Join-Path $tempDir "pubspec.yaml"
     $tempLock = Join-Path $tempDir "pubspec.lock"
-    Copy-Item (Join-Path $RepoRoot "solution/server/pubspec.yaml") $tempPubspec
+    Copy-Item (Join-Path $RepoRoot "solution/api/pubspec.yaml") $tempPubspec
     Copy-Item (Join-Path $RepoRoot "pubspec.lock") $tempLock
 
-    Write-Host "`n=== TEST 3 (PROVA NEGATIVA 1): Versão com range (^3.4.13) deve ser REPROVADA (exit 1) ==="
-    (Get-Content $tempPubspec -Raw) -replace 'serverpod: 3.4.13', 'serverpod: ^3.4.13' |
+    Write-Host "`n=== TEST 3 (PROVA NEGATIVA 1): Versão com range (^4.0.0) deve ser REPROVADA (exit 1) ==="
+    (Get-Content $tempPubspec -Raw) -replace 'pointycastle: 4.0.0', 'pointycastle: ^4.0.0' |
         Set-Content -Path $tempPubspec -Encoding utf8
-    & $psExe -ExecutionPolicy Bypass -NoProfile -File $PinGateScript -ServerPubspecPath $tempPubspec -LockfilePath $tempLock
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $PinGateScript -ApiPubspecPath $tempPubspec -LockfilePath $tempLock
     if ($LASTEXITCODE -eq 0) {
-        throw "FAIL: Pin gate não reprovou dependência com range (^3.4.13)!"
+        throw "FAIL: Pin gate não reprovou dependência com range (^4.0.0)!"
     }
     Write-Host "Pass: Pin gate reprovou range com exit code $LASTEXITCODE (prova negativa 1 verde)."
 
     Write-Host "`n=== TEST 4 (PROVA NEGATIVA 2): Divergência no pubspec.lock deve ser REPROVADA (exit 1) ==="
     # Restaura pubspec
-    Copy-Item (Join-Path $RepoRoot "solution/server/pubspec.yaml") $tempPubspec -Force
+    Copy-Item (Join-Path $RepoRoot "solution/api/pubspec.yaml") $tempPubspec -Force
     # Adultera o lockfile
-    (Get-Content $tempLock -Raw) -replace 'version: "3.4.13"', 'version: "3.4.14"' |
+    (Get-Content $tempLock -Raw) -replace 'version: "4.0.0"', 'version: "4.0.1"' |
         Set-Content -Path $tempLock -Encoding utf8
-    & $psExe -ExecutionPolicy Bypass -NoProfile -File $PinGateScript -ServerPubspecPath $tempPubspec -LockfilePath $tempLock
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $PinGateScript -ApiPubspecPath $tempPubspec -LockfilePath $tempLock
     if ($LASTEXITCODE -eq 0) {
         throw "FAIL: Pin gate não reprovou divergência no lockfile!"
     }
     Write-Host "Pass: Pin gate reprovou divergência no lockfile com exit code $LASTEXITCODE (prova negativa 2 verde)."
-
-    Write-Host "`n=== TEST 5 (PROVA NEGATIVA 3): Divergência da versão da Serverpod CLI deve ser REPROVADA (exit 1) ==="
-    # Restaura lockfile
-    Copy-Item (Join-Path $RepoRoot "pubspec.lock") $tempLock -Force
-    & $psExe -ExecutionPolicy Bypass -NoProfile -File $PinGateScript -ServerPubspecPath $tempPubspec -LockfilePath $tempLock -SimulateCliVersion "4.0.4"
-    if ($LASTEXITCODE -eq 0) {
-        throw "FAIL: Pin gate não reprovou versão divergente da Serverpod CLI (4.0.4 vs 3.4.13)!"
-    }
-    Write-Host "Pass: Pin gate reprovou CLI divergente com exit code $LASTEXITCODE (prova negativa 3 verde)."
 } finally {
     if (Test-Path $tempDir) {
         Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -67,4 +58,3 @@ try {
 
 Write-Host "`n>>> ALL INV-SEC-11 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<"
 exit 0
-

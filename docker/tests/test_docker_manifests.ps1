@@ -30,8 +30,8 @@ if ($composeContent -notmatch "(?m)^name:\s*devtasks") {
 }
 
 # 2.2 Containers nomeados
-if ($composeContent -notmatch "container_name:\s*devtasks[_-]server") {
-    throw "FAIL: Container do server deve seguir convenção anti-colisão (devtasks-server ou devtasks_server)."
+if ($composeContent -notmatch "container_name:\s*devtasks[_-](api|server)") {
+    throw "FAIL: Container do backend deve seguir convenção anti-colisão (devtasks-api ou devtasks-server)."
 }
 if ($composeContent -notmatch "container_name:\s*devtasks[_-]postgres") {
     throw "FAIL: Container do postgres deve seguir convenção anti-colisão (devtasks-postgres ou devtasks_postgres)."

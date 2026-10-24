@@ -6,13 +6,9 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
 ## Stack & Topologia
 
 - Stack Dart única: **Flutter** (`solution/app`) + **Dart/shelf** (`solution/api`) + **PostgreSQL** + **Docker**.
-  *(Serverpod está em descomissionamento — EPIC-08 / `D-08`. `solution/{server,client}` permanecem no disco
-  apenas até o `UC-08.08`, quando são removidos.)*
-- Topologia alvo `solution/{app,api}` é **decisão consciente do PO** — desvio da topologia `lib/` raiz
-  prevista para stack mobile no oráculo; registrada em `docs/architecture/DESIGN.md` §9. Não "consertar" para `lib/` raiz.
-- Pub workspace nativo na raiz (membros: `app`, `api`; `server`/`client` até o UC-08.08) — **lock único na raiz** (EPIC-00).
-- `solution/client/` é **código gerado** (`serverpod generate`) e está **congelado**: não recebe features novas,
-  não é editado à mão, e é removido no `UC-08.08`.
+- Topologia `solution/{app,api}` é decisão consciente de arquitetura — documentada em `docs/architecture/DESIGN.md` §9.
+- Pub workspace nativo na raiz (membros: `app`, `api`) — **lock único na raiz**.
+- Fonte de verdade do contrato client↔server: **`docs/api/openapi.yaml` (OpenAPI 3.1)** — validado por teste de contrato (`D-08`). O cliente **nunca** é derivado do código do servidor; adaptadores falam HTTP e vivem em `infrastructure/`.
 
 ## Código
 
@@ -28,7 +24,6 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
   com `export` relativo a esse diretório — a raiz do módulo só tem o barrel de superfície (`.auth.dart`);
   (e) `global/` **não** importa `modules/` (a porta transversal `SessionStore` mora em `global/session/`).
 - Falha de negócio esperada → `Result`/erro tipado capturado na fronteira; exceção só para falha impredizável.
-- Fonte de verdade do contrato client↔server: **`docs/api/openapi.yaml` (OpenAPI 3.1)** — validado por teste de contrato (`D-08`). O cliente **nunca** é derivado do código do servidor; adaptadores falam HTTP e vivem em `infrastructure/`.
 
 ## Qualidade
 
@@ -36,13 +31,14 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
 - Commits Conventional, atômicos, **docs no mesmo commit** da mudança; stage **por path explícito**.
 - Nenhuma entrega declarada sem cadeia de evidência estruturada (`[EVIDÊNCIA]`).
 
-## Decisões fechadas (2026-10-21 — trilha completa em `docs/architecture/DESIGN.md` §12)
+## Decisões fechadas (trilha completa em `docs/architecture/DESIGN.md` §12)
 
 - **D-01**: Kanban = **3 colunas** (`Backlog | Em Progresso | Concluído`) — PRD RF-10/Apêndice A corrigidos.
 - **D-02**: Papéis = **3** (`owner | developer | viewer`) — PRD RF-05/§7/§9 corrigidos.
 - **D-03**: Gerência de estado do app = **Riverpod** (GetX descartado).
 - **D-04**: Branches = ciclo por UC com commits assinados direto em **`develop`**; `main` só via
-  release; hook F0.04 bloqueia commit `(UC-XX.YY)` fora de `develop` (2026-10-21).
+  release; hook F0.04 bloqueia commit `(UC-XX.YY)` fora de `develop`.
 - **D-07**: Apresentação do app = **MVVM por slice, unidirecional** (1 UC = 1 ViewModel com estado
   imutável + intents; Riverpod é o mecanismo); estado transversal em `global/`; código enxuto com
-  **Object Calisthenics + SOLID + Clean Code ponta a ponta** auditados no Gate 3 (2026-10-23).
+  **Object Calisthenics + SOLID + Clean Code ponta a ponta** auditados no Gate 3.
+- **D-08**: Arquitetura da API = **Dart/Shelf + PostgreSQL nativo puro + OpenAPI 3.1** como contrato canônico.

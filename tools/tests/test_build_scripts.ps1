@@ -35,24 +35,14 @@ if (($out | Out-String) -notmatch "FAIL-FAST") {
 }
 Write-Host "Pass: fail-fast real disparado (exit $LASTEXITCODE) com PATH sem Flutter/Dart"
 
-Write-Host "=== TEST 3.1: Fail-fast REAL em caso de CLI Serverpod divergente do pin (INV-SEC-11) ==="
-$mismatchOut = & $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -PreflightOnly -SimulateServerpodCliVersion "4.0.4" 2>&1
-if ($LASTEXITCODE -eq 0) {
-    throw "FAIL: build.ps1 nao falhou com versao divergente do Serverpod CLI!"
-}
-if (($mismatchOut | Out-String) -notmatch "FAIL-FAST") {
-    throw "FAIL: fail-fast de versao sem a mensagem '[FAIL-FAST]' esperada"
-}
-Write-Host "Pass: fail-fast real de versao do Serverpod CLI disparado (exit $LASTEXITCODE)"
-
 Write-Host "=== TEST 4: Build idempotente completo + artefato esperado (NC-10) ==="
-& $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript -SkipClientGen
+& $psExe -ExecutionPolicy Bypass -NoProfile -File $BuildScript
 if ($LASTEXITCODE -ne 0) {
     throw "FAIL: tools/build.ps1 failed with exit code $LASTEXITCODE"
 }
-$artifact = Join-Path $RepoRoot "solution/builds/devtasks-server.exe"
+$artifact = Join-Path $RepoRoot "solution/builds/devtasks-api.exe"
 if (-not (Test-Path $artifact)) {
-    throw "FAIL: artefato esperado ausente apos o build: solution/builds/devtasks-server.exe"
+    throw "FAIL: artefato esperado ausente apos o build: solution/builds/devtasks-api.exe"
 }
 if ((Get-Item $artifact).Length -le 0) {
     throw "FAIL: artefato gerado esta vazio"
@@ -76,7 +66,7 @@ try {
     }
 
     # Verifica integridade dos fontes após clean
-    if (-not (Test-Path "solution/app/lib/main.dart") -or -not (Test-Path "solution/server/lib/main.dart")) {
+    if (-not (Test-Path "solution/app/lib/main.dart") -or -not (Test-Path "solution/api/bin/server.dart")) {
         throw "FAIL: Clean deleted source files!"
     }
 } finally {
@@ -84,7 +74,7 @@ try {
         Copy-Item $backupTool ".dart_tool" -Recurse -Force
         Remove-Item $backupTool -Recurse -Force -ErrorAction SilentlyContinue
     }
-    & flutter pub get | Out-Null
+    & dart pub get | Out-Null
 }
 
 Write-Host "`n>>> ALL UC-00.02 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<"

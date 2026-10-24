@@ -112,7 +112,7 @@
 
 - **RNF-01 (Performance & Latência)**: latência **P95** dos endpoints CRUD abaixo de **500 ms** (percentil, não média — medir pós-deploy; ferramenta de medição definida no DESIGN).
 - **RNF-02 (Isolamento de Dados)**: zero vazamento cross-tenant: toda query sobre projetos/tarefas/comentários é mediada pela membresia do usuário (ver RF-06).
-- **RNF-03 (Autenticação)**: toda rota privada exige sessão autenticada. O mecanismo exato (Serverpod Auth, JWT/opaco, TTL, refresh) é decisão do `DESIGN.md` — este PRD não o prescreve.
+- **RNF-03 (Autenticação)**: toda rota privada exige sessão autenticada. O mecanismo exato (token de sessão opaco, TTL, revogação) é decisão do `DESIGN.md` — este PRD não o prescreve.
 - **RNF-04 (Senhas)**: armazenamento exclusivamente por hash seguro fornecido pelo framework (nunca texto plano, nunca hash reversível); política de senha mínima (tamanho) definida no DESIGN.
 - **RNF-05 (Testabilidade)**: suíte unitária de domínio executa sem banco nem rede reais (fakes/mocks), reproduzível em qualquer máquina por um único comando.
 - **RNF-06 (Responsividade)**: interface utilizável em mobile, tablet e desktop (browsers modernos).
@@ -130,7 +130,7 @@ Itens **expressamente fora** do MVP, com justificativa:
 2. **Integrações GitHub/GitLab**: depende de OAuth de terceiros e escopo de API alheio.
 3. **Automações, subtarefas, anexos, relatórios avançados, múltiplos quadros por projeto**: expansões de escopo que não alteram a decisão de compra/uso inicial.
 4. **IA para geração de tarefas**: custo e complexidade sem validação de demanda.
-5. **Colaboração em tempo real** (presença, atualização ao vivo do quadro): comentários e atribuição cobrem colaboração **assíncrona** no MVP; streaming do Serverpod é candidato natural a pós-MVP.
+5. **Colaboração em tempo real** (presença, atualização ao vivo do quadro): comentários e atribuição cobrem colaboração **assíncrona** no MVP; streaming/WebSockets é candidato natural a pós-MVP.
 6. **Convites por link/e-mail automatizado, verificação de e-mail e recuperação de senha**: MVP usa **adição de membro existente por e-mail** (RF-05). Recuperação de senha é limitação aceita — **pré-requisito obrigatório antes de qualquer divulgação pública com dados reais**.
 7. **Exportação/exclusão de dados (LGPD) e SLA formal (99%)**: exigem operação/monitoramento maduros — pré-requisito antes de coletar dados pessoais reais de terceiros; foco do MVP é demo e portfólio.
 8. **App nativo publicado em lojas, modo offline, multi-idioma**: fora da proposta de portfólio.

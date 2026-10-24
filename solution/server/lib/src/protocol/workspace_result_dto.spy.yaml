@@ -1,8 +1,0 @@
-class: WorkspaceResultDto
-fields:
-  success: bool
-  workspace: WorkspaceDto?
-  errorCode: String?
-  message: String?
-  field: String?
-

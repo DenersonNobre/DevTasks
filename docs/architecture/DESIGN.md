@@ -131,10 +131,10 @@
 
 ## 8. Decisões de Engenharia (D-ENG)
 
-- **D-ENG-01 — Stack** ⚠️ **SUPERADA pela D-08**: Flutter Web/Mobile + Serverpod + PostgreSQL + Docker. O Serverpod foi abandonado em 2026-10-24 (ver §14); stack alvo = Flutter + **shelf** + PostgreSQL + Docker.
-- **D-ENG-02 — Monorepo**: pub workspace nativo na raiz com membros `solution/{app,api}` (skill `flutter-pub-workspace`); lock único na raiz. (`server`/`client` existem só até o UC-08.08.)
-- **D-ENG-03 — Contrato** ⚠️ **SUPERADA pela D-08**: `serverpod generate` era a fonte de verdade. Motivo da reversão: o pacote `client` era derivado do **código do servidor**, acoplando o cliente à tecnologia do backend. Nova fonte: `docs/api/openapi.yaml` (OpenAPI 3.1).
-- **D-ENG-04 — Auth** ⚠️ **SUPERADA pela D-08**: o módulo `serverpod_auth_server` deixa de ser usado. Auth própria em shelf: Argon2 (pointycastle) + token opaco com hash SHA-256 em `devtasks_session` + rate limit por IP.
+- **D-ENG-01 — Stack**: Flutter Web/Mobile + **Dart/shelf** + PostgreSQL + Docker.
+- **D-ENG-02 — Monorepo**: pub workspace nativo na raiz com membros `solution/{app,api}` (skill `flutter-pub-workspace`); lock único na raiz.
+- **D-ENG-03 — Contrato**: `docs/api/openapi.yaml` (OpenAPI 3.1) como fonte de verdade neutra e canônica entre cliente e servidor, validada por teste de contrato. O cliente nunca é derivado do código do servidor.
+- **D-ENG-04 — Auth**: Auth própria em shelf com Argon2id (`pointycastle`) + token opaco com hash SHA-256 canônico em `devtasks_session` + rate limit por IP.
 - **D-ENG-05 — Isolamento multi-tenant**: toda mutação/leitura de endpoint valida membership (RF-06) — a invariante formal (`INV-XX`) nasce na `SPEC.md`.
 - **D-ENG-06 — Estrutura do app (VSA)**: `solution/app/lib/modules/<modulo>/{domain,infrastructure,presentation}` + kernel `global/` (theme, router, shared widgets). Backend: `solution/api/lib/src/http/routes/` + `lib/src/modules/` (VSA no servidor).
 - **D-ENG-07 — Estado no app**: **Riverpod** — decidido (**D-03**, 2026-10-21): testabilidade e padrão de mercado transferível para portfólio; alternativa GetX (skill existente do autor) descartada.
@@ -145,8 +145,7 @@
 
 ## 9. C4 — Contêineres & Topologia do Repositório
 
-> **Alvo após o EPIC-08** (`D-08`). Durante a migração, `server/` e `client/` coexistem congelados
-> até o `UC-08.08`.
+Topologia canônica do workspace com membros `solution/app` e `solution/api`.
 
 ```mermaid
 flowchart LR
@@ -261,41 +260,22 @@ O wireframe é **mais rico que o MVP aprovado**. Recomendação padrão: **PRD g
 
 ---
 
-## 14. D-08 — Migração Serverpod → shelf + contrato neutro (2026-10-24)
+## 14. D-08 — Arquitetura da API em Shelf + Contrato Neutro OpenAPI 3.1
 
-**Decisão do PO**: abandonar o Serverpod e reescrever o servidor em **shelf**, com **PostgreSQL via
-SQL puro** e **OpenAPI 3.1 como fonte de verdade do contrato**.
+A API do DevTasks é construída em **Dart/shelf**, com **PostgreSQL via SQL puro** e **OpenAPI 3.1 como fonte única da verdade do contrato**.
 
-**Motivo (arquitetural, não técnico)**: o pacote `solution/client/` era **gerado a partir do código do
-servidor**, então o cliente dependia da tecnologia do backend. O desacoplamento não vem da troca de
-framework — vem do **contrato neutro + adaptador**. Por isso o contrato (`docs/api/openapi.yaml`) é
-gate bloqueante (`UC-08.06`), com prova negativa versionada.
+**Motivo arquitetural**: O desacoplamento do cliente móvel vem do **contrato neutro + adaptadores HTTP próprios**, e nunca de código gerado a partir do servidor. Por isso o contrato (`docs/api/openapi.yaml`) é a fonte primária, com validação de conformidade.
 
-**Escolhas e alternativas descartadas:**
+**Escolhas canônicas:**
 
 | Tema | Escolha | Alternativa descartada | Por quê |
 |:--|:--|:--|:--|
-| HTTP | `shelf` + `shelf_router` | `dart_frog` | shelf é o mínimo oficial; dart_frog é outro framework opinativo (novo acoplamento) |
-| Dados | `postgres` + SQL puro + migrations `.sql` | `drift` / ORM | SQL explícito, sem codegen; DIP preservado pelas portas |
-| Contrato | OpenAPI 3.1 + teste de contrato | geração a partir do código | geração a partir do código **é** o defeito original |
-| Dados existentes | recriar schema (demo) | migrar dados | não há Postgres em uso; sem dado real a preservar |
+| HTTP | `shelf` + `shelf_router` | `dart_frog` | shelf é o mínimo oficial; evita frameworks opinativos e acoplamentos |
+| Dados | `postgres` + SQL puro + migrations `.sql` | `drift` / ORM | SQL explícito, sem codegen; DIP preservado pelas portas de repositório |
+| Contrato | OpenAPI 3.1 + teste de contrato | geração acoplada | cliente independente, adaptadores testáveis com fakes |
 
-**Custo assumido (medido, não estimado)**: 14 arq / 891 LOC portáveis sem mudança; 12 arq / ~840 LOC
-com troca de DTO; 7 arq / ~650 LOC reescritos; 21 arq / 2.541 LOC de teste (unit com fakes sobrevive).
-Fatiado em 8 UCs em `docs/plan/epics/epic-08-migracao-shelf.md`.
+**Regras arquiteturais:**
 
-**Consequências vinculantes:**
-
-1. `solution/server/` e `solution/client/` ficam **congelados** (sem features novas) e são removidos no `UC-08.08`.
-2. Nenhum identificador de transporte (`devtasks_client`, `serverpod`) pode aparecer em `domain/` ou `presentation/`;
-   o `dip-gate` passa a proibi-los e a varrer `presentation/`.
-3. `AGENTS.md` (Stack/Topologia/Contrato) atualizado no mesmo commit desta decisão.
-4. `RNF-03` mantém **token opaco** (não JWT): decisão anterior preservada, agora com implementação própria.
-5. **IDs são UUID** (`uuid` no Postgres, `String` no Dart) em todas as entidades e no schema. Motivo:
-   o contrato já declara `format: uuid` (11 pontos) e identificador sequencial em API pública permite
-   enumeração. Consequência de teste: identificadores nunca são `int`; `createdAt` é **obrigatório**
-   onde o contrato o exige (`required: [id, name, role, createdAt]`).
-
-**Não-objetivo declarado**: melhorar performance ou reduzir custo de infra. A migração é por
-integridade arquitetural; se o resultado não produzir um cliente testável sem o pacote do servidor,
-o épico **falhou**, mesmo que os testes estejam verdes.
+1. Nenhum identificador de transporte pode aparecer em `domain/` ou `presentation/`; o `dip-gate` audita e garante pureza.
+2. `RNF-03` adota **token opaco** de 256 bits com hash SHA-256 canônico em `devtasks_session`.
+3. **IDs são UUID** (`uuid` no Postgres, `String` no Dart) em todas as entidades e no schema. Motivo: o contrato declara `format: uuid` e identificador sequencial em API pública permite enumeração. `createdAt` é obrigatório em formato ISO-8601 UTC.

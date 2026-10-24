@@ -1,6 +1,0 @@
-class: DevtasksProject
-table: devtasks_project
-fields:
-  workspaceId: int
-  name: String
-  createdAt: DateTime

@@ -6,7 +6,7 @@
 
 ## Contexto
 
-Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
+Projeto DevTasks (Flutter + Dart/Shelf + Postgres puro + OpenAPI 3.1, portfólio/demo público).
 **EPIC-00 ✅** · **EPIC-01 (Autenticação) ✅** · **EPIC-02 (Workspaces) ✅** · **EPIC-03 (Projetos) 🔄**.
 
 ## Estado verificado (2026-10-24)

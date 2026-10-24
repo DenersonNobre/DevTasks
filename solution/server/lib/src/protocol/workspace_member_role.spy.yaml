@@ -1,7 +1,0 @@
-enum: WorkspaceMemberRole
-serialized: byName
-values:
-  - owner
-  - developer
-  - viewer
-

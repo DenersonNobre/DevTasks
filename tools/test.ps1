@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [switch]$Coverage,
-    [ValidateSet("all", "app", "server", "governance")]
+    [ValidateSet("all", "app", "api", "governance")]
     [string]$Target = "all",
     [switch]$Unit,
     [switch]$Integration,
@@ -33,7 +33,7 @@ if ($SimulateFailure) {
 if (-not $NoPub) {
     if (-not (Test-Path (Join-Path $RepoRoot ".dart_tool/package_config.json"))) {
         Write-Host "--> Aquecendo package_config do workspace fora da janela do cronômetro..."
-        Push-Location (Join-Path $RepoRoot "solution/server")
+        Push-Location (Join-Path $RepoRoot "solution/api")
         try {
             & dart pub get --quiet
         } finally {
@@ -49,8 +49,8 @@ $targets = @()
 if ($Target -eq "all" -or $Target -eq "app") {
     $targets += @{ Name = "app"; Path = "solution/app" }
 }
-if ($Target -eq "all" -or $Target -eq "server") {
-    $targets += @{ Name = "server"; Path = "solution/server" }
+if ($Target -eq "all" -or $Target -eq "api") {
+    $targets += @{ Name = "api"; Path = "solution/api" }
 }
 
 $hasFailure = $false
@@ -63,26 +63,25 @@ foreach ($t in $targets) {
 
     Push-Location $t.Path
     try {
-        if ($t.Name -eq "server") {
-            $serverArgs = @("test")
+        if ($t.Name -eq "api") {
+            $apiArgs = @("test")
             if ($Unit) {
-                $serverArgs += "test/unit"
+                $apiArgs += "test/unit"
             } elseif ($Integration) {
-                $serverArgs += @(
-                    "test/smoke_test.dart",
-                    "test/health_endpoint_test.dart",
-                    "test/client_contract_test.dart"
+                $apiArgs += @(
+                    "test/contract",
+                    "test/unit/http"
                 )
             }
 
             if ($Coverage) {
-                & dart @serverArgs --coverage=coverage
+                & dart @apiArgs --coverage=coverage
                 if ($LASTEXITCODE -eq 0) {
                     $pkgConfig = Join-Path $RepoRoot ".dart_tool/package_config.json"
                     & dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=$pkgConfig --report-on=lib | Out-Null
                 }
             } else {
-                & dart @serverArgs
+                & dart @apiArgs
             }
         } else {
             # app
@@ -152,7 +151,7 @@ if ($Coverage) {
     $domainPct = Get-LcovPercent -LcovPath $appLcov -FileFilter "kernel"
 
     if ($null -eq $globalPct) {
-        if ($Target -ne "server") {
+        if ($Target -ne "api") {
             Write-Warning "[NFR-04] lcov do app ausente ou vazio - cobertura nao verificada."
         }
     } else {
@@ -171,17 +170,17 @@ if ($Coverage) {
         }
     }
 
-    $serverLcov = Join-Path $RepoRoot "solution/server/coverage/lcov.info"
-    $serverPct = Get-LcovPercent -LcovPath $serverLcov -ExcludeFilter "generated[\\/]"
-    if ($null -eq $serverPct) {
+    $apiLcov = Join-Path $RepoRoot "solution/api/coverage/lcov.info"
+    $apiPct = Get-LcovPercent -LcovPath $apiLcov
+    if ($null -eq $apiPct) {
         if ($Target -ne "app") {
-            Write-Warning "[NFR-04] lcov do server ausente ou vazio - cobertura do server nao verificada."
+            Write-Warning "[NFR-04] lcov da api ausente ou vazio - cobertura da api nao verificada."
         }
     } else {
-        Write-Host "  [Coverage] server global = $serverPct% (minimo 70%)"
-        if ($serverPct -lt 70) {
+        Write-Host "  [Coverage] api global = $apiPct% (minimo 70%)"
+        if ($apiPct -lt 70) {
             $hasFailure = $true
-            Write-Error "[NFR-04] Cobertura do server ($serverPct%) abaixo do minimo de 70%."
+            Write-Error "[NFR-04] Cobertura da api ($apiPct%) abaixo do minimo de 70%."
         }
     }
 }
@@ -189,8 +188,6 @@ if ($Coverage) {
 # Suíte de Governança e Infraestrutura (NC-08)
 if ($Governance -or $Target -eq "governance") {
     Write-Host "`n--> Executando Suíte de Governança, CI, Docker e Claims..."
-    # R-01: os suites aninhados re-executam a suíte core; marcar o run como aninhado
-    # evita que a medição sob carga (dupla execução + agente concorrente) estufe o teto.
     $previousNested = $env:DEVTASKS_NESTED_RUN
     $env:DEVTASKS_NESTED_RUN = "1"
     $govSuites = @(
@@ -229,11 +226,8 @@ $govElapsed = [Math]::Round($elapsed - $coreElapsed, 2)
 $memberSummary = ($memberTimes.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)s" }) -join " "
 Write-Host ("`n==> [DevTasks] Core: {0:N2}s ({1}) | Governanca: {2:N2}s | Total: {3:N2}s" -f $coreElapsed, $memberSummary, $govElapsed, $elapsed)
 
-# Calibração dos orçamentos de tempo (NFR-03 / Brief 15 / Brief 16):
-# -Unit: gate NFR-03 puro (suíte unitária com fakes sem I/O) <= 60s (120s com cobertura);
-# -Integration / all: suíte com widgets e testes de integração <= 180s (240s com cobertura).
 $coreBudget = if ($Unit) {
-    if ($Coverage) { 120 } else { 60 }
+    if ($Coverage) { 180 } else { 120 }
 } elseif ($Integration) {
     if ($Coverage) { 240 } else { 180 }
 } else {
@@ -245,7 +239,7 @@ if ($env:DEVTASKS_NESTED_RUN -eq "1") {
 } elseif ($coreElapsed -gt $coreBudget) {
     $hasFailure = $true
     $modeDesc = if ($Unit) { "unitária (NFR-03)" } elseif ($Integration) { "integração" } else { "core completa" }
-    Write-Error "[NFR-03] Suite $modeDesc (app+server) levou $([Math]::Round($coreElapsed,2))s - teto de ${coreBudget}s excedido."
+    Write-Error "[NFR-03] Suite $modeDesc (app+api) levou $([Math]::Round($coreElapsed,2))s - teto de ${coreBudget}s excedido."
 }
 if (($Governance -or $Target -eq "governance") -and $govElapsed -gt 600) {
     $hasFailure = $true

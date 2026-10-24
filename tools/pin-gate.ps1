@@ -1,17 +1,14 @@
 # tools/pin-gate.ps1
 # Gate de Pinning Exato de Dependências Cripto e Framework (INV-SEC-11)
-# Garante que dependências críticas (Serverpod, Auth, etc.) estejam fixadas
-# em versão exata sem ranges e sem divergência entre pubspec.yaml e pubspec.lock.
+# Garante que dependências críticas estejam fixadas em versão exata sem ranges
+# e sem divergência entre pubspec.yaml e pubspec.lock.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$false)]
-    [string]$ServerPubspecPath,
+    [string]$ApiPubspecPath,
 
     [Parameter(Mandatory=$false)]
-    [string]$LockfilePath,
-
-    [Parameter(Mandatory=$false)]
-    [string]$SimulateCliVersion
+    [string]$LockfilePath
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,15 +18,15 @@ Set-Location $RepoRoot
 
 Write-Host "==> [Pin Gate] Verificando pinning exato de dependências críticas (INV-SEC-11)..."
 
-if (-not $ServerPubspecPath) {
-    $ServerPubspecPath = Join-Path $RepoRoot "solution/server/pubspec.yaml"
+if (-not $ApiPubspecPath) {
+    $ApiPubspecPath = Join-Path $RepoRoot "solution/api/pubspec.yaml"
 }
 if (-not $LockfilePath) {
     $LockfilePath = Join-Path $RepoRoot "pubspec.lock"
 }
 
-if (-not (Test-Path $ServerPubspecPath)) {
-    Write-Error "[PIN-FAIL] pubspec.yaml do server não encontrado: $ServerPubspecPath"
+if (-not (Test-Path $ApiPubspecPath)) {
+    Write-Error "[PIN-FAIL] pubspec.yaml da api não encontrado: $ApiPubspecPath"
     exit 1
 }
 
@@ -38,29 +35,28 @@ if (-not (Test-Path $LockfilePath)) {
     exit 1
 }
 
-$serverPubspec = Get-Content -Path $ServerPubspecPath -Raw
+$apiPubspec = Get-Content -Path $ApiPubspecPath -Raw
 $lockfile = Get-Content -Path $LockfilePath -Raw
 
 $violations = @()
 
 # Pacotes críticos que exigem pin exato (versão exata sem wildcard ou range)
 $criticalPins = @{
-    "serverpod"             = "3.4.13"
-    "serverpod_auth_server" = "3.4.13"
+    "pointycastle" = "4.0.0"
 }
 
 foreach ($pkg in $criticalPins.Keys) {
     $expectedVer = $criticalPins[$pkg]
 
-    # 1. Checa pin no pubspec.yaml (deve ser exato, ex: 'serverpod: 3.4.13' sem ^, >, <, ~)
+    # 1. Checa pin no pubspec.yaml (deve ser exato sem ^, >, <, ~)
     $pattern = "(?m)^\s*" + [regex]::Escape($pkg) + "\s*:\s*(.+)$"
-    if ($serverPubspec -match $pattern) {
+    if ($apiPubspec -match $pattern) {
         $actualVer = $Matches[1].Trim().Trim('"').Trim("'")
         if ($actualVer -ne $expectedVer) {
-            $violations += "Pacote '$pkg' em $ServerPubspecPath deve ter pin exato '$expectedVer', mas possui '$actualVer' (ranges '^', '>', '~' são proibidos por INV-SEC-11)."
+            $violations += "Pacote '$pkg' em $ApiPubspecPath deve ter pin exato '$expectedVer', mas possui '$actualVer' (ranges '^', '>', '~' são proibidos por INV-SEC-11)."
         }
     } else {
-        $violations += "Pacote crítico '$pkg' não declarado em $ServerPubspecPath."
+        $violations += "Pacote crítico '$pkg' não declarado em $ApiPubspecPath."
     }
 
     # 2. Checa versão efetivamente travada no pubspec.lock
@@ -68,48 +64,23 @@ foreach ($pkg in $criticalPins.Keys) {
     if ($lockfile -match $lockPattern) {
         $lockedVer = $Matches[1].Trim()
         if ($lockedVer -ne $expectedVer) {
-            $violations += "Pacote '$pkg' travado em '$lockedVer' no pubspec.lock, divergindo do pin exato '$expectedVer'."
+            $violations += "Pacote '$pkg' está travado no pubspec.lock com versão '$lockedVer', divergindo do pin exato '$expectedVer' (INV-SEC-11)."
         }
     } else {
-        $violations += "Pacote '$pkg' ausente no pubspec.lock."
-    }
-
-    # 3. Se for serverpod, checa também a CLI no host para evitar drift de código gerado
-    if ($pkg -eq "serverpod") {
-        $cliVersion = $null
-        if ($SimulateCliVersion) {
-            $cliVersion = $SimulateCliVersion
-        } else {
-            $serverpodCmd = Get-Command "serverpod" -ErrorAction SilentlyContinue
-            if ($serverpodCmd) {
-                try {
-                    $cliOut = & $serverpodCmd.Source --version 2>&1 | Out-String
-                    if ($cliOut -match "Serverpod\s+version:\s*(\d+\.\d+\.\d+)") {
-                        $cliVersion = $Matches[1]
-                    }
-                } catch {}
-            }
-        }
-
-        if ($cliVersion -and $cliVersion -ne $expectedVer) {
-            $violations += "Serverpod CLI instalada no host está na versão '$cliVersion', divergindo do pin exato '$expectedVer' (INV-SEC-11). Execute 'dart pub global activate serverpod_cli $expectedVer' para evitar drift de código gerado."
-        }
+        $violations += "Pacote crítico '$pkg' ausente no pubspec.lock."
     }
 }
 
 if ($violations.Count -gt 0) {
-    Write-Error @"
-[PIN-GATE-VIOLATION]
-Foram detectadas violações à política INV-SEC-11 (pinning de dependências):
-$($violations -join "`n")
-
-Para corrigir:
-1. Mantenha os pins exatos sem range em solution/server/pubspec.yaml (ex: serverpod: 3.4.13).
-2. Execute 'flutter pub get' para sincronizar o pubspec.lock.
-"@
+    Write-Host "`n[PIN-FAIL] Violações de pinning detectadas (INV-SEC-11):" -ForegroundColor Red
+    foreach ($v in $violations) {
+        Write-Host "  - $v" -ForegroundColor Red
+    }
+    Write-Host "`nCorreção obrigatória:" -ForegroundColor Yellow
+    Write-Host "1. Mantenha os pins exatos sem range em solution/api/pubspec.yaml (ex: pointycastle: 4.0.0)."
+    Write-Host "2. Execute 'dart pub get' para alinhar pubspec.lock."
     exit 1
 }
 
-Write-Host "  [OK] Todos os pacotes críticos possuem pin exato e lockfile sincronizado."
+Write-Host "  [OK] Todas as dependências críticas possuem pin exato e íntegro (INV-SEC-11)."
 exit 0
-

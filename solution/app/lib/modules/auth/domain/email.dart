@@ -2,7 +2,7 @@
 // Value Object de e-mail (UC-01.01).
 // SRP: normalizar e validar o formato de um e-mail, expondo o valor canônico.
 // NÃO faz: persistência, checagem de unicidade (INV-08 vive na camada de aplicação),
-// envio de mensagens, I/O, nem depende de Flutter/Serverpod.
+// envio de mensagens, I/O, nem depende de Flutter ou de transporte de rede.
 
 import 'package:devtasks_app/global/kernel/failures.dart';
 import 'package:devtasks_app/global/kernel/result.dart';

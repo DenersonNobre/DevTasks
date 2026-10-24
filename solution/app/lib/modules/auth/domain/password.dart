@@ -3,7 +3,7 @@
 // SRP: validar a política de senha (12..128, minúscula, maiúscula, dígito) e
 // carregar o segredo sem jamais expô-lo em representação textual.
 // NÃO faz: hash, persistência, comparação de credenciais, I/O, nem depende de
-// Flutter/Serverpod.
+// Flutter ou transporte de rede.
 
 import 'package:devtasks_app/global/kernel/failures.dart';
 import 'package:devtasks_app/global/kernel/result.dart';

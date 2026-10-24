@@ -1,7 +1,0 @@
-class: ProjectResultDto
-fields:
-  success: bool
-  project: ProjectDto?
-  errorCode: String?
-  message: String?
-  field: String?

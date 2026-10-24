@@ -1,7 +1,0 @@
-class: MeResultDto
-fields:
-  success: bool
-  userId: String?
-  email: String?
-  errorCode: String?
-  message: String?
