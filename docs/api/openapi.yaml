@@ -1,0 +1,1099 @@
+openapi: 3.1.0
+
+info:
+  title: DevTasks API
+  version: 1.0.0
+  summary: Contrato HTTP canônico do DevTasks (auth, workspaces, membros e projetos).
+  description: |
+    Fonte de verdade do contrato client↔server da API DevTasks (shelf + shelf_router),
+    conforme `brief-paralelo-2026-10-24-21.md` §4 e `docs/architecture/SPEC.md`.
+
+    Regras transversais materializadas neste contrato:
+
+    - **Envelope de erro único**: toda resposta de erro devolve `Error`
+      (`errorCode`, `message`, `field?`). Nenhuma rota devolve stack trace, nome de tabela
+      ou detalhe de infraestrutura no corpo.
+    - **INV-01 (isolamento multi-tenant)**: recurso inexistente e recurso de outro tenant
+      respondem de forma indistinguível com `404 ERR_NOT_FOUND`.
+    - **INV-06 (permissão por papel)**: `viewer` não muta nada, `developer` executa tarefas,
+      `owner` administra workspace, membros e projetos. Papel insuficiente → `403
+      ERR_INSUFFICIENT_ROLE`, nunca exceção.
+    - **INV-08 (identidade única)**: `email` é normalizado (`trim` + `lowercase`) na fronteira;
+      a unicidade é a do e-mail normalizado.
+    - **INV-09 (membresia única)**: `(workspaceId, userId)` é único; readição → `409
+      ERR_MEMBER_ALREADY_EXISTS`.
+    - **INV-SEC-16**: o token de sessão trafega **exclusivamente** no header
+      `Authorization: Bearer <token>` — nunca em corpo, query string, URL ou log.
+    - **INV-SEC-04**: login devolve erro único (`ERR_INVALID_CREDENTIALS`) para e-mail
+      inexistente e para senha incorreta.
+    - **INV-SEC-13**: throttling ocorre antes de qualquer custo de hash/verify.
+    - **Ordem de checagem na fronteira** (determinística — o teste de contrato pode
+      afirmar a precedência): autenticação (`401`) → acesso ao recurso dentro do tenant
+      (`404`, `INV-01`) → papel mínimo (`403`, `INV-06`) → validação do corpo (`400`).
+      Um não-membro nunca recebe `403` por um recurso que ele não pode ver.
+  contact:
+    name: DevTasks — Engenharia
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+
+servers:
+  - url: http://localhost:8080
+    description: Ambiente local (`dart run bin/server.dart` ou docker compose).
+
+tags:
+  - name: Infra
+    description: Disponibilidade do processo (sem autenticação).
+  - name: Auth
+    description: Cadastro, login e encerramento de sessão.
+  - name: Users
+    description: Identidade do usuário autenticado.
+  - name: Workspaces
+    description: Tenants e suas configurações. Toda rota exige `owner` para mutação.
+  - name: Members
+    description: Vínculo `(workspace, user)` com papel (`owner|developer|viewer`).
+  - name: Projects
+    description: Contêineres de tarefas dentro de um workspace.
+
+# Default global: toda operação exige Bearer; rotas públicas sobrescrevem com `security: []`.
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [Infra]
+      operationId: getHealth
+      summary: Verifica a saúde do processo
+      description: |
+        Sonda de disponibilidade usada por orquestrador de container e pela esteira de CI.
+        Sem autenticação por decisão de infraestrutura: não devolve dado de tenant.
+      security: []
+      responses:
+        '200':
+          description: Processo no ar.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              examples:
+                ok:
+                  summary: Saudável
+                  value:
+                    status: ok
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /auth/signup:
+    post:
+      tags: [Auth]
+      operationId: signUp
+      summary: Cadastra um usuário
+      description: |
+        Cria a conta e devolve apenas o identificador — nenhum token é emitido aqui; o login
+        é uma chamada separada (INV-SEC-16 não se aplica a esta resposta).
+
+        Invariantes aplicadas: `INV-08` (e-mail normalizado e único), `INV-SEC-08`
+        (política de senha), `INV-SEC-09` (apenas `name`/`email`/`password` são aceitos),
+        `INV-SEC-12` (conta nasce com `emailVerified == false`), `INV-SEC-13` (throttling
+        antes do hash).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            examples:
+              valido:
+                summary: Cadastro válido
+                value:
+                  name: Ana Souza
+                  email: ana.souza@example.com
+                  password: SenhaForte123
+      responses:
+        '201':
+          description: Conta criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+              examples:
+                criado:
+                  summary: Identificador da conta recém-criada
+                  value:
+                    userId: 3f4c1b8e-2f57-4f8a-9d21-93c0a1d47f10
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '409':
+          $ref: '#/components/responses/ErrEmailAlreadyTaken'
+        '429':
+          $ref: '#/components/responses/ErrRateLimited'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /auth/signin:
+    post:
+      tags: [Auth]
+      operationId: signIn
+      summary: Autentica e emite token de sessão
+      description: |
+        Emite o token de sessão (CSPRNG, persistido apenas como digest — `INV-SEC-17`).
+        `INV-SEC-04`: e-mail inexistente e senha incorreta devolvem **a mesma** resposta
+        `401 ERR_INVALID_CREDENTIALS`, com o mesmo caminho e o mesmo custo de verificação.
+
+        `400` aqui é **estritamente estrutural** (campo ausente ou fora de formato) e ocorre
+        antes de qualquer consulta de conta — portanto não distingue e-mail existente de
+        inexistente. Credencial errada nunca vira `400`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+            examples:
+              valido:
+                summary: Credenciais
+                value:
+                  email: ana.souza@example.com
+                  password: SenhaForte123
+      responses:
+        '200':
+          description: Sessão criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionToken'
+              examples:
+                autenticado:
+                  summary: Token a ser enviado no header Authorization
+                  value:
+                    sessionToken: 9c1f0d5c2f0a4a7e8b3d6f1a2c4e5b7d
+                    userId: 3f4c1b8e-2f57-4f8a-9d21-93c0a1d47f10
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrInvalidCredentials'
+        '429':
+          $ref: '#/components/responses/ErrRateLimited'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /auth/signout:
+    post:
+      tags: [Auth]
+      operationId: signOut
+      summary: Encerra a sessão corrente
+      description: |
+        Revoga o token apresentado no header. Idempotente do ponto de vista do cliente:
+        o corpo de sucesso é vazio e o token deixa de ser aceito dali em diante.
+      responses:
+        '200':
+          description: Sessão encerrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+              examples:
+                encerrada:
+                  summary: Sem corpo útil
+                  value: {}
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /me:
+    get:
+      tags: [Users]
+      operationId: getCurrentUser
+      summary: Devolve o perfil do usuário autenticado
+      description: |
+        Única leitura de identidade do próprio usuário. Não aceita identificador por
+        parâmetro — o sujeito é sempre o dono do token (`INV-01`).
+      responses:
+        '200':
+          description: Perfil do usuário do token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+              examples:
+                perfil:
+                  summary: Perfil
+                  value:
+                    userId: 3f4c1b8e-2f57-4f8a-9d21-93c0a1d47f10
+                    name: Ana Souza
+                    email: ana.souza@example.com
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /workspaces:
+    post:
+      tags: [Workspaces]
+      operationId: createWorkspace
+      summary: Cria um workspace
+      description: |
+        Criação atômica (`INV-09`): o workspace e o membership `owner` do criador nascem na
+        mesma transação — não existe workspace sem dono.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkspaceRequest'
+            examples:
+              valido:
+                summary: Workspace novo
+                value:
+                  name: Squad Atlas
+      responses:
+        '201':
+          description: Workspace criado; o criador é `owner`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+              examples:
+                criado:
+                  summary: Workspace com o papel do solicitante
+                  value:
+                    workspace:
+                      id: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                      name: Squad Atlas
+                      role: owner
+                      createdAt: '2026-10-24T21:05:00Z'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+    get:
+      tags: [Workspaces]
+      operationId: listWorkspaces
+      summary: Lista os workspaces do usuário
+      description: |
+        Devolve apenas workspaces em que o usuário tem membership ativo (`INV-01`). Lista
+        vazia é sucesso (`200`), nunca erro.
+      responses:
+        '200':
+          description: Workspaces acessíveis ao usuário do token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceList'
+              examples:
+                comItens:
+                  summary: Dois workspaces
+                  value:
+                    workspaces:
+                      - id: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                        name: Squad Atlas
+                        role: owner
+                        createdAt: '2026-10-24T21:05:00Z'
+                      - id: 7d9c4b63-1e5f-4a80-9b32-4f6d8a0c2e34
+                        name: Squad Boreal
+                        role: viewer
+                        createdAt: '2026-10-20T09:30:00Z'
+                vazio:
+                  summary: Nenhum workspace
+                  value:
+                    workspaces: []
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /workspaces/{id}:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+    get:
+      tags: [Workspaces]
+      operationId: getWorkspace
+      summary: Detalha um workspace
+      description: |
+        `INV-01`: workspace sem membership do solicitante responde `404 ERR_NOT_FOUND`,
+        exatamente como um identificador inexistente.
+      responses:
+        '200':
+          description: Workspace acessível.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+              examples:
+                detalhe:
+                  summary: Workspace com o papel do solicitante
+                  value:
+                    workspace:
+                      id: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                      name: Squad Atlas
+                      role: developer
+                      createdAt: '2026-10-24T21:05:00Z'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+    patch:
+      tags: [Workspaces]
+      operationId: updateWorkspace
+      summary: Renomeia um workspace
+      description: |
+        Mutação exclusiva de `owner` (`INV-06`), aplicada na ordem canônica da fronteira:
+        recurso resolvido dentro do tenant (`404` caso contrário, `INV-01`) → papel
+        (`403`) → corpo (`400`). Um não-membro recebe `404`, nunca `403`: a resposta não
+        revela a existência do workspace.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkspaceRequest'
+            examples:
+              valido:
+                summary: Novo nome
+                value:
+                  name: Squad Atlas Core
+      responses:
+        '200':
+          description: Workspace atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+              examples:
+                atualizado:
+                  summary: Nome novo
+                  value:
+                    workspace:
+                      id: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                      name: Squad Atlas Core
+                      role: owner
+                      createdAt: '2026-10-24T21:05:00Z'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /workspaces/{id}/members:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+    post:
+      tags: [Members]
+      operationId: addWorkspaceMember
+      summary: Adiciona um membro ao workspace
+      description: |
+        Exclusivo de `owner` (`INV-06`). `INV-09`: `(workspace, user)` é único — readição
+        devolve `409 ERR_MEMBER_ALREADY_EXISTS`, sem alterar o papel vigente.
+
+        A resposta devolve o workspace inteiro (visão consistente do agregado após a
+        mutação), não apenas o vínculo criado.
+
+        `role` fora do enum fechado ou `userId` não-UUID → `400 ERR_VALIDATION`: a validação
+        estrutural do corpo precede a checagem de unicidade.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+            examples:
+              valido:
+                summary: Novo developer
+                value:
+                  userId: c2a4e6f8-0b1d-4c3e-9f57-1a3c5e7d9b20
+                  role: developer
+      responses:
+        '201':
+          description: Vínculo criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+              examples:
+                criado:
+                  summary: Workspace após a inclusão
+                  value:
+                    workspace:
+                      id: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                      name: Squad Atlas
+                      role: owner
+                      createdAt: '2026-10-24T21:05:00Z'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '409':
+          $ref: '#/components/responses/ErrMemberAlreadyExists'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /workspaces/{id}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+      - $ref: '#/components/parameters/MemberUserId'
+    delete:
+      tags: [Members]
+      operationId: removeWorkspaceMember
+      summary: Remove um membro do workspace
+      description: |
+        Exclusivo de `owner` (`INV-06`). O domínio recusa remover o último `owner` do
+        workspace (ver `Workspace.removeMember` na `SPEC.md` §4.1) — a fronteira mapeia a
+        recusa como `403 ERR_INSUFFICIENT_ROLE`.
+
+        `{userId}` inexistente **ou** sem vínculo com este workspace → `404 ERR_NOT_FOUND`.
+      responses:
+        '200':
+          description: Vínculo removido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+              examples:
+                removido:
+                  summary: Sem corpo útil
+                  value: {}
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /workspaces/{id}/projects:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+    post:
+      tags: [Projects]
+      operationId: createProject
+      summary: Cria um projeto no workspace
+      description: |
+        Exclusivo de `owner` (`INV-06`). Projeto nasce `active`; arquivamento não faz parte
+        deste contrato (fatia futura).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+            examples:
+              valido:
+                summary: Projeto novo
+                value:
+                  name: Onboarding
+      responses:
+        '201':
+          description: Projeto criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+              examples:
+                criado:
+                  summary: Projeto recém-criado
+                  value:
+                    project:
+                      id: 8e0f2b45-3a6c-4d7e-9b81-5c3d7f9a1b23
+                      workspaceId: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                      name: Onboarding
+                      createdAt: '2026-10-24T21:10:00Z'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+    get:
+      tags: [Projects]
+      operationId: listProjects
+      summary: Lista os projetos do workspace
+      description: |
+        Qualquer papel do workspace pode ler (`viewer` incluso). Workspace inacessível ou
+        inexistente → `404 ERR_NOT_FOUND` (`INV-01`).
+      responses:
+        '200':
+          description: Projetos do workspace.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectList'
+              examples:
+                comItens:
+                  summary: Um projeto
+                  value:
+                    projects:
+                      - id: 8e0f2b45-3a6c-4d7e-9b81-5c3d7f9a1b23
+                        workspaceId: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                        name: Onboarding
+                        createdAt: '2026-10-24T21:10:00Z'
+                vazio:
+                  summary: Nenhum projeto
+                  value:
+                    projects: []
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /projects/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    patch:
+      tags: [Projects]
+      operationId: updateProject
+      summary: Renomeia um projeto
+      description: |
+        Exclusivo de `owner` do workspace dono do projeto (`INV-06`). Projeto de outro
+        workspace responde `404 ERR_NOT_FOUND` (`INV-01`) — o papel só é avaliado para quem
+        já tem acesso.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRequest'
+            examples:
+              valido:
+                summary: Novo nome
+                value:
+                  name: Onboarding 2026
+      responses:
+        '200':
+          description: Projeto atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+              examples:
+                atualizado:
+                  summary: Nome novo
+                  value:
+                    project:
+                      id: 8e0f2b45-3a6c-4d7e-9b81-5c3d7f9a1b23
+                      workspaceId: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                      name: Onboarding 2026
+                      createdAt: '2026-10-24T21:10:00Z'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-session-token
+      description: |
+        Token opaco de sessão, emitido por `POST /auth/signin`. Enviado **somente** no header
+        `Authorization: Bearer <token>` (`INV-SEC-16`) — nunca em corpo, query string ou URL.
+        Ausente, malformado, expirado ou revogado → `401 ERR_NOT_AUTHENTICATED`.
+
+  parameters:
+    WorkspaceId:
+      name: id
+      in: path
+      required: true
+      description: Identificador do workspace (UUID).
+      schema:
+        type: string
+        format: uuid
+      examples:
+        padrao:
+          value: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+    ProjectId:
+      name: id
+      in: path
+      required: true
+      description: Identificador do projeto (UUID).
+      schema:
+        type: string
+        format: uuid
+      examples:
+        padrao:
+          value: 8e0f2b45-3a6c-4d7e-9b81-5c3d7f9a1b23
+    MemberUserId:
+      name: userId
+      in: path
+      required: true
+      description: Identificador do usuário alvo da membresia (UUID).
+      schema:
+        type: string
+        format: uuid
+      examples:
+        padrao:
+          value: c2a4e6f8-0b1d-4c3e-9f57-1a3c5e7d9b20
+
+  responses:
+    ErrValidation:
+      description: Entrada inválida (`400`). Falha esperada de validação de fronteira.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            campoInvalido:
+              summary: Política de senha violada
+              value:
+                errorCode: ERR_VALIDATION
+                message: A senha deve ter entre 12 e 128 caracteres, com minúscula, maiúscula e dígito.
+                field: password
+            corpoInvalido:
+              summary: Campo obrigatório ausente
+              value:
+                errorCode: ERR_VALIDATION
+                message: O nome do workspace é obrigatório.
+                field: name
+    ErrNotAuthenticated:
+      description: |
+        Sessão ausente, malformada, expirada ou revogada (`401`). O header
+        `WWW-Authenticate` acompanha a resposta.
+      headers:
+        WWW-Authenticate:
+          description: Desafio de autenticação.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            semToken:
+              summary: Header Authorization ausente
+              value:
+                errorCode: ERR_NOT_AUTHENTICATED
+                message: Autenticação necessária.
+            tokenInvalido:
+              summary: Token revogado ou expirado
+              value:
+                errorCode: ERR_NOT_AUTHENTICATED
+                message: Sessão inválida ou expirada.
+    ErrInvalidCredentials:
+      description: |
+        Credenciais incorretas (`401`). Resposta **única** para e-mail inexistente e para
+        senha errada (`INV-SEC-04`) — não há campo `field` nem detalhe que permita enumerar
+        contas.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            credenciais:
+              summary: Erro único de login
+              value:
+                errorCode: ERR_INVALID_CREDENTIALS
+                message: E-mail ou senha inválidos.
+    ErrInsufficientRole:
+      description: |
+        Papel insuficiente para a operação (`403`, `INV-06`). Só é devolvido a quem já tem
+        acesso ao workspace; não-membro recebe `404`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            papel:
+              summary: Viewer tentando mutar
+              value:
+                errorCode: ERR_INSUFFICIENT_ROLE
+                message: Apenas o owner do workspace pode executar esta operação.
+    ErrNotFound:
+      description: |
+        Recurso inexistente **ou** inacessível ao solicitante (`404`, `INV-01`). Os dois casos
+        são indistinguíveis por decisão de segurança.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            ausente:
+              summary: Identificador inexistente ou de outro tenant
+              value:
+                errorCode: ERR_NOT_FOUND
+                message: Recurso não encontrado.
+    ErrEmailAlreadyTaken:
+      description: E-mail já cadastrado após normalização (`409`, `INV-08`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            duplicado:
+              summary: Cadastro repetido
+              value:
+                errorCode: ERR_EMAIL_ALREADY_TAKEN
+                message: Este e-mail já está cadastrado.
+                field: email
+    ErrMemberAlreadyExists:
+      description: Vínculo `(workspace, user)` já existente (`409`, `INV-09`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            duplicado:
+              summary: Membro readicionado
+              value:
+                errorCode: ERR_MEMBER_ALREADY_EXISTS
+                message: O usuário já é membro deste workspace.
+                field: userId
+    ErrRateLimited:
+      description: |
+        Limite de tentativas excedido (`429`; `NFR-05` / `INV-SEC-02`: 10 requisições por
+        minuto por IP). O bloqueio acontece **antes** do custo de hash (`INV-SEC-13`).
+        O IP é mantido apenas em memória efêmera e nunca é logado (`INV-SEC-14`).
+      headers:
+        Retry-After:
+          description: Segundos até a próxima tentativa permitida.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            bloqueado:
+              summary: Throttling ativo
+              value:
+                errorCode: ERR_RATE_LIMITED
+                message: Muitas tentativas. Tente novamente em instantes.
+    ErrInfraFailure:
+      description: |
+        Falha catastrófica de infraestrutura (`500`): banco indisponível, timeout de rede,
+        disco. Exceção tipada capturada na borda — o corpo devolve código genérico e
+        mensagem neutra; stack trace e detalhe técnico ficam apenas no log estruturado
+        (`INV-SEC-05`: sem senha, token, e-mail ou nome em claro).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            indisponivel:
+              summary: Banco fora do ar
+              value:
+                errorCode: ERR_INFRA_FAILURE
+                message: Não foi possível concluir a operação. Tente novamente.
+
+  schemas:
+    ErrorCode:
+      type: string
+      description: |
+        Taxonomia fechada de códigos consumíveis pelo cliente. A taxonomia completa do
+        domínio está na `SPEC.md` §6; aqui ficam apenas os códigos que esta superfície HTTP
+        pode emitir.
+      enum:
+        - ERR_VALIDATION
+        - ERR_NOT_AUTHENTICATED
+        - ERR_INVALID_CREDENTIALS
+        - ERR_EMAIL_ALREADY_TAKEN
+        - ERR_NOT_FOUND
+        - ERR_INSUFFICIENT_ROLE
+        - ERR_MEMBER_ALREADY_EXISTS
+        - ERR_RATE_LIMITED
+        - ERR_INFRA_FAILURE
+
+    Error:
+      type: object
+      description: Envelope único de erro de toda a API.
+      required: [errorCode, message]
+      additionalProperties: false
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+          minLength: 1
+          description: Texto seguro para exibição ao usuário final.
+        field:
+          type: string
+          description: |
+            Nome do campo culpado, quando a falha é atribuível a um campo específico do
+            corpo ou da rota. Ausente em falhas não atribuíveis (sessão, infraestrutura).
+
+    Role:
+      type: string
+      description: |
+        Papel do usuário no workspace (`MemberRole`, D-02). Ordem total
+        `viewer < developer < owner` (`INV-06`).
+      enum:
+        - owner
+        - developer
+        - viewer
+
+    HealthStatus:
+      type: object
+      required: [status]
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Processo apto a receber tráfego.
+
+    EmptyResponse:
+      type: object
+      description: Corpo de sucesso sem conteúdo útil. Presente para manter `Content-Type` JSON uniforme.
+      additionalProperties: false
+      properties: {}
+
+    SignupRequest:
+      type: object
+      description: |
+        Payload de cadastro. `additionalProperties: false` materializa `INV-SEC-09`
+        (mass assignment): qualquer campo extra rejeita o corpo com `400 ERR_VALIDATION`.
+      required: [name, email, password]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Normalizado na fronteira (`trim` + `lowercase`) antes da checagem de unicidade (`INV-08`).
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+          writeOnly: true
+          description: |
+            Política `INV-SEC-08`: 12..128 caracteres com minúscula, maiúscula e dígito.
+            Nunca ecoada em resposta e nunca logada (`INV-SEC-05`).
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{12,128}$'
+
+    SignupResponse:
+      type: object
+      required: [userId]
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Identificador da conta criada. Nenhum token é emitido neste passo.
+
+    SigninRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          writeOnly: true
+
+    SessionToken:
+      type: object
+      description: Resultado do login.
+      required: [sessionToken, userId]
+      additionalProperties: false
+      properties:
+        sessionToken:
+          type: string
+          minLength: 1
+          description: |
+            Token opaco de sessão. Em repouso existe apenas como digest SHA-256
+            (`INV-SEC-17`); o cliente deve reenviá-lo somente no header
+            `Authorization: Bearer` (`INV-SEC-16`).
+        userId:
+          type: string
+          format: uuid
+
+    UserProfile:
+      type: object
+      required: [userId, name, email]
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+          format: email
+
+    CreateWorkspaceRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+
+    UpdateWorkspaceRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+
+    Workspace:
+      type: object
+      description: |
+        Projeção do workspace **do ponto de vista do solicitante** — `role` é o papel de quem
+        chamou, não uma lista de membros.
+      required: [id, name, role, createdAt]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        role:
+          $ref: '#/components/schemas/Role'
+        createdAt:
+          type: string
+          format: date-time
+
+    WorkspaceResponse:
+      type: object
+      required: [workspace]
+      additionalProperties: false
+      properties:
+        workspace:
+          $ref: '#/components/schemas/Workspace'
+
+    WorkspaceList:
+      type: object
+      required: [workspaces]
+      additionalProperties: false
+      properties:
+        workspaces:
+          type: array
+          description: Apenas workspaces com membership ativo do solicitante (`INV-01`). Pode ser vazio.
+          items:
+            $ref: '#/components/schemas/Workspace'
+
+    AddMemberRequest:
+      type: object
+      required: [userId, role]
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Usuário alvo; o vínculo `(workspace, user)` é único (`INV-09`).
+        role:
+          $ref: '#/components/schemas/Role'
+
+    Member:
+      type: object
+      description: |
+        Projeção canônica do vínculo `(workspace, user)`: papel sempre explícito — nenhum dos
+        três valores pode ser nulo (`INV-09`). É a forma que `AddMemberRequest` espelha; uma
+        rota de listagem de membros não faz parte deste contrato.
+      required: [userId, role]
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/Role'
+
+    CreateProjectRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+
+    UpdateProjectRequest:
+      type: object
+      description: Atualização parcial; informe ao menos um campo.
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+
+    Project:
+      type: object
+      required: [id, workspaceId, name, createdAt]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+          description: Workspace dono. Compõe a cadeia de composição única (`INV-02`).
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        createdAt:
+          type: string
+          format: date-time
+
+    ProjectResponse:
+      type: object
+      required: [project]
+      additionalProperties: false
+      properties:
+        project:
+          $ref: '#/components/schemas/Project'
+
+    ProjectList:
+      type: object
+      required: [projects]
+      additionalProperties: false
+      properties:
+        projects:
+          type: array
+          description: Projetos do workspace. Pode ser vazio.
+          items:
+            $ref: '#/components/schemas/Project'

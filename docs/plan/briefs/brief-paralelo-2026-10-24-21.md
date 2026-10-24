@@ -94,3 +94,25 @@ Ambas **só começam** após o Agente A commitar o `pubspec.yaml` do `solution/a
 `INV-01` (indistinção cross-tenant), `INV-05` (arquivado = leitura), `INV-06` (owner-only),
 `INV-08` (e-mail normalizado/único), `INV-09` (criação atômica + membro único),
 `INV-SEC-04/05/10/13/16/17` (anti-enumeração, sem PII em log, CSPRNG, rate limit sem hash, token só em header, hash-only).
+
+## 7. Entrega do contrato (Agente B) — aceita
+
+`docs/api/openapi.yaml`: **11 path items / 14 operações / 22 schemas / 9 respostas de erro reutilizáveis**.
+
+Validação mecânica (Agente A, `test/contract/openapi_contract_test.dart`) → **7/7**:
+parseia como YAML, OpenAPI 3.1, `bearerAuth`, envelope `Error`, rotas exatamente as do §4,
+`operationId` único em todas as 14, `/health` público, **zero `$ref` órfão**.
+
+**Desvios declarados pelo Agente B — aceitos com justificativa:**
+
+1. **`400 ERR_VALIDATION` em `POST /auth/signin` e `POST /workspaces/{id}/members`.** A tabela do §4
+   não era exaustiva (omitia até o `401` da rota de membros) e o `SPEC.md` (NFR-05) exige validação de
+   entrada em toda fronteira. Em `signin`, o `400` é **estrutural apenas** — credencial inválida continua
+   `401` com corpo idêntico, preservando `INV-SEC-04`.
+2. **Contrato não foi validado por parser pelo Agente B** (runtime sem shell). Resolvido pelo teste
+   acima, que é a validação mecânica canônica e roda no CI (semente do `UC-08.06b`).
+
+## 8. Próximas fatias do Agente B (não iniciar sem pubspec commitado)
+
+`UC-08.02` (migrations + pool + `tools/db.ps1`) → `UC-08.03` (auth). O `pubspec.yaml` de
+`solution/api` já contém `postgres`, `pointycastle`, `crypto` e `yaml`.
