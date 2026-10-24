@@ -2,6 +2,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../../modules/auth/auth_routes.dart';
+import '../../modules/workspace/workspace_routes.dart';
 import 'api_exception.dart';
 import 'cors_middleware.dart';
 import 'error_middleware.dart';
@@ -16,10 +17,12 @@ import 'json_response.dart';
 Handler buildHandler({
   String corsOrigin = '*',
   AuthRoutes? authRoutes,
+  WorkspaceRoutes? workspaceRoutes,
 }) {
   final router = Router(notFoundHandler: _notFound);
   router.get('/health', _health);
   authRoutes?.register(router);
+  workspaceRoutes?.register(router);
 
   return const Pipeline()
       .addMiddleware(errorMiddleware())

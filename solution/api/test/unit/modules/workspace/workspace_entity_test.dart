@@ -52,9 +52,10 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
   }
 
   @override
-  Future<WorkspaceEntity?> updateName({
+  Future<WorkspaceWithRole?> updateName({
     required String workspaceId,
     required String name,
+    required String userId,
   }) async {
     final index = workspaces.indexWhere((w) => w.workspace.id == workspaceId);
     if (index == -1) return null;
@@ -64,31 +65,35 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
       name: name,
       createdAt: old.workspace.createdAt,
     );
-    workspaces[index] = WorkspaceWithRole(workspace: updatedEntity, role: old.role);
-    return updatedEntity;
+    final updated = WorkspaceWithRole(workspace: updatedEntity, role: old.role);
+    workspaces[index] = updated;
+    return updated;
   }
 
   @override
-  Future<WorkspaceWithRole> addMember({
+  Future<AddMemberOutcome> addMember({
     required String workspaceId,
     required String userId,
     required WorkspaceMemberRole role,
   }) async {
     final existing = await findById(workspaceId);
-    if (existing == null) throw StateError('Workspace not found');
+    if (existing == null) return const MemberUserNotFound();
     final withRole = WorkspaceWithRole(workspace: existing, role: role);
     workspaces.add(withRole);
-    return withRole;
+    return MemberAdded(withRole);
   }
 
   @override
-  Future<bool> removeMember({
+  Future<RemoveMemberOutcome> removeMember({
     required String workspaceId,
     required String userId,
   }) async {
     final initialLength = workspaces.length;
     workspaces.removeWhere((w) => w.workspace.id == workspaceId);
-    return workspaces.length < initialLength;
+    if (workspaces.length == initialLength) {
+      return const MemberNotFound();
+    }
+    return const MemberRemoved();
   }
 }
 
@@ -184,12 +189,17 @@ void main() {
       final role = await repo.getMemberRole(workspaceId: _uuid(1), userId: 'u1');
       expect(role, WorkspaceMemberRole.owner);
 
-      final updated = await repo.updateName(workspaceId: _uuid(1), name: 'Squad Alpha');
+      final updated = await repo.updateName(
+        workspaceId: _uuid(1),
+        name: 'Squad Alpha',
+        userId: 'u1',
+      );
       expect(updated, isNotNull);
-      expect(updated!.name, 'Squad Alpha');
+      expect(updated!.workspace.name, 'Squad Alpha');
 
-      final removed = await repo.removeMember(workspaceId: _uuid(1), userId: 'u1');
-      expect(removed, isTrue);
+      final removeOutcome =
+          await repo.removeMember(workspaceId: _uuid(1), userId: 'u1');
+      expect(removeOutcome, isA<MemberRemoved>());
     });
   });
 }

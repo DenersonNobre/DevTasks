@@ -30,9 +30,16 @@ Future<void> main() async {
     rateLimiter: rateLimiter,
   );
 
+  final workspaceRepo = PostgresWorkspaceRepository(sql);
+  final workspaceRoutes = WorkspaceRoutes(
+    workspaceRepository: workspaceRepo,
+    authenticator: sessionService,
+  );
+
   final handler = buildHandler(
     corsOrigin: config.corsOrigin,
     authRoutes: authRoutes,
+    workspaceRoutes: workspaceRoutes,
   );
 
   final server = await shelf_io.serve(
