@@ -7,21 +7,22 @@
 ## Contexto
 
 Projeto DevTasks (Flutter + Serverpod + Postgres, portfólio/demo público).
-**EPIC-00 concluída** · **EPIC-01 (Autenticação) concluída** · **EPIC-02 (Workspaces) concluída**.
+**EPIC-00 ✅** · **EPIC-01 (Autenticação) ✅** · **EPIC-02 (Workspaces) ✅** · **EPIC-03 (Projetos) 🔄**.
 
-## Estado verificado (2026-10-23)
+## Estado verificado (2026-10-24)
 
-- **EPIC-01**: Concluída ✅ (`UC-01.00`–`UC-01.08` implementados + Gate 3/4 verdes, precedência DAG validada).
-- **EPIC-02**: Concluída ✅ (`UC-02.01` CRUD, `UC-02.02` Membresias, `UC-02.03` MembershipGuard `INV-06`/`INV-01`).
-- **Harness NFR-03**: Core: 82,15s (app=65s server=17.02s) | Total: 82,15s verde sob teto calibrado de 180s.
-- **Resíduos**: B8 corrigido em `me_service.dart:6` (`INV-SEC-16`); sem invariantes reservadas.
-- **Briefs**: Brief 17 (DoD Fechamento EPIC-01) e Brief 18 (UC-02.03 MembershipGuard) concluídos.
+- **EPIC-01**: Concluída ✅ (`UC-01.00`–`UC-01.08`, Gate 3/4 verdes).
+- **EPIC-02**: Concluída ✅ (`UC-02.01` CRUD, `UC-02.02` Membresias, `UC-02.03` MembershipGuard).
+- **EPIC-03**: Em execução 🔄 — `UC-03.01` (CRUD de projetos) implementado em 3 commits
+  (`a0ed0fa` Red, `c180990` server, `df578e7` app) e aguardando **Gate 3 (review)** para `release`.
+- **Gate 4 canônico**: `tools/test.ps1 -Unit` → **VERDE em 51,73s** (app 27,87s / server 23,75s; 101/101).
+- **Dívida fechada**: teste tautológico do guard substituído por cobertura real (`179394e`, 5 testes).
 
 ## Próximos passos
 
-1. **Iniciar EPIC-03 (Projetos)**: `UC-03.01` (CRUD de projetos escopado por workspace).
-2. **Gate 2.5**: Manter aplicação do `MembershipGuard` e `SessionGuard` nos novos endpoints.
-3. **Gate 4**: Manter suíte verde (172/172 testes).
+1. **Gate 3** do outro agente sobre `a0ed0fa..df578e7` (brief-20) → autorizar `release UC-03.01`.
+2. **`UC-03.02`** (arquivamento de projeto · `INV-05`).
+3. Wire da `ProjectsView` no shell quando existir seleção de workspace (EPIC-02 app — fatia ausente).
 
 ## Travas vivas
 
