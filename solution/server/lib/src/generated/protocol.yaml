@@ -4,8 +4,14 @@ auth:
   - signOut:
 me:
   - me:
+project:
+  - create:
+  - update:
+  - listByWorkspace:
 workspace:
   - create:
   - update:
   - list:
   - getById:
+  - addMember:
+  - removeMember:

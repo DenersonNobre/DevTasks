@@ -20,10 +20,15 @@ import 'package:devtasks_server/src/generated/sign_in_result_dto.dart' as _i6;
 import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i7;
 import 'package:devtasks_server/src/generated/sign_out_result_dto.dart' as _i8;
 import 'package:devtasks_server/src/generated/me_result_dto.dart' as _i9;
-import 'package:devtasks_server/src/generated/workspace_result_dto.dart'
-    as _i10;
-import 'package:devtasks_server/src/generated/workspace_list_result_dto.dart'
+import 'package:devtasks_server/src/generated/project_result_dto.dart' as _i10;
+import 'package:devtasks_server/src/generated/project_list_result_dto.dart'
     as _i11;
+import 'package:devtasks_server/src/generated/workspace_result_dto.dart'
+    as _i12;
+import 'package:devtasks_server/src/generated/workspace_list_result_dto.dart'
+    as _i13;
+import 'package:devtasks_server/src/generated/workspace_member_role.dart'
+    as _i14;
 import 'package:devtasks_server/src/generated/protocol.dart';
 import 'package:devtasks_server/src/generated/endpoints.dart';
 export 'package:serverpod_test/serverpod_test_public_exports.dart';
@@ -142,6 +147,8 @@ class TestEndpoints {
 
   late final _MeEndpoint me;
 
+  late final _ProjectEndpoint project;
+
   late final _WorkspaceEndpoint workspace;
 }
 
@@ -157,6 +164,10 @@ class _InternalTestEndpoints extends TestEndpoints
       serializationManager,
     );
     me = _MeEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    project = _ProjectEndpoint(
       endpoints,
       serializationManager,
     );
@@ -309,6 +320,118 @@ class _MeEndpoint {
   }
 }
 
+class _ProjectEndpoint {
+  _ProjectEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _i2.EndpointDispatch _endpointDispatch;
+
+  final _i2.SerializationManager _serializationManager;
+
+  _i3.Future<_i10.ProjectResultDto> create(
+    _i1.TestSessionBuilder sessionBuilder,
+    int workspaceId,
+    String name,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'project',
+            method: 'create',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'project',
+          methodName: 'create',
+          parameters: _i1.testObjectToJson({
+            'workspaceId': workspaceId,
+            'name': name,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i10.ProjectResultDto>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i10.ProjectResultDto> update(
+    _i1.TestSessionBuilder sessionBuilder,
+    int id,
+    String name,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'project',
+            method: 'update',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'project',
+          methodName: 'update',
+          parameters: _i1.testObjectToJson({
+            'id': id,
+            'name': name,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i10.ProjectResultDto>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i11.ProjectListResultDto> listByWorkspace(
+    _i1.TestSessionBuilder sessionBuilder,
+    int workspaceId,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'project',
+            method: 'listByWorkspace',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'project',
+          methodName: 'listByWorkspace',
+          parameters: _i1.testObjectToJson({'workspaceId': workspaceId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i11.ProjectListResultDto>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
 class _WorkspaceEndpoint {
   _WorkspaceEndpoint(
     this._endpointDispatch,
@@ -319,7 +442,7 @@ class _WorkspaceEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<_i10.WorkspaceResultDto> create(
+  _i3.Future<_i12.WorkspaceResultDto> create(
     _i1.TestSessionBuilder sessionBuilder,
     String name,
   ) async {
@@ -342,7 +465,7 @@ class _WorkspaceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i10.WorkspaceResultDto>);
+                as _i3.Future<_i12.WorkspaceResultDto>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -350,7 +473,7 @@ class _WorkspaceEndpoint {
     });
   }
 
-  _i3.Future<_i10.WorkspaceResultDto> update(
+  _i3.Future<_i12.WorkspaceResultDto> update(
     _i1.TestSessionBuilder sessionBuilder,
     int id,
     String name,
@@ -377,7 +500,7 @@ class _WorkspaceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i10.WorkspaceResultDto>);
+                as _i3.Future<_i12.WorkspaceResultDto>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -385,7 +508,7 @@ class _WorkspaceEndpoint {
     });
   }
 
-  _i3.Future<_i11.WorkspaceListResultDto> list(
+  _i3.Future<_i13.WorkspaceListResultDto> list(
     _i1.TestSessionBuilder sessionBuilder,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
@@ -407,7 +530,7 @@ class _WorkspaceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i11.WorkspaceListResultDto>);
+                as _i3.Future<_i13.WorkspaceListResultDto>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();
@@ -415,7 +538,7 @@ class _WorkspaceEndpoint {
     });
   }
 
-  _i3.Future<_i10.WorkspaceResultDto> getById(
+  _i3.Future<_i12.WorkspaceResultDto> getById(
     _i1.TestSessionBuilder sessionBuilder,
     int id,
   ) async {
@@ -438,7 +561,79 @@ class _WorkspaceEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i10.WorkspaceResultDto>);
+                as _i3.Future<_i12.WorkspaceResultDto>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i12.WorkspaceResultDto> addMember(
+    _i1.TestSessionBuilder sessionBuilder,
+    int workspaceId,
+    String userId,
+    _i14.WorkspaceMemberRole role,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workspace',
+            method: 'addMember',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workspace',
+          methodName: 'addMember',
+          parameters: _i1.testObjectToJson({
+            'workspaceId': workspaceId,
+            'userId': userId,
+            'role': role,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i12.WorkspaceResultDto>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i12.WorkspaceResultDto> removeMember(
+    _i1.TestSessionBuilder sessionBuilder,
+    int workspaceId,
+    String userId,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workspace',
+            method: 'removeMember',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workspace',
+          methodName: 'removeMember',
+          parameters: _i1.testObjectToJson({
+            'workspaceId': workspaceId,
+            'userId': userId,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i12.WorkspaceResultDto>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

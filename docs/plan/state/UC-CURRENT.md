@@ -1,51 +1,58 @@
 # UC-CURRENT — DevTasks
 
-> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-02-workspace.md` §F2.3.
+> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-03-projetos.md` §F3.1.
 > Ordem de leitura ao retomar: `CHECKPOINT.md` → este arquivo → código.
 
 ## UC corrente
 
-**UC-02.03** — `MembershipGuard` & Autorização de Workspace (EPIC-02 · F2.3). Status: **Concluído ✅**.
+**UC-03.01** — CRUD de Projetos (`EPIC-03 · F3.1`). Status: **Em execução 🔄** (TASK-01 e TASK-02 concluídas; TASK-03 pendente).
 
-**Gate 2.5: COMPLETED** — Invariantes de segurança e autorização multi-tenant:
-- `INV-01`: Isolamento multi-tenant — não-membro ou workspace inexistente recebem idêntico `ERR_NOT_FOUND` (indistinção);
-- `INV-06`: Autorização estrita por papel — apenas membros com papel `owner` podem mutar membros (`addMember`, `removeMember`) ou atualizar configurações;
-- `INV-SEC-06`: Identidade do autor (`callerUserId`) derivada estritamente da sessão/token autenticado (nunca de corpo/RPC);
-- `INV-SEC-16`: Extração de token exclusivamente via header `Authorization: Bearer`;
-- `DIP`: `MembershipGuard` puro, sem imports de infra, dependendo exclusivamente da porta `WorkspaceRepository`.
+**Gate 2.5: INVOKED** — superfície nova (endpoint autenticado + autorização por papel):
+- `INV-01`: não-membro e workspace/projeto inexistente devolvem idêntico `ERR_NOT_FOUND`;
+- `INV-06`: criar/editar exigem papel `owner` (delegado ao `MembershipGuard`, sem duplicar lógica);
+- `INV-SEC-06`: `callerUserId` derivado exclusivamente da sessão, nunca do payload RPC;
+- `INV-SEC-16`: token apenas via header `Authorization: Bearer`;
+- `DIP`: `ProjectEntity` puro (sem import de DTO/ORM); mapeamento para `ProjectDto` fica no serviço.
 
-## Escopo (DoD da F2.3)
+## Escopo (DoD da F3.1)
 
-- `MembershipGuard` puro em `solution/server/lib/src/modules/workspace/membership_guard.dart`.
-- Métodos `authorizeOwner`, `isOwner`, `canMutate`.
-- Integração de `MembershipGuard` em `WorkspaceEndpoint` nos métodos `addMember` e `removeMember`.
-- Testes unitários com fakes cobrindo owner, developer, viewer, não-membro e workspace inexistente (`test/unit/workspace/membership_guard_red_test.dart`).
+- [x] `TASK-01`: teste Red de criação/edição/listagem + guardas `INV-01`/`INV-06`.
+- [x] `TASK-02`: `project_endpoint` + módulo `projects/` (domain, ports, service, repositório Serverpod) + modelos de protocolo.
+- [ ] `TASK-03`: módulo app `projects/` (listagem, form de criação/edição, states §3).
 
 ## Interfaces & Portas
 
-- `WorkspaceRepository`: métodos `addMember` e `removeMember`.
-- `MembershipGuard`: contrato de autorização transversal (`MembershipAuthResult`: `Allowed` / `Denied`).
-- `WorkspaceEndpoint`: composition root com suporte a injeção de `MembershipGuard`.
+- `ProjectRepository` (`findById`, `create`, `updateName`, `listActiveByWorkspace`).
+- `ProjectService` (`createProject`, `updateProject`, `listProjects`) — recebe `callerUserId` da sessão.
+- `ProjectEndpoint` (`create`, `update`, `listByWorkspace`) — composition root com injeção opcional.
+- Reutiliza `MembershipGuard` e `WorkspaceRepository` (sem nova checagem de papel).
 
-## Arquivos-alvo entregues
+## Arquivos entregues
 
-- `solution/server/lib/src/modules/workspace/membership_guard.dart` [NEW]
-- `solution/server/lib/src/modules/workspace/ports.dart` [MODIFY]
-- `solution/server/lib/src/modules/workspace/serverpod_workspace_repository.dart` [MODIFY]
-- `solution/server/lib/src/modules/workspace/workspace_service.dart` [MODIFY]
-- `solution/server/lib/src/endpoints/workspace_endpoint.dart` [MODIFY]
-- `solution/server/test/unit/workspace/membership_guard_red_test.dart` [NEW/MODIFY]
+- `solution/server/lib/src/protocol/devtasks_project.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/project_dto.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/project_result_dto.spy.yaml` [NEW]
+- `solution/server/lib/src/protocol/project_list_result_dto.spy.yaml` [NEW]
+- `solution/server/lib/src/generated/**` [REGENERATED]
+- `solution/server/lib/src/modules/projects/domain/project_entity.dart` [NEW]
+- `solution/server/lib/src/modules/projects/domain/project_name.dart` [NEW]
+- `solution/server/lib/src/modules/projects/ports.dart` [NEW]
+- `solution/server/lib/src/modules/projects/project_service.dart` [NEW]
+- `solution/server/lib/src/modules/projects/serverpod_project_repository.dart` [NEW]
+- `solution/server/lib/src/endpoints/project_endpoint.dart` [NEW]
+- `solution/server/test/unit/projects/project_service_red_test.dart` [NEW]
 
 ## Evidência
 
 ```text
-[EVIDÊNCIA] (UC-02.03)
-- Leitura: membership_guard.dart → authorizeOwner, isOwner, canMutate cobrindo INV-01 e INV-06.
-- Verificação: dart test solution/server/test/unit/workspace → 14/14 passed.
-- Verificação: dart test solution/server/test/unit → 87/87 passed.
-- Confirmação: pwsh tools/test.ps1 → Suíte completa de testes VERDE.
+[EVIDÊNCIA] (UC-03.01 · TASK-01/02)
+- Red: dart test test/unit/projects → exit 1 (compile failure: modules/projects ausente).
+- Green: dart test test/unit/projects → 10/10 passed.
+- Contrato: serverpod generate → ✓ Done.
+- Migration: serverpod create-migration → tabela devtasks_project.
 ```
 
-## Próximo UC
+## Próximo passo
 
-- **UC-02.04** / Próxima fatia da EPIC-02 conforme backlog (`docs/plan/epics/epic-02-workspace.md`).
+1. `TASK-03`: módulo `solution/app/lib/modules/projects/` (listagem + form) com testes de widget.
+2. Gate 3 (`review`) sobre o diff do UC; Gate 4 (suíte completa) antes do commit de fechamento.

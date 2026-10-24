@@ -14,10 +14,13 @@
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../endpoints/auth_endpoint.dart' as _i2;
 import '../endpoints/me_endpoint.dart' as _i3;
-import '../endpoints/workspace_endpoint.dart' as _i4;
-import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i5;
-import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i6;
-import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i7;
+import '../endpoints/project_endpoint.dart' as _i4;
+import '../endpoints/workspace_endpoint.dart' as _i5;
+import 'package:devtasks_server/src/generated/sign_up_dto.dart' as _i6;
+import 'package:devtasks_server/src/generated/sign_in_dto.dart' as _i7;
+import 'package:devtasks_server/src/generated/workspace_member_role.dart'
+    as _i8;
+import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i9;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -35,7 +38,13 @@ class Endpoints extends _i1.EndpointDispatch {
           'me',
           null,
         ),
-      'workspace': _i4.WorkspaceEndpoint()
+      'project': _i4.ProjectEndpoint()
+        ..initialize(
+          server,
+          'project',
+          null,
+        ),
+      'workspace': _i5.WorkspaceEndpoint()
         ..initialize(
           server,
           'workspace',
@@ -51,7 +60,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'dto': _i1.ParameterDescription(
               name: 'dto',
-              type: _i1.getType<_i5.SignUpDto>(),
+              type: _i1.getType<_i6.SignUpDto>(),
               nullable: false,
             ),
           },
@@ -69,7 +78,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'dto': _i1.ParameterDescription(
               name: 'dto',
-              type: _i1.getType<_i6.SignInDto>(),
+              type: _i1.getType<_i7.SignInDto>(),
               nullable: false,
             ),
           },
@@ -109,6 +118,79 @@ class Endpoints extends _i1.EndpointDispatch {
         ),
       },
     );
+    connectors['project'] = _i1.EndpointConnector(
+      name: 'project',
+      endpoint: endpoints['project']!,
+      methodConnectors: {
+        'create': _i1.MethodConnector(
+          name: 'create',
+          params: {
+            'workspaceId': _i1.ParameterDescription(
+              name: 'workspaceId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['project'] as _i4.ProjectEndpoint).create(
+                session,
+                params['workspaceId'],
+                params['name'],
+              ),
+        ),
+        'update': _i1.MethodConnector(
+          name: 'update',
+          params: {
+            'id': _i1.ParameterDescription(
+              name: 'id',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['project'] as _i4.ProjectEndpoint).update(
+                session,
+                params['id'],
+                params['name'],
+              ),
+        ),
+        'listByWorkspace': _i1.MethodConnector(
+          name: 'listByWorkspace',
+          params: {
+            'workspaceId': _i1.ParameterDescription(
+              name: 'workspaceId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['project'] as _i4.ProjectEndpoint).listByWorkspace(
+                    session,
+                    params['workspaceId'],
+                  ),
+        ),
+      },
+    );
     connectors['workspace'] = _i1.EndpointConnector(
       name: 'workspace',
       endpoint: endpoints['workspace']!,
@@ -127,7 +209,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['workspace'] as _i4.WorkspaceEndpoint).create(
+                  (endpoints['workspace'] as _i5.WorkspaceEndpoint).create(
                     session,
                     params['name'],
                   ),
@@ -151,7 +233,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['workspace'] as _i4.WorkspaceEndpoint).update(
+                  (endpoints['workspace'] as _i5.WorkspaceEndpoint).update(
                     session,
                     params['id'],
                     params['name'],
@@ -164,7 +246,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['workspace'] as _i4.WorkspaceEndpoint).list(
+              ) async => (endpoints['workspace'] as _i5.WorkspaceEndpoint).list(
                 session,
               ),
         ),
@@ -182,13 +264,69 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['workspace'] as _i4.WorkspaceEndpoint).getById(
+                  (endpoints['workspace'] as _i5.WorkspaceEndpoint).getById(
                     session,
                     params['id'],
                   ),
         ),
+        'addMember': _i1.MethodConnector(
+          name: 'addMember',
+          params: {
+            'workspaceId': _i1.ParameterDescription(
+              name: 'workspaceId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'role': _i1.ParameterDescription(
+              name: 'role',
+              type: _i1.getType<_i8.WorkspaceMemberRole>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['workspace'] as _i5.WorkspaceEndpoint).addMember(
+                    session,
+                    params['workspaceId'],
+                    params['userId'],
+                    params['role'],
+                  ),
+        ),
+        'removeMember': _i1.MethodConnector(
+          name: 'removeMember',
+          params: {
+            'workspaceId': _i1.ParameterDescription(
+              name: 'workspaceId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['workspace'] as _i5.WorkspaceEndpoint)
+                  .removeMember(
+                    session,
+                    params['workspaceId'],
+                    params['userId'],
+                  ),
+        ),
       },
     );
-    modules['serverpod_auth'] = _i7.Endpoints()..initializeEndpoints(server);
+    modules['serverpod_auth'] = _i9.Endpoints()..initializeEndpoints(server);
   }
 }

@@ -19,11 +19,16 @@ import 'package:devtasks_client/src/protocol/sign_in_result_dto.dart' as _i5;
 import 'package:devtasks_client/src/protocol/sign_in_dto.dart' as _i6;
 import 'package:devtasks_client/src/protocol/sign_out_result_dto.dart' as _i7;
 import 'package:devtasks_client/src/protocol/me_result_dto.dart' as _i8;
-import 'package:devtasks_client/src/protocol/workspace_result_dto.dart' as _i9;
-import 'package:devtasks_client/src/protocol/workspace_list_result_dto.dart'
+import 'package:devtasks_client/src/protocol/project_result_dto.dart' as _i9;
+import 'package:devtasks_client/src/protocol/project_list_result_dto.dart'
     as _i10;
-import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i11;
-import 'protocol.dart' as _i12;
+import 'package:devtasks_client/src/protocol/workspace_result_dto.dart' as _i11;
+import 'package:devtasks_client/src/protocol/workspace_list_result_dto.dart'
+    as _i12;
+import 'package:devtasks_client/src/protocol/workspace_member_role.dart'
+    as _i13;
+import 'package:serverpod_auth_client/serverpod_auth_client.dart' as _i14;
+import 'protocol.dart' as _i15;
 
 /// Endpoint de autenticação (cadastro, login e logout).
 ///
@@ -84,13 +89,62 @@ class EndpointMe extends _i1.EndpointRef {
       );
 }
 
+/// Endpoint de Projetos (UC-03.01 · F3.1).
+///
+/// Segurança (Gate 2.5):
+/// - Autenticação obrigatória via token de sessão (INV-SEC-16);
+/// - Identidade do autor extraída exclusivamente da sessão, nunca do payload (INV-SEC-06);
+/// - `INV-01`: não-membro recebe `ERR_NOT_FOUND` indistinguível de inexistente;
+/// - `INV-06`: criar/editar exige papel `owner` (via `ProjectService` + `MembershipGuard`).
+/// {@category Endpoint}
+class EndpointProject extends _i1.EndpointRef {
+  EndpointProject(_i1.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'project';
+
+  /// Cria um projeto no workspace informado (somente owner).
+  _i2.Future<_i9.ProjectResultDto> create(
+    int workspaceId,
+    String name,
+  ) => caller.callServerEndpoint<_i9.ProjectResultDto>(
+    'project',
+    'create',
+    {
+      'workspaceId': workspaceId,
+      'name': name,
+    },
+  );
+
+  /// Renomeia um projeto existente (somente owner do workspace do projeto).
+  _i2.Future<_i9.ProjectResultDto> update(
+    int id,
+    String name,
+  ) => caller.callServerEndpoint<_i9.ProjectResultDto>(
+    'project',
+    'update',
+    {
+      'id': id,
+      'name': name,
+    },
+  );
+
+  /// Lista os projetos ativos do workspace para qualquer membro (INV-01).
+  _i2.Future<_i10.ProjectListResultDto> listByWorkspace(int workspaceId) =>
+      caller.callServerEndpoint<_i10.ProjectListResultDto>(
+        'project',
+        'listByWorkspace',
+        {'workspaceId': workspaceId},
+      );
+}
+
 /// Endpoint de gerenciamento de Workspaces (UC-02.01).
 ///
 /// Segurança (Gate 2.5):
 /// - Autenticação obrigatória via `SessionAuthenticator` (INV-SEC-16);
 /// - Identidade do autor (`userId`) extraída exclusivamente da sessão (INV-SEC-06);
 /// - Isolamento multi-tenant: não-membro recebe ERR_NOT_FOUND indistinguível (INV-01);
-/// - Autorização por papel: apenas owner muta workspace (INV-06).
+/// - Autorização por papel: apenas owner muta workspace (INV-06 via `MembershipGuard`).
 /// {@category Endpoint}
 class EndpointWorkspace extends _i1.EndpointRef {
   EndpointWorkspace(_i1.EndpointCaller caller) : super(caller);
@@ -99,18 +153,18 @@ class EndpointWorkspace extends _i1.EndpointRef {
   String get name => 'workspace';
 
   /// Cria um novo workspace e vincula o usuário autenticado como owner.
-  _i2.Future<_i9.WorkspaceResultDto> create(String name) =>
-      caller.callServerEndpoint<_i9.WorkspaceResultDto>(
+  _i2.Future<_i11.WorkspaceResultDto> create(String name) =>
+      caller.callServerEndpoint<_i11.WorkspaceResultDto>(
         'workspace',
         'create',
         {'name': name},
       );
 
   /// Renomeia um workspace existente (apenas owner).
-  _i2.Future<_i9.WorkspaceResultDto> update(
+  _i2.Future<_i11.WorkspaceResultDto> update(
     int id,
     String name,
-  ) => caller.callServerEndpoint<_i9.WorkspaceResultDto>(
+  ) => caller.callServerEndpoint<_i11.WorkspaceResultDto>(
     'workspace',
     'update',
     {
@@ -120,28 +174,56 @@ class EndpointWorkspace extends _i1.EndpointRef {
   );
 
   /// Lista workspaces pertencentes ao usuário autenticado.
-  _i2.Future<_i10.WorkspaceListResultDto> list() =>
-      caller.callServerEndpoint<_i10.WorkspaceListResultDto>(
+  _i2.Future<_i12.WorkspaceListResultDto> list() =>
+      caller.callServerEndpoint<_i12.WorkspaceListResultDto>(
         'workspace',
         'list',
         {},
       );
 
   /// Consulta detalhes de um workspace específico.
-  _i2.Future<_i9.WorkspaceResultDto> getById(int id) =>
-      caller.callServerEndpoint<_i9.WorkspaceResultDto>(
+  _i2.Future<_i11.WorkspaceResultDto> getById(int id) =>
+      caller.callServerEndpoint<_i11.WorkspaceResultDto>(
         'workspace',
         'getById',
         {'id': id},
       );
+
+  /// Adiciona um membro a um workspace (INV-06 guard aplicado; Gate 2.5).
+  _i2.Future<_i11.WorkspaceResultDto> addMember(
+    int workspaceId,
+    String userId,
+    _i13.WorkspaceMemberRole role,
+  ) => caller.callServerEndpoint<_i11.WorkspaceResultDto>(
+    'workspace',
+    'addMember',
+    {
+      'workspaceId': workspaceId,
+      'userId': userId,
+      'role': role,
+    },
+  );
+
+  /// Remove um membro de um workspace (INV-06 guard aplicado; Gate 2.5).
+  _i2.Future<_i11.WorkspaceResultDto> removeMember(
+    int workspaceId,
+    String userId,
+  ) => caller.callServerEndpoint<_i11.WorkspaceResultDto>(
+    'workspace',
+    'removeMember',
+    {
+      'workspaceId': workspaceId,
+      'userId': userId,
+    },
+  );
 }
 
 class Modules {
   Modules(Client client) {
-    auth = _i11.Caller(client);
+    auth = _i14.Caller(client);
   }
 
-  late final _i11.Caller auth;
+  late final _i14.Caller auth;
 }
 
 class Client extends _i1.ServerpodClientShared {
@@ -164,7 +246,7 @@ class Client extends _i1.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i12.Protocol(),
+         _i15.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,
@@ -175,6 +257,7 @@ class Client extends _i1.ServerpodClientShared {
        ) {
     auth = EndpointAuth(this);
     me = EndpointMe(this);
+    project = EndpointProject(this);
     workspace = EndpointWorkspace(this);
     modules = Modules(this);
   }
@@ -182,6 +265,8 @@ class Client extends _i1.ServerpodClientShared {
   late final EndpointAuth auth;
 
   late final EndpointMe me;
+
+  late final EndpointProject project;
 
   late final EndpointWorkspace workspace;
 
@@ -191,6 +276,7 @@ class Client extends _i1.ServerpodClientShared {
   Map<String, _i1.EndpointRef> get endpointRefLookup => {
     'auth': auth,
     'me': me,
+    'project': project,
     'workspace': workspace,
   };
 

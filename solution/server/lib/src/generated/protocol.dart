@@ -14,23 +14,31 @@
 import 'package:serverpod/serverpod.dart' as _i1;
 import 'package:serverpod/protocol.dart' as _i2;
 import 'package:serverpod_auth_server/serverpod_auth_server.dart' as _i3;
-import 'devtasks_session.dart' as _i4;
-import 'devtasks_workspace.dart' as _i5;
-import 'devtasks_workspace_member.dart' as _i6;
-import 'me_result_dto.dart' as _i7;
-import 'sign_in_dto.dart' as _i8;
-import 'sign_in_result_dto.dart' as _i9;
-import 'sign_out_result_dto.dart' as _i10;
-import 'sign_up_dto.dart' as _i11;
-import 'sign_up_result_dto.dart' as _i12;
-import 'workspace_dto.dart' as _i13;
-import 'workspace_list_result_dto.dart' as _i14;
-import 'workspace_member_role.dart' as _i15;
-import 'workspace_result_dto.dart' as _i16;
+import 'devtasks_project.dart' as _i4;
+import 'devtasks_session.dart' as _i5;
+import 'devtasks_workspace.dart' as _i6;
+import 'devtasks_workspace_member.dart' as _i7;
+import 'me_result_dto.dart' as _i8;
+import 'project_dto.dart' as _i9;
+import 'project_list_result_dto.dart' as _i10;
+import 'project_result_dto.dart' as _i11;
+import 'sign_in_dto.dart' as _i12;
+import 'sign_in_result_dto.dart' as _i13;
+import 'sign_out_result_dto.dart' as _i14;
+import 'sign_up_dto.dart' as _i15;
+import 'sign_up_result_dto.dart' as _i16;
+import 'workspace_dto.dart' as _i17;
+import 'workspace_list_result_dto.dart' as _i18;
+import 'workspace_member_role.dart' as _i19;
+import 'workspace_result_dto.dart' as _i20;
+export 'devtasks_project.dart';
 export 'devtasks_session.dart';
 export 'devtasks_workspace.dart';
 export 'devtasks_workspace_member.dart';
 export 'me_result_dto.dart';
+export 'project_dto.dart';
+export 'project_list_result_dto.dart';
+export 'project_result_dto.dart';
 export 'sign_in_dto.dart';
 export 'sign_in_result_dto.dart';
 export 'sign_out_result_dto.dart';
@@ -49,6 +57,56 @@ class Protocol extends _i1.SerializationManagerServer {
   static final Protocol _instance = Protocol._();
 
   static final List<_i2.TableDefinition> targetTableDefinitions = [
+    _i2.TableDefinition(
+      name: 'devtasks_project',
+      dartName: 'DevtasksProject',
+      schema: 'public',
+      module: 'devtasks',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'nextval(\'devtasks_project_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'workspaceId',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'name',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+      ],
+      foreignKeys: [],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'devtasks_project_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        ),
+      ],
+      managed: true,
+    ),
     _i2.TableDefinition(
       name: 'devtasks_session',
       dartName: 'DevtasksSession',
@@ -267,98 +325,127 @@ class Protocol extends _i1.SerializationManagerServer {
       }
     }
 
-    if (t == _i4.DevtasksSession) {
-      return _i4.DevtasksSession.fromJson(data) as T;
+    if (t == _i4.DevtasksProject) {
+      return _i4.DevtasksProject.fromJson(data) as T;
     }
-    if (t == _i5.DevtasksWorkspace) {
-      return _i5.DevtasksWorkspace.fromJson(data) as T;
+    if (t == _i5.DevtasksSession) {
+      return _i5.DevtasksSession.fromJson(data) as T;
     }
-    if (t == _i6.DevtasksWorkspaceMember) {
-      return _i6.DevtasksWorkspaceMember.fromJson(data) as T;
+    if (t == _i6.DevtasksWorkspace) {
+      return _i6.DevtasksWorkspace.fromJson(data) as T;
     }
-    if (t == _i7.MeResultDto) {
-      return _i7.MeResultDto.fromJson(data) as T;
+    if (t == _i7.DevtasksWorkspaceMember) {
+      return _i7.DevtasksWorkspaceMember.fromJson(data) as T;
     }
-    if (t == _i8.SignInDto) {
-      return _i8.SignInDto.fromJson(data) as T;
+    if (t == _i8.MeResultDto) {
+      return _i8.MeResultDto.fromJson(data) as T;
     }
-    if (t == _i9.SignInResultDto) {
-      return _i9.SignInResultDto.fromJson(data) as T;
+    if (t == _i9.ProjectDto) {
+      return _i9.ProjectDto.fromJson(data) as T;
     }
-    if (t == _i10.SignOutResultDto) {
-      return _i10.SignOutResultDto.fromJson(data) as T;
+    if (t == _i10.ProjectListResultDto) {
+      return _i10.ProjectListResultDto.fromJson(data) as T;
     }
-    if (t == _i11.SignUpDto) {
-      return _i11.SignUpDto.fromJson(data) as T;
+    if (t == _i11.ProjectResultDto) {
+      return _i11.ProjectResultDto.fromJson(data) as T;
     }
-    if (t == _i12.SignUpResultDto) {
-      return _i12.SignUpResultDto.fromJson(data) as T;
+    if (t == _i12.SignInDto) {
+      return _i12.SignInDto.fromJson(data) as T;
     }
-    if (t == _i13.WorkspaceDto) {
-      return _i13.WorkspaceDto.fromJson(data) as T;
+    if (t == _i13.SignInResultDto) {
+      return _i13.SignInResultDto.fromJson(data) as T;
     }
-    if (t == _i14.WorkspaceListResultDto) {
-      return _i14.WorkspaceListResultDto.fromJson(data) as T;
+    if (t == _i14.SignOutResultDto) {
+      return _i14.SignOutResultDto.fromJson(data) as T;
     }
-    if (t == _i15.WorkspaceMemberRole) {
-      return _i15.WorkspaceMemberRole.fromJson(data) as T;
+    if (t == _i15.SignUpDto) {
+      return _i15.SignUpDto.fromJson(data) as T;
     }
-    if (t == _i16.WorkspaceResultDto) {
-      return _i16.WorkspaceResultDto.fromJson(data) as T;
+    if (t == _i16.SignUpResultDto) {
+      return _i16.SignUpResultDto.fromJson(data) as T;
     }
-    if (t == _i1.getType<_i4.DevtasksSession?>()) {
-      return (data != null ? _i4.DevtasksSession.fromJson(data) : null) as T;
+    if (t == _i17.WorkspaceDto) {
+      return _i17.WorkspaceDto.fromJson(data) as T;
     }
-    if (t == _i1.getType<_i5.DevtasksWorkspace?>()) {
-      return (data != null ? _i5.DevtasksWorkspace.fromJson(data) : null) as T;
+    if (t == _i18.WorkspaceListResultDto) {
+      return _i18.WorkspaceListResultDto.fromJson(data) as T;
     }
-    if (t == _i1.getType<_i6.DevtasksWorkspaceMember?>()) {
-      return (data != null ? _i6.DevtasksWorkspaceMember.fromJson(data) : null)
+    if (t == _i19.WorkspaceMemberRole) {
+      return _i19.WorkspaceMemberRole.fromJson(data) as T;
+    }
+    if (t == _i20.WorkspaceResultDto) {
+      return _i20.WorkspaceResultDto.fromJson(data) as T;
+    }
+    if (t == _i1.getType<_i4.DevtasksProject?>()) {
+      return (data != null ? _i4.DevtasksProject.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i5.DevtasksSession?>()) {
+      return (data != null ? _i5.DevtasksSession.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i6.DevtasksWorkspace?>()) {
+      return (data != null ? _i6.DevtasksWorkspace.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i7.DevtasksWorkspaceMember?>()) {
+      return (data != null ? _i7.DevtasksWorkspaceMember.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i7.MeResultDto?>()) {
-      return (data != null ? _i7.MeResultDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i8.MeResultDto?>()) {
+      return (data != null ? _i8.MeResultDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i8.SignInDto?>()) {
-      return (data != null ? _i8.SignInDto.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i9.ProjectDto?>()) {
+      return (data != null ? _i9.ProjectDto.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i9.SignInResultDto?>()) {
-      return (data != null ? _i9.SignInResultDto.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i10.SignOutResultDto?>()) {
-      return (data != null ? _i10.SignOutResultDto.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i11.SignUpDto?>()) {
-      return (data != null ? _i11.SignUpDto.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i12.SignUpResultDto?>()) {
-      return (data != null ? _i12.SignUpResultDto.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i13.WorkspaceDto?>()) {
-      return (data != null ? _i13.WorkspaceDto.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i14.WorkspaceListResultDto?>()) {
-      return (data != null ? _i14.WorkspaceListResultDto.fromJson(data) : null)
+    if (t == _i1.getType<_i10.ProjectListResultDto?>()) {
+      return (data != null ? _i10.ProjectListResultDto.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i15.WorkspaceMemberRole?>()) {
-      return (data != null ? _i15.WorkspaceMemberRole.fromJson(data) : null)
+    if (t == _i1.getType<_i11.ProjectResultDto?>()) {
+      return (data != null ? _i11.ProjectResultDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i12.SignInDto?>()) {
+      return (data != null ? _i12.SignInDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i13.SignInResultDto?>()) {
+      return (data != null ? _i13.SignInResultDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i14.SignOutResultDto?>()) {
+      return (data != null ? _i14.SignOutResultDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i15.SignUpDto?>()) {
+      return (data != null ? _i15.SignUpDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i16.SignUpResultDto?>()) {
+      return (data != null ? _i16.SignUpResultDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i17.WorkspaceDto?>()) {
+      return (data != null ? _i17.WorkspaceDto.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i18.WorkspaceListResultDto?>()) {
+      return (data != null ? _i18.WorkspaceListResultDto.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i16.WorkspaceResultDto?>()) {
-      return (data != null ? _i16.WorkspaceResultDto.fromJson(data) : null)
+    if (t == _i1.getType<_i19.WorkspaceMemberRole?>()) {
+      return (data != null ? _i19.WorkspaceMemberRole.fromJson(data) : null)
           as T;
     }
-    if (t == List<_i13.WorkspaceDto>) {
+    if (t == _i1.getType<_i20.WorkspaceResultDto?>()) {
+      return (data != null ? _i20.WorkspaceResultDto.fromJson(data) : null)
+          as T;
+    }
+    if (t == List<_i9.ProjectDto>) {
+      return (data as List).map((e) => deserialize<_i9.ProjectDto>(e)).toList()
+          as T;
+    }
+    if (t == List<_i17.WorkspaceDto>) {
       return (data as List)
-              .map((e) => deserialize<_i13.WorkspaceDto>(e))
+              .map((e) => deserialize<_i17.WorkspaceDto>(e))
               .toList()
           as T;
     }
-    if (t == _i1.getType<List<_i13.WorkspaceDto>?>()) {
+    if (t == _i1.getType<List<_i17.WorkspaceDto>?>()) {
       return (data != null
               ? (data as List)
-                    .map((e) => deserialize<_i13.WorkspaceDto>(e))
+                    .map((e) => deserialize<_i17.WorkspaceDto>(e))
                     .toList()
               : null)
           as T;
@@ -374,19 +461,23 @@ class Protocol extends _i1.SerializationManagerServer {
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
-      _i4.DevtasksSession => 'DevtasksSession',
-      _i5.DevtasksWorkspace => 'DevtasksWorkspace',
-      _i6.DevtasksWorkspaceMember => 'DevtasksWorkspaceMember',
-      _i7.MeResultDto => 'MeResultDto',
-      _i8.SignInDto => 'SignInDto',
-      _i9.SignInResultDto => 'SignInResultDto',
-      _i10.SignOutResultDto => 'SignOutResultDto',
-      _i11.SignUpDto => 'SignUpDto',
-      _i12.SignUpResultDto => 'SignUpResultDto',
-      _i13.WorkspaceDto => 'WorkspaceDto',
-      _i14.WorkspaceListResultDto => 'WorkspaceListResultDto',
-      _i15.WorkspaceMemberRole => 'WorkspaceMemberRole',
-      _i16.WorkspaceResultDto => 'WorkspaceResultDto',
+      _i4.DevtasksProject => 'DevtasksProject',
+      _i5.DevtasksSession => 'DevtasksSession',
+      _i6.DevtasksWorkspace => 'DevtasksWorkspace',
+      _i7.DevtasksWorkspaceMember => 'DevtasksWorkspaceMember',
+      _i8.MeResultDto => 'MeResultDto',
+      _i9.ProjectDto => 'ProjectDto',
+      _i10.ProjectListResultDto => 'ProjectListResultDto',
+      _i11.ProjectResultDto => 'ProjectResultDto',
+      _i12.SignInDto => 'SignInDto',
+      _i13.SignInResultDto => 'SignInResultDto',
+      _i14.SignOutResultDto => 'SignOutResultDto',
+      _i15.SignUpDto => 'SignUpDto',
+      _i16.SignUpResultDto => 'SignUpResultDto',
+      _i17.WorkspaceDto => 'WorkspaceDto',
+      _i18.WorkspaceListResultDto => 'WorkspaceListResultDto',
+      _i19.WorkspaceMemberRole => 'WorkspaceMemberRole',
+      _i20.WorkspaceResultDto => 'WorkspaceResultDto',
       _ => null,
     };
   }
@@ -401,31 +492,39 @@ class Protocol extends _i1.SerializationManagerServer {
     }
 
     switch (data) {
-      case _i4.DevtasksSession():
+      case _i4.DevtasksProject():
+        return 'DevtasksProject';
+      case _i5.DevtasksSession():
         return 'DevtasksSession';
-      case _i5.DevtasksWorkspace():
+      case _i6.DevtasksWorkspace():
         return 'DevtasksWorkspace';
-      case _i6.DevtasksWorkspaceMember():
+      case _i7.DevtasksWorkspaceMember():
         return 'DevtasksWorkspaceMember';
-      case _i7.MeResultDto():
+      case _i8.MeResultDto():
         return 'MeResultDto';
-      case _i8.SignInDto():
+      case _i9.ProjectDto():
+        return 'ProjectDto';
+      case _i10.ProjectListResultDto():
+        return 'ProjectListResultDto';
+      case _i11.ProjectResultDto():
+        return 'ProjectResultDto';
+      case _i12.SignInDto():
         return 'SignInDto';
-      case _i9.SignInResultDto():
+      case _i13.SignInResultDto():
         return 'SignInResultDto';
-      case _i10.SignOutResultDto():
+      case _i14.SignOutResultDto():
         return 'SignOutResultDto';
-      case _i11.SignUpDto():
+      case _i15.SignUpDto():
         return 'SignUpDto';
-      case _i12.SignUpResultDto():
+      case _i16.SignUpResultDto():
         return 'SignUpResultDto';
-      case _i13.WorkspaceDto():
+      case _i17.WorkspaceDto():
         return 'WorkspaceDto';
-      case _i14.WorkspaceListResultDto():
+      case _i18.WorkspaceListResultDto():
         return 'WorkspaceListResultDto';
-      case _i15.WorkspaceMemberRole():
+      case _i19.WorkspaceMemberRole():
         return 'WorkspaceMemberRole';
-      case _i16.WorkspaceResultDto():
+      case _i20.WorkspaceResultDto():
         return 'WorkspaceResultDto';
     }
     className = _i2.Protocol().getClassNameForObject(data);
@@ -445,44 +544,56 @@ class Protocol extends _i1.SerializationManagerServer {
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
     }
+    if (dataClassName == 'DevtasksProject') {
+      return deserialize<_i4.DevtasksProject>(data['data']);
+    }
     if (dataClassName == 'DevtasksSession') {
-      return deserialize<_i4.DevtasksSession>(data['data']);
+      return deserialize<_i5.DevtasksSession>(data['data']);
     }
     if (dataClassName == 'DevtasksWorkspace') {
-      return deserialize<_i5.DevtasksWorkspace>(data['data']);
+      return deserialize<_i6.DevtasksWorkspace>(data['data']);
     }
     if (dataClassName == 'DevtasksWorkspaceMember') {
-      return deserialize<_i6.DevtasksWorkspaceMember>(data['data']);
+      return deserialize<_i7.DevtasksWorkspaceMember>(data['data']);
     }
     if (dataClassName == 'MeResultDto') {
-      return deserialize<_i7.MeResultDto>(data['data']);
+      return deserialize<_i8.MeResultDto>(data['data']);
+    }
+    if (dataClassName == 'ProjectDto') {
+      return deserialize<_i9.ProjectDto>(data['data']);
+    }
+    if (dataClassName == 'ProjectListResultDto') {
+      return deserialize<_i10.ProjectListResultDto>(data['data']);
+    }
+    if (dataClassName == 'ProjectResultDto') {
+      return deserialize<_i11.ProjectResultDto>(data['data']);
     }
     if (dataClassName == 'SignInDto') {
-      return deserialize<_i8.SignInDto>(data['data']);
+      return deserialize<_i12.SignInDto>(data['data']);
     }
     if (dataClassName == 'SignInResultDto') {
-      return deserialize<_i9.SignInResultDto>(data['data']);
+      return deserialize<_i13.SignInResultDto>(data['data']);
     }
     if (dataClassName == 'SignOutResultDto') {
-      return deserialize<_i10.SignOutResultDto>(data['data']);
+      return deserialize<_i14.SignOutResultDto>(data['data']);
     }
     if (dataClassName == 'SignUpDto') {
-      return deserialize<_i11.SignUpDto>(data['data']);
+      return deserialize<_i15.SignUpDto>(data['data']);
     }
     if (dataClassName == 'SignUpResultDto') {
-      return deserialize<_i12.SignUpResultDto>(data['data']);
+      return deserialize<_i16.SignUpResultDto>(data['data']);
     }
     if (dataClassName == 'WorkspaceDto') {
-      return deserialize<_i13.WorkspaceDto>(data['data']);
+      return deserialize<_i17.WorkspaceDto>(data['data']);
     }
     if (dataClassName == 'WorkspaceListResultDto') {
-      return deserialize<_i14.WorkspaceListResultDto>(data['data']);
+      return deserialize<_i18.WorkspaceListResultDto>(data['data']);
     }
     if (dataClassName == 'WorkspaceMemberRole') {
-      return deserialize<_i15.WorkspaceMemberRole>(data['data']);
+      return deserialize<_i19.WorkspaceMemberRole>(data['data']);
     }
     if (dataClassName == 'WorkspaceResultDto') {
-      return deserialize<_i16.WorkspaceResultDto>(data['data']);
+      return deserialize<_i20.WorkspaceResultDto>(data['data']);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);
@@ -510,12 +621,14 @@ class Protocol extends _i1.SerializationManagerServer {
       }
     }
     switch (t) {
-      case _i4.DevtasksSession:
-        return _i4.DevtasksSession.t;
-      case _i5.DevtasksWorkspace:
-        return _i5.DevtasksWorkspace.t;
-      case _i6.DevtasksWorkspaceMember:
-        return _i6.DevtasksWorkspaceMember.t;
+      case _i4.DevtasksProject:
+        return _i4.DevtasksProject.t;
+      case _i5.DevtasksSession:
+        return _i5.DevtasksSession.t;
+      case _i6.DevtasksWorkspace:
+        return _i6.DevtasksWorkspace.t;
+      case _i7.DevtasksWorkspaceMember:
+        return _i7.DevtasksWorkspaceMember.t;
     }
     return null;
   }

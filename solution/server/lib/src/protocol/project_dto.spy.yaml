@@ -1,0 +1,6 @@
+class: ProjectDto
+fields:
+  id: int
+  workspaceId: int
+  name: String
+  createdAt: DateTime

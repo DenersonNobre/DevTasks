@@ -1,0 +1,6 @@
+class: ProjectListResultDto
+fields:
+  success: bool
+  projects: List<ProjectDto>
+  errorCode: String?
+  message: String?
