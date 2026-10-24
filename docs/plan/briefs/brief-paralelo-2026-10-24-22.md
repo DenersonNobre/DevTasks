@@ -26,7 +26,15 @@ Paths: `solution/api/migrations/**`, `solution/api/lib/src/db/**`, `tools/db.ps1
 Entrega: 5 tabelas em migrations versionadas idempotentes, pool `postgres`, migrator com ordem
 determinística, `tools/db.ps1` (`up|status|reset`), repositórios SQL **não** (ficam no 08.03/04/05).
 
-### Agente B (outro) — `UC-08.03a` Port dos módulos puros
+### Agente B (outro) — `UC-08.03` (parte 1: port dos módulos puros)
+
+> **Atenção ao claim**: o validador aceita apenas `UC-XX.YY` — sufixos como `08.03a` são rejeitados
+> (`[CLAIMS-ERROR] Slice inválido`). Registre o claim como **`UC-08.03`** e trate "parte 1/parte 2"
+> apenas como recorte de paths neste brief:
+>
+> ```powershell
+> .\tools\bin\claims.ps1 claim -Slice UC-08.03 -Owner "<agente>" -Ttl 120 -Paths "solution/api/lib/src/modules/auth","solution/api/test/unit/modules/auth"
+> ```
 
 Paths: `solution/api/lib/src/modules/**`, `solution/api/test/unit/modules/**`.
 

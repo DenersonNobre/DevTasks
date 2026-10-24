@@ -5,47 +5,42 @@
 
 ## UC corrente
 
-**UC-08.02** — Persistência (migrations + pool + runner) · `EPIC-08 · F8.2`. Status: **Concluído ✅ (com pendência declarada)**.
+**UC-08.03** — Auth no servidor shelf (parte 1: módulos puros). Status: **Concluído ✅** (parte 2 = repositórios SQL + rotas, pendente).
 
-**Gate 2.5: PULADO** — schema novo, sem superfície de auth. Cercas de invariante aplicadas no DDL
-(`UNIQUE (email)` INV-08, `CHECK role` INV-06, `UNIQUE (workspace_id,user_id)` INV-09, FKs `ON DELETE CASCADE` INV-01).
+**Gate 2.5: PULADO nesta parte** — porte sem alteração de lógica; as invariantes de segurança
+(`INV-SEC-04/05/08/10/13/16/17`) são cobertas pelos testes portados e permanecem asserções executáveis.
 
-## Escopo (DoD da F8.2)
+## Escopo (parte 1 do UC-08.03)
 
-- [x] `migrations/0001_initial.sql` com as 5 tabelas + índices + cercas de invariante.
-- [x] `loadMigrations` determinístico (`<versao>_<nome>.sql`), recusa versão duplicada/não numérica.
-- [x] `Migrator.up()` idempotente, ordem por versão, `skipped` correto.
-- [x] `SqlMigrationStore` em `schema_migrations` (`ON CONFLICT DO NOTHING`).
-- [x] `tools/db.ps1` (`up|status|reset`, reset exige `-Force` + `DEVTASKS_ALLOW_RESET=true`).
-- [ ] **Prova contra Postgres real** — bloqueada: não há banco na máquina. Teste de integração existe
-      e é **declaradamente pulado** sem `DEVTASKS_TEST_DATABASE_URL`. Nada de "validado" sem isso.
+- [x] 9 arquivos portados: `argon2_password_hasher`, `rate_limiter`, `session_guard`, `sign_in_handler`,
+      `sign_up_handler`, `session_service` (ex-`serverpod_session_service`), `ports`, `domain/email`, `domain/password`.
+- [x] 6 arquivos de teste em `test/unit/modules/auth/` (inclui `session_service_test` novo e `sign_up_handler_test` portado).
+- [x] Zero imports de `serverpod`/`devtasks_client`/`flutter` no módulo (verificado por grep).
+- [ ] Parte 2: `UserRepository`/`SessionRepository` SQL + rotas HTTP + `Bearer` middleware.
 
-## Interfaces & Portas
+## Coordenação — dois fatos que custaram tempo (registrados)
 
-- `SqlExecutor` (`execute`/`query`) + `PgSqlExecutor` + `openPool(dsn)`.
-- `MigrationStore` (`ensureReady`/`appliedVersions`/`markApplied`) + `SqlMigrationStore`.
-- `Migrator({sql, store, migrations})` → `MigrationReport(applied, skipped)`.
-- `loadMigrations(Directory)` → `List<Migration>`, com `MigrationFormatException`.
-
-## Bug encontrado e corrigido (pelo teste)
-
-`MigrationReport.skipped` lia o tamanho da coleção **viva** devolvida pelo store (aliasing): após
-marcar, `skipped` virava o total. Corrigido com snapshot (`{...appliedVersions()}`) e cálculo antes do
-loop. O teste que pegou isso permanece (migrator: "aplica pendentes em ordem...").
+1. **`claims` rejeita sufixo**: só aceita `UC-XX.YY`. `UC-08.03a` → `[CLAIMS-ERROR] Slice inválido`.
+   Sub-fatias agora são recorte de *paths* no brief, nunca no ID.
+2. **Claim preso no próprio subagente**: o agente `coder` reservou `UC-08.03` e terminou sem liberar.
+   O orquestrador liberou explicitamente (`release`) antes de reclamar — decisão declarada, não
+   auto-reap silencioso.
+3. **Continuação de linha com backtick no PowerShell** quebrou o comando do brief-23: `-Paths` virou
+   argumento posicional literal. Comando de claim agora é linha única.
 
 ## Evidência
 
 ```text
-[EVIDÊNCIA] (UC-08.02)
-- Verificação: dart analyze lib/src/db bin/migrate.dart test/unit/db test/integration/db → No issues found.
-- Confirmação: dart test test/unit/db → 20/20 passed.
-- Cobertura: ordem por versão, skip de aplicadas, idempotência, duplicata recusada, loader (padrão,
-  ordenação, arquivo inválido, versão não numérica, diretório ausente), DDL (5 tabelas + cercas).
-- Pendente: integração real (skip explícito sem DEVTASKS_TEST_DATABASE_URL).
+[EVIDÊNCIA] (UC-08.03 · parte 1)
+- Verificação: grep de imports proibidos em lib/src/modules/auth → nenhum resultado.
+- Verificação: dart analyze lib/src/modules/auth test/unit/modules/auth lib/devtasks_api.dart → No issues found.
+- Confirmação: dart test test/unit/modules/auth → 50/50 passed.
+- Defeito encontrado e corrigido: teste de CSPRNG usava TokenGenerator(Random(42)) e asseria tokens
+  distintos — fixture incoerente. Passou a usar o gerador seguro real; a propriedade agora é provada.
 ```
 
 ## Próximo passo
 
-1. **`UC-08.03a` em voo** (Agente B): port do módulo auth base para `solution/api/lib/src/modules/auth/**`.
-2. Depois: `08.03b` repositórios SQL + rotas → `08.04` → `08.05` → `08.06b` (gate de contrato) → `08.07` (app) → `08.08`.
-3. **Bloqueio transversal**: para validar persistência e E2E precisamos de Postgres (Docker, binário portátil sem admin, ou hospedado).
+1. **`UC-08.03` parte 2** (repositórios SQL + rotas de auth) — depende de Postgres para prova real.
+2. **`UC-08.04`** (Agente C, em voo): port de workspace/projects puros.
+3. Bloqueio transversal: Postgres ausente ⇒ sem prova de persistência/E2E.

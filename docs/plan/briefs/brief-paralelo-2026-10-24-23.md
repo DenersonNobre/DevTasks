@@ -10,13 +10,16 @@ com testes. É porte mecânico + **uma** adaptação declarada (`WorkspaceEntity
 
 ### 1.1 Claim (primeiro comando do Agente C)
 
+> O validador aceita apenas `UC-XX.YY`. Use **`UC-08.04`** (não `UC-08.04a`) e passe os paths numa
+> única linha, separados por vírgula — continuação de linha com backtick no PowerShell quebra o
+> comando (o `-Paths` vira argumento posicional).
+
 ```powershell
-.\tools\bin\claims.ps1 claim -Slice UC-08.04a -Owner "agent-c" -Ttl 120 `
-  -Paths "solution/api/lib/src/modules/workspace","solution/api/lib/src/modules/projects","solution/api/test/unit/modules/workspace","solution/api/test/unit/modules/projects"
+.\tools\bin\claims.ps1 claim -Slice UC-08.04 -Owner "agent-c" -Ttl 120 -Paths "solution/api/lib/src/modules/workspace,solution/api/lib/src/modules/projects,solution/api/test/unit/modules/workspace,solution/api/test/unit/modules/projects"
 ```
 
 Exit `2` = fatia tomada por outro agente: **aborte**, não edite nada.
-Ao terminar (testes verdes), o orquestrador libera com `claims.ps1 release -Slice UC-08.04a`.
+Ao terminar (testes verdes), o orquestrador libera com `claims.ps1 release -Slice UC-08.04`.
 
 ## 2. Paths exclusivos do Agente C (não escrever fora)
 
