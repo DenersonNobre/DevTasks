@@ -4,9 +4,9 @@ import 'package:devtasks_app/global/kernel/failures.dart';
 import 'package:devtasks_app/global/kernel/result.dart';
 import 'package:devtasks_app/modules/auth/domain/auth_client.dart';
 
-/// Fake da porta `AuthClient`: configura o resultado, conta chamadas e permite
+/// Fake da porta `IAuthClient`: configura o resultado, conta chamadas e permite
 /// segurar a resposta com [pendingSignIn] para observar o estado de carregamento.
-final class FakeAuthClient implements AuthClient {
+final class FakeAuthClient implements IAuthClient {
   IResult<AuthSession, IFailure>? signInResult;
   IResult<String, IFailure>? signUpResult;
   Completer<IResult<AuthSession, IFailure>>? pendingSignIn;

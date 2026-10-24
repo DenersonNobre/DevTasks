@@ -4,4 +4,4 @@
 
 export 'session_controller.dart' show SessionController, SessionState, SessionStatus;
 export 'session_providers.dart' show sessionControllerProvider, sessionStoreProvider;
-export 'session_store.dart' show SessionStore;
+export 'session_store.dart' show ISessionStore, SessionStore;

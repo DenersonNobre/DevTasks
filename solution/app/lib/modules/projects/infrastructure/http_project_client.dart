@@ -12,7 +12,7 @@ import 'package:devtasks_app/modules/projects/domain/project_summary.dart';
 import 'package:http/http.dart' as http;
 
 /// Cliente HTTP do contrato de projetos.
-class HttpProjectClient implements ProjectClient {
+class HttpProjectClient implements IProjectClient {
   HttpProjectClient({http.Client? client, String? baseUrl})
       : _client = client ?? http.Client(),
         _baseUrl = _normalize(

@@ -7,6 +7,6 @@ import '../domain/project_client.dart';
 import 'http_project_client.dart';
 
 /// Instancia o adaptador HTTP por padrão; testes sobrescrevem com fake.
-final projectClientProvider = Provider<ProjectClient>(
+final projectClientProvider = Provider<IProjectClient>(
   (_) => HttpProjectClient(),
 );

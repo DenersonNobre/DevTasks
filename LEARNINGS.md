@@ -15,6 +15,16 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-24 — Padronização de Interfaces com Prefixo 'I' no App Flutter (Convenção do Oráculo)
+
+- **Sintoma**: Portas e abstrações puras de `solution/app` (`AuthClient`, `ProjectClient`, `SessionStore`, `SecureKeyValueStore`, `BaseFailure`, `EntityId`) não continham o prefixo `'I'`, gerando assimetria com as regras de Dart do usuário documentadas em `~/.agents/rules/topics/flutter.md`.
+- **Causa raiz**: Nomenclatura inicial inspirada no Effective Dart (sem prefixo húngaro), superada pela convenção explícita de arquitetura do Oráculo (`I-` para abstrações e interfaces puras).
+- **Fix**:
+  1. Renomeadas para prefixo `I`: `IAuthClient`, `IProjectClient`, `ISessionStore`, `ISecureKeyValueStore`, `IBaseFailure`, `IEntityId`.
+  2. Adicionados aliases retrocompatíveis (`typedef`) para evitar quebras em consumidores legados.
+  3. Atualizados adaptadores (`HttpAuthClient`, `HttpProjectClient`, `SecureSessionStore`, `FlutterSecureKeyValueStore`), providers Riverpod e fakes de testes.
+- **Prevenção**: Suíte de testes unitários do app garante 100% verde com as novas interfaces tipadas.
+
 ## 2026-10-24 — Padronização de Interfaces com Prefixo 'I' no Módulo API (Convenção do Oráculo)
 
 - **Sintoma**: Classes abstratas e interfaces puras na camada de portas e infraestrutura de `solution/api` estavam sem o prefixo `'I'` (ex.: `WorkspaceRepository`, `ProjectRepository`, `SqlExecutor`, `UserRepository`), divergindo da convenção arquitetural do Oráculo.

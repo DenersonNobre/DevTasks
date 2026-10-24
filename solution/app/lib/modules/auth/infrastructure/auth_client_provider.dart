@@ -7,6 +7,6 @@ import '../domain/auth_client.dart';
 import 'http_auth_client.dart';
 
 /// Instancia o adaptador HTTP por padrão; testes sobrescrevem com fake.
-final authClientProvider = Provider<AuthClient>(
+final authClientProvider = Provider<IAuthClient>(
   (_) => HttpAuthClient(),
 );

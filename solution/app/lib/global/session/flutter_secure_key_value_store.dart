@@ -2,8 +2,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'secure_session_store.dart';
 
-/// Adaptador real que implementa [SecureKeyValueStore] usando [FlutterSecureStorage].
-class FlutterSecureKeyValueStore implements SecureKeyValueStore {
+/// Adaptador real que implementa [ISecureKeyValueStore] usando [FlutterSecureStorage].
+class FlutterSecureKeyValueStore implements ISecureKeyValueStore {
   const FlutterSecureKeyValueStore([FlutterSecureStorage? storage])
       : _storage = storage ?? const FlutterSecureStorage();
 

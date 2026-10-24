@@ -6,8 +6,8 @@ import 'package:devtasks_app/modules/projects/domain/project_summary.dart';
 /// UUID determinístico para testes.
 String uuid(int n) => '00000000-0000-4000-8000-${n.toString().padLeft(12, '0')}';
 
-/// Fake da porta `ProjectClient`: configura resultados e conta chamadas.
-final class FakeProjectClient implements ProjectClient {
+/// Fake da porta `IProjectClient`: configura resultados e conta chamadas.
+final class FakeProjectClient implements IProjectClient {
   IResult<List<ProjectSummary>, IFailure>? listResult;
   IResult<ProjectSummary, IFailure>? createResult;
   IResult<ProjectSummary, IFailure>? renameResult;

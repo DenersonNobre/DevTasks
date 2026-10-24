@@ -52,7 +52,7 @@ void main() {
   });
 }
 
-class _NoStore implements SessionStore {
+class _NoStore implements ISessionStore {
   String? token;
 
   @override

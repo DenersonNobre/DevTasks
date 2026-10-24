@@ -6,15 +6,15 @@ import 'failures.dart';
 import 'result.dart';
 
 /// Base para identificadores fortemente tipados.
-abstract class EntityId<T> {
+abstract class IEntityId<T> {
   final T value;
 
-  const EntityId(this.value);
+  const IEntityId(this.value);
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is EntityId<T> &&
+      other is IEntityId<T> &&
           runtimeType == other.runtimeType &&
           value == other.value;
 
@@ -24,6 +24,9 @@ abstract class EntityId<T> {
   @override
   String toString() => '$runtimeType($value)';
 }
+
+/// Alias para manter compatibilidade com implementações existentes.
+typedef EntityId<T> = IEntityId<T>;
 
 /// Identificador de Usuário (UUID — `D-08`).
 class UserId extends EntityId<String> {

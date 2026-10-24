@@ -15,7 +15,7 @@ import 'package:http/http.dart' as http;
 /// Segurança (Gate 2.5):
 /// - token só trafega em header `Authorization: Bearer` (INV-SEC-16);
 /// - nenhum corpo/token é logado (INV-SEC-05).
-class HttpAuthClient implements AuthClient {
+class HttpAuthClient implements IAuthClient {
   HttpAuthClient({http.Client? client, String? baseUrl})
       : _client = client ?? http.Client(),
         _baseUrl = _normalize(

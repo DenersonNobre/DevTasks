@@ -12,7 +12,7 @@ import 'project_summary.dart';
 ///
 /// O `token` é explícito porque a sessão é estado transversal (`global/session/`),
 /// nunca responsabilidade do slice (INV-SEC-16: header Bearer).
-abstract interface class ProjectClient {
+abstract interface class IProjectClient {
   Future<IResult<List<ProjectSummary>, IFailure>> listByWorkspace({
     required String workspaceId,
     required String token,
@@ -30,3 +30,6 @@ abstract interface class ProjectClient {
     required String token,
   });
 }
+
+/// Alias retrocompatível com a nomenclatura anterior.
+typedef ProjectClient = IProjectClient;

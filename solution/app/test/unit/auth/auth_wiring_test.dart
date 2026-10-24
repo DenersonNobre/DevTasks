@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-class _FakeKeyValueStore implements SecureKeyValueStore {
+class _FakeKeyValueStore implements ISecureKeyValueStore {
   final Map<String, String> data = {};
 
   @override

@@ -6,12 +6,12 @@ import 'session_controller.dart';
 import 'session_store.dart';
 
 /// Provider da porta fina de chave-valor segura.
-final secureKeyValueStoreProvider = Provider<SecureKeyValueStore>(
+final secureKeyValueStoreProvider = Provider<ISecureKeyValueStore>(
   (_) => const FlutterSecureKeyValueStore(),
 );
 
 /// Provider do adaptador de persistência de sessão.
-final sessionStoreProvider = Provider<SessionStore>(
+final sessionStoreProvider = Provider<ISessionStore>(
   (ref) => SecureSessionStore(ref.watch(secureKeyValueStoreProvider)),
 );
 

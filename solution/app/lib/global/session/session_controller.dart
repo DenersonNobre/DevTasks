@@ -22,14 +22,14 @@ class SessionState {
   String toString() => 'SessionState(${status.name})';
 }
 
-/// Controla a sessão do app: restaura no boot e persiste no [SessionStore].
+/// Controla a sessão do app: restaura no boot e persiste no [ISessionStore].
 ///
 /// Puro Flutter (sem I/O direto): a prova de "sobrevive a restart" é um novo
 /// controlador lendo o mesmo store injetado.
 class SessionController extends ChangeNotifier {
   SessionController(this._store);
 
-  final SessionStore _store;
+  final ISessionStore _store;
 
   SessionState _state = const SessionState.signedOut();
 

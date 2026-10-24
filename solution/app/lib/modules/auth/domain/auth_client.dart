@@ -29,7 +29,7 @@ final class AuthSession {
 }
 
 /// Contrato de autenticação: falha esperada é valor tipado, não exceção.
-abstract interface class AuthClient {
+abstract interface class IAuthClient {
   Future<IResult<AuthSession, IFailure>> signIn({
     required String email,
     required String password,
@@ -44,3 +44,6 @@ abstract interface class AuthClient {
 
   Future<IResult<void, IFailure>> signOut(String token);
 }
+
+/// Alias retrocompatível com a nomenclatura anterior.
+typedef AuthClient = IAuthClient;

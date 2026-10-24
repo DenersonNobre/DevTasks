@@ -8,19 +8,19 @@ abstract interface class IFailure {
 }
 
 /// Base concreta reutilizável para falhas de domínio.
-abstract class BaseFailure implements IFailure {
+abstract class IBaseFailure implements IFailure {
   @override
   final String code;
 
   @override
   final String message;
 
-  const BaseFailure({required this.code, required this.message});
+  const IBaseFailure({required this.code, required this.message});
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is BaseFailure &&
+      other is IBaseFailure &&
           runtimeType == other.runtimeType &&
           code == other.code &&
           message == other.message;
@@ -31,6 +31,9 @@ abstract class BaseFailure implements IFailure {
   @override
   String toString() => '$code: $message';
 }
+
+/// Alias para manter compatibilidade com implementações existentes.
+typedef BaseFailure = IBaseFailure;
 
 /// ERR_VALIDATION: Entrada inválida (campos obrigatórios, limites, formatos).
 class ValidationFailure extends BaseFailure {
