@@ -1,11 +1,8 @@
 // solution/app/lib/modules/projects/domain/project_summary.dart
 // VO de leitura de projeto no app (D-07 / UC-03.01).
-// SRP: representar um projeto exibível. NÃO conhece DTO, HTTP nem sessão.
-
-import 'package:flutter/foundation.dart';
+// SRP: representar um projeto exibível. NÃO conhece DTO, HTTP, sessão nem Flutter (DIP).
 
 /// Projeto exibível na listagem do workspace.
-@immutable
 final class ProjectSummary {
   const ProjectSummary({
     required this.id,
