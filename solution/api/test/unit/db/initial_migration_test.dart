@@ -32,6 +32,11 @@ void main() {
       }
     });
 
+    test('ids são UUID e não sequenciais (contrato OpenAPI format: uuid)', () {
+      expect(sql, contains('id            uuid        PRIMARY KEY DEFAULT gen_random_uuid()'));
+      expect(sql, isNot(contains('bigserial')));
+    });
+
     test('e-mail é único (INV-08)', () {
       expect(sql, contains('UNIQUE (email)'));
     });
@@ -40,7 +45,7 @@ void main() {
       expect(sql, contains('UNIQUE (token_hash)'));
       expect(
         sql,
-        contains('user_id    bigint      NOT NULL REFERENCES devtasks_user (id)'),
+        contains('user_id    uuid        NOT NULL REFERENCES devtasks_user (id)'),
       );
     });
 
@@ -55,7 +60,7 @@ void main() {
     test('projeto referencia workspace com cascata (INV-01)', () {
       expect(
         sql,
-        contains('workspace_id bigint NOT NULL REFERENCES devtasks_workspace (id) ON DELETE CASCADE'),
+        contains('workspace_id uuid        NOT NULL REFERENCES devtasks_workspace (id) ON DELETE CASCADE'),
       );
     });
 

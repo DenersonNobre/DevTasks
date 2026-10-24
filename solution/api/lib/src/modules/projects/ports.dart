@@ -22,4 +22,3 @@ abstract interface class ProjectRepository {
   /// Lista os projetos ativos de um workspace.
   Future<List<ProjectEntity>> listActiveByWorkspace(int workspaceId);
 }
-

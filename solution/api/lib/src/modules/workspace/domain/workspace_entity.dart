@@ -1,19 +1,21 @@
 import 'workspace_member_role.dart';
 
 /// Entidade de domínio representando o Workspace (SPEC §4.1).
+///
+/// O id segue o contrato OpenAPI (formato uuid) — identificado por String.
 class WorkspaceEntity {
   const WorkspaceEntity({
     required this.id,
     required this.name,
-    this.createdAt,
+    required this.createdAt,
   });
 
-  final int id;
+  final String id;
   final String name;
-  final DateTime? createdAt;
+  final DateTime createdAt;
 }
 
-/// Agregação de Workspace com o papel do usuário no contexto atual (D-02 / OpenAPI 3.1).
+/// Agregação de Workspace com o papel do usuário no contexto atual.
 class WorkspaceWithRole {
   const WorkspaceWithRole({
     required this.workspace,
@@ -23,13 +25,13 @@ class WorkspaceWithRole {
   final WorkspaceEntity workspace;
   final WorkspaceMemberRole role;
 
+  /// Serializa para JSON (sem DTO de transporte no domínio).
   Map<String, Object?> toJson() {
-    return <String, Object?>{
+    return {
       'id': workspace.id,
       'name': workspace.name,
       'role': role.wireValue,
-      'createdAt': workspace.createdAt?.toUtc().toIso8601String(),
+      'createdAt': workspace.createdAt.toUtc().toIso8601String(),
     };
   }
 }
-

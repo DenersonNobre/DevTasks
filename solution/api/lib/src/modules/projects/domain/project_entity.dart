@@ -10,9 +10,8 @@ class ProjectEntity {
     required this.createdAt,
   });
 
-  final int id;
-  final int workspaceId;
+  final String id;
+  final String workspaceId;
   final String name;
   final DateTime createdAt;
 }
-

@@ -1,42 +1,31 @@
 import 'domain/workspace_entity.dart';
 import 'domain/workspace_member_role.dart';
 
-/// Porta de persistência de Workspace e suas filiações (SPEC §5).
+/// Porta de persistência de Workspace (DIP · ISP).
+///
+/// IDs são String (UUID) conforme contrato OpenAPI.
 abstract interface class WorkspaceRepository {
-  /// Busca um workspace por ID (independente de autorização).
-  Future<WorkspaceEntity?> findById(int id);
-
-  /// Cria um workspace e vincula o usuário criador como `owner` na mesma transação atômica.
+  Future<WorkspaceEntity?> findById(String id);
   Future<WorkspaceWithRole> createWithRole({
     required String name,
     required String ownerUserId,
   });
-
-  /// Lista todos os workspaces nos quais o usuário é membro ativo com seus respectivos papéis.
   Future<List<WorkspaceWithRole>> listByUserId(String userId);
-
-  /// Obtém o papel de filiação de um usuário em determinado workspace (`null` se não-membro).
   Future<WorkspaceMemberRole?> getMemberRole({
-    required int workspaceId,
+    required String workspaceId,
     required String userId,
   });
-
-  /// Atualiza o nome de um workspace.
   Future<WorkspaceEntity?> updateName({
-    required int workspaceId,
+    required String workspaceId,
     required String name,
   });
-
-  /// Adiciona um membro a um workspace (INV-06: apenas owner pode mutar).
   Future<WorkspaceWithRole> addMember({
-    required int workspaceId,
+    required String workspaceId,
     required String userId,
     required WorkspaceMemberRole role,
   });
-
-  /// Remove um membro de um workspace (INV-06).
   Future<bool> removeMember({
-    required int workspaceId,
+    required String workspaceId,
     required String userId,
   });
 }

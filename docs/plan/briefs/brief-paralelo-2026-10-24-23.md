@@ -111,7 +111,13 @@ sem inventar design, **deixe de fora e relate** — não force.
 - **Red**: Falha de compilação capturada no `dart analyze solution/api` (50 issues) pela ausência dos tipos e módulos.
 - **Green**: `dart test test/unit/modules/workspace test/unit/modules/projects -r compact` -> 13/13 testes passando.
 
-(c) saída do analyze:
+(c) saída do analyze: `No issues found.` (0 issues) em `dart analyze lib/src/modules/workspace lib/src/modules/projects test/unit/modules/workspace test/unit/modules/projects`; adaptado `WorkspaceEntity.id` de `int` → `String` (UUID, contrato OpenAPI); `WorkspaceMemberRole` puro (sem `protocol.dart`).
+
+(d) o que ficou de fora e por quê: `workspace_service.dart`, `membership_guard.dart`, `project_service.dart` — dependem de DTOs gerados/códigos de erro definidos na camada de serviço (UC-08.04b/08.05b); portar agora inventaria design não acordado (§4, proibido).
+
+(e) Confirmações: `pubspec.yaml` NÃO editado; barrel `devtasks_api.dart` NÃO tocado; `auth/` NÃO tocado; nenhum `git add/commit/restore/stash` executado (`git status --read-only` permitido apenas); claim `UC-08.04` liberado.
+
+[CONCLUSÃO — 2026-10-24] Brief 23 concluído pelo Agente C (`agent-c`). Gate 3 (tests verdes, analyze 0, diff apenas nos paths do §2) e Gate 4 (evidência estruturada) satisfeitos. Pronto para Brief 24.
 - `dart analyze lib/src/modules/workspace lib/src/modules/projects test/unit/modules/workspace test/unit/modules/projects` -> 0 issues (`No issues found!`).
 
 (d) o que ficou de fora e por quê:

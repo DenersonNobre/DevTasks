@@ -24,4 +24,3 @@ class ProjectName {
     return (name: ProjectName._(trimmed), error: null);
   }
 }
-

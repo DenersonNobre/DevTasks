@@ -3,6 +3,9 @@ import 'package:devtasks_api/src/modules/workspace/domain/workspace_member_role.
 import 'package:devtasks_api/src/modules/workspace/ports.dart';
 import 'package:test/test.dart';
 
+/// UUID determinístico para testes (formato válido, sem depender do banco).
+String _uuid(int n) => '00000000-0000-4000-8000-${n.toString().padLeft(12, '0')}';
+
 class _FakeWorkspaceRepository implements WorkspaceRepository {
   final List<WorkspaceWithRole> workspaces = [];
 
@@ -12,7 +15,7 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
     required String ownerUserId,
   }) async {
     final entity = WorkspaceEntity(
-      id: workspaces.length + 1,
+      id: _uuid(workspaces.length + 1),
       name: name,
       createdAt: DateTime.utc(2026, 10, 24, 12, 0, 0),
     );
@@ -25,7 +28,7 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
   }
 
   @override
-  Future<WorkspaceEntity?> findById(int id) async {
+  Future<WorkspaceEntity?> findById(String id) async {
     for (final w in workspaces) {
       if (w.workspace.id == id) return w.workspace;
     }
@@ -34,7 +37,7 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
 
   @override
   Future<WorkspaceMemberRole?> getMemberRole({
-    required int workspaceId,
+    required String workspaceId,
     required String userId,
   }) async {
     for (final w in workspaces) {
@@ -50,7 +53,7 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
 
   @override
   Future<WorkspaceEntity?> updateName({
-    required int workspaceId,
+    required String workspaceId,
     required String name,
   }) async {
     final index = workspaces.indexWhere((w) => w.workspace.id == workspaceId);
@@ -67,7 +70,7 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
 
   @override
   Future<WorkspaceWithRole> addMember({
-    required int workspaceId,
+    required String workspaceId,
     required String userId,
     required WorkspaceMemberRole role,
   }) async {
@@ -80,7 +83,7 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
 
   @override
   Future<bool> removeMember({
-    required int workspaceId,
+    required String workspaceId,
     required String userId,
   }) async {
     final initialLength = workspaces.length;
@@ -91,22 +94,29 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
 
 void main() {
   group('WorkspaceEntity & WorkspaceWithRole (SPEC §4.1 / D-02)', () {
-    test('WorkspaceEntity armazena atributos imutáveis', () {
+    test('WorkspaceEntity armazena atributos imutáveis, com createdAt obrigatório', () {
       final now = DateTime.utc(2026, 10, 24, 10, 0, 0);
-      const entity = WorkspaceEntity(
-        id: 42,
+      final entity = WorkspaceEntity(
+        id: _uuid(42),
         name: 'Workspace Core',
-        createdAt: null,
-      );
-      expect(entity.id, 42);
-      expect(entity.name, 'Workspace Core');
-
-      final withDate = WorkspaceEntity(
-        id: 1,
-        name: 'Test',
         createdAt: now,
       );
-      expect(withDate.createdAt, now);
+
+      expect(entity.id, _uuid(42));
+      expect(entity.name, 'Workspace Core');
+      expect(entity.createdAt, now);
+    });
+
+    test('id é UUID string (contrato OpenAPI format: uuid)', () {
+      const uuidPattern =
+          r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+      final entity = WorkspaceEntity(
+        id: _uuid(1),
+        name: 'W',
+        createdAt: DateTime.utc(2026, 10, 24),
+      );
+
+      expect(entity.id, matches(uuidPattern));
     });
 
     test('WorkspaceMemberRole contém os 3 papéis válidos (D-02)', () {
@@ -123,7 +133,7 @@ void main() {
     test('WorkspaceWithRole.toJson() serializa id, name, role e createdAt ISO-8601 UTC', () {
       final createdAt = DateTime.utc(2026, 10, 24, 12, 34, 56);
       final entity = WorkspaceEntity(
-        id: 7,
+        id: _uuid(7),
         name: 'Projeto Principal',
         createdAt: createdAt,
       );
@@ -136,33 +146,49 @@ void main() {
       final json = withRole.toJson();
 
       expect(json, {
-        'id': 7,
+        'id': _uuid(7),
         'name': 'Projeto Principal',
         'role': 'owner',
         'createdAt': '2026-10-24T12:34:56.000Z',
       });
     });
 
+    test('createdAt nunca serializa nulo (contrato exige campo)', () {
+      final entity = WorkspaceEntity(
+        id: _uuid(9),
+        name: 'W',
+        createdAt: DateTime.utc(2026, 10, 24, 1, 2, 3),
+      );
+
+      final json = WorkspaceWithRole(
+        workspace: entity,
+        role: WorkspaceMemberRole.viewer,
+      ).toJson();
+
+      expect(json['createdAt'], isNotNull);
+      expect(json['createdAt'], isA<String>());
+    });
+
     test('WorkspaceRepository port permite CRUD em memória via fake', () async {
       final repo = _FakeWorkspaceRepository();
       final created = await repo.createWithRole(name: 'Squad A', ownerUserId: 'u1');
 
-      expect(created.workspace.id, 1);
+      expect(created.workspace.id, _uuid(1));
       expect(created.workspace.name, 'Squad A');
       expect(created.role, WorkspaceMemberRole.owner);
 
-      final found = await repo.findById(1);
+      final found = await repo.findById(_uuid(1));
       expect(found, isNotNull);
       expect(found!.name, 'Squad A');
 
-      final role = await repo.getMemberRole(workspaceId: 1, userId: 'u1');
+      final role = await repo.getMemberRole(workspaceId: _uuid(1), userId: 'u1');
       expect(role, WorkspaceMemberRole.owner);
 
-      final updated = await repo.updateName(workspaceId: 1, name: 'Squad Alpha');
+      final updated = await repo.updateName(workspaceId: _uuid(1), name: 'Squad Alpha');
       expect(updated, isNotNull);
       expect(updated!.name, 'Squad Alpha');
 
-      final removed = await repo.removeMember(workspaceId: 1, userId: 'u1');
+      final removed = await repo.removeMember(workspaceId: _uuid(1), userId: 'u1');
       expect(removed, isTrue);
     });
   });
