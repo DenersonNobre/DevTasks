@@ -7,5 +7,6 @@ environment:
 
 workspace:
   - solution/app
+  - solution/api
   - solution/server
   - solution/client

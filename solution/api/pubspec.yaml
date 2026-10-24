@@ -1,0 +1,23 @@
+name: devtasks_api
+description: "DevTasks — API HTTP (shelf + PostgreSQL, contrato OpenAPI)"
+resolution: workspace
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  # Transporte HTTP mínimo (sem codegen, sem framework opinativo).
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  # Acesso a dados por SQL puro (D-08).
+  postgres: ^3.5.0
+  # Criptografia: Argon2 (hash de senha) e SHA-256 (hash de token).
+  pointycastle: 4.0.0
+  crypto: ^3.0.3
+
+dev_dependencies:
+  test: ^1.25.5
+  http: ^1.2.2
+  lints: ^6.0.0

@@ -1,78 +1,54 @@
 # UC-CURRENT — DevTasks
 
-> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-03-projetos.md` §F3.1.
+> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-08-migracao-shelf.md`.
 > Ordem de leitura ao retomar: `CHECKPOINT.md` → este arquivo → código.
 
 ## UC corrente
 
-**UC-03.01** — CRUD de Projetos (`EPIC-03 · F3.1`). Status: **Concluído ✅** (TASK-01/02/03; aguardando Gate 3/4).
+**UC-08.01** — Fundação HTTP do servidor shelf (`EPIC-08 · F8.1`). Status: **Concluído ✅**.
 
-**Gate 2.5: INVOKED** — superfície nova (endpoint autenticado + autorização por papel):
-- `INV-01`: não-membro e workspace/projeto inexistente devolvem idêntico `ERR_NOT_FOUND`;
-- `INV-06`: criar/editar exigem papel `owner` (delegado ao `MembershipGuard`, sem duplicar lógica);
-- `INV-SEC-06`: `callerUserId` derivado exclusivamente da sessão, nunca do payload RPC;
-- `INV-SEC-16`: token apenas via header `Authorization: Bearer`;
-- `DIP`: `ProjectEntity` puro (sem import de DTO/ORM); mapeamento para `ProjectDto` fica no serviço.
+**Gate 2.5: PULADO** — fatia de transporte (bootstrap/middleware), sem superfície de auth.
+Mitigação já aplicada: CORS deixou de ser `*` fixo e passou a ser configurável por `CORS_ORIGIN`
+(`*` aceito apenas em desenvolvimento; API usa token em header, não cookie).
 
-## Escopo (DoD da F3.1)
+## Escopo (DoD da F8.1)
 
-- [x] `TASK-01`: teste Red de criação/edição/listagem + guardas `INV-01`/`INV-06`.
-- [x] `TASK-02`: `project_endpoint` + módulo `projects/` (domain, ports, service, repositório Serverpod) + modelos de protocolo.
-- [x] `TASK-03`: módulo app `projects/` (VO + porta `ProjectClient`, adaptador Serverpod, ViewModel MVVM/Riverpod, View de listagem + form, testes unit + widget).
+- [x] `solution/api` como membro do pub workspace (lock único na raiz).
+- [x] `bin/server.dart` sobe o servidor em porta/host configuráveis por ambiente.
+- [x] `GET /health` → 200 `{"status":"ok"}` e content-type JSON.
+- [x] Middleware de erro: `ApiException` → status/código declarados; inesperado → 500 genérico **sem stack**.
+- [x] CORS com preflight `OPTIONS` e allowlist configurável.
+- [x] Rota inexistente → 404 `ERR_NOT_FOUND`.
 
 ## Interfaces & Portas
 
-- `ProjectRepository` (`findById`, `create`, `updateName`, `listActiveByWorkspace`).
-- `ProjectService` (`createProject`, `updateProject`, `listProjects`) — recebe `callerUserId` da sessão.
-- `ProjectEndpoint` (`create`, `update`, `listByWorkspace`) — composition root com injeção opcional.
-- Reutiliza `MembershipGuard` e `WorkspaceRepository` (sem nova checagem de papel).
+- `AppConfig` (`port`, `host`, `databaseUrl`, `sessionTtlHours`, `corsOrigin`) — `toString` redige a senha do DSN.
+- `buildHandler({String corsOrigin})` — composição pura, testável sem rede.
+- `ApiException` com fábricas (`badRequest`, `unauthenticated`, `forbidden`, `notFound`, `conflict`, `rateLimited`).
+- `JsonResponse` (`ok`/`created`/`error`) com envelope canônico `{errorCode, message, field?}`.
 
 ## Arquivos entregues
 
-- `solution/server/lib/src/protocol/devtasks_project.spy.yaml` [NEW]
-- `solution/server/lib/src/protocol/project_dto.spy.yaml` [NEW]
-- `solution/server/lib/src/protocol/project_result_dto.spy.yaml` [NEW]
-- `solution/server/lib/src/protocol/project_list_result_dto.spy.yaml` [NEW]
-- `solution/server/lib/src/generated/**` [REGENERATED]
-- `solution/server/lib/src/modules/projects/domain/project_entity.dart` [NEW]
-- `solution/server/lib/src/modules/projects/domain/project_name.dart` [NEW]
-- `solution/server/lib/src/modules/projects/ports.dart` [NEW]
-- `solution/server/lib/src/modules/projects/project_service.dart` [NEW]
-- `solution/server/lib/src/modules/projects/serverpod_project_repository.dart` [NEW]
-- `solution/server/lib/src/endpoints/project_endpoint.dart` [NEW]
-- `solution/server/test/unit/projects/project_service_red_test.dart` [NEW]
-- `solution/app/lib/modules/projects/domain/project_summary.dart` [NEW]
-- `solution/app/lib/modules/projects/domain/project_client.dart` [NEW]
-- `solution/app/lib/modules/projects/infrastructure/serverpod_project_client.dart` [NEW]
-- `solution/app/lib/modules/projects/infrastructure/project_client_provider.dart` [NEW]
-- `solution/app/lib/modules/projects/presentation/projects_state.dart` [NEW]
-- `solution/app/lib/modules/projects/presentation/projects_view_model.dart` [NEW]
-- `solution/app/lib/modules/projects/presentation/projects_view.dart` [NEW]
-- `solution/app/test/support/fake_project_client.dart` [NEW]
-- `solution/app/test/unit/projects/projects_view_model_test.dart` [NEW]
-- `solution/app/test/widget/projects_view_test.dart` [NEW]
+- `solution/api/pubspec.yaml` [NEW]
+- `solution/api/bin/server.dart` [NEW]
+- `solution/api/lib/devtasks_api.dart` [NEW]
+- `solution/api/lib/src/config/env.dart` [NEW]
+- `solution/api/lib/src/http/{api_exception,json_response,error_middleware,cors_middleware,router}.dart` [NEW]
+- `solution/api/test/unit/http/router_test.dart` [NEW]
+- `pubspec.yaml` (raiz) — membro `solution/api` [MODIFY]
 
 ## Evidência
 
 ```text
-[EVIDÊNCIA] (UC-03.01 · TASK-01/02/03)
-- Red: dart test test/unit/projects → exit 1 (compile failure: modules/projects ausente).
-- Green server: dart test test/unit/projects → 10/10 passed.
-- Suíte server: dart test test/unit → 101/101 passed.
-- Contrato: serverpod generate → ✓ Done; serverpod create-migration → devtasks_project.
-- Green app: flutter test test/unit/projects test/widget/projects_view_test.dart → 12/12 passed.
-- Suíte app: flutter test → 91/91 passed.
-- Analyze: flutter analyze → 0 issues.
+[EVIDÊNCIA] (UC-08.01)
+- Verificação: dart analyze (solution/api) → No issues found.
+- Confirmação: dart test (solution/api) → 11/11 passed.
+- Cobertura da fatia: /health, 404 canônico, ApiException→400, inesperado→500 sem stack,
+  FormatException→400, preflight OPTIONS, headers CORS, AppConfig defaults/override/redação.
 ```
-
-## Gap conhecido (declarado, não escondido)
-
-- `ProjectsView` exige `workspaceId` + `token` e **ainda não está ligada ao shell**: o app não possui
-  seleção de workspace (UI do EPIC-02 não foi entregue como módulo de app). Wiring depende dessa fatia.
-
 
 ## Próximo passo
 
-1. Gate 3 (`review`) sobre o diff do UC; Gate 4 (suíte completa via `tools/test.ps1`).
-2. `UC-03.02` (arquivamento `INV-05`) após fechamento deste.
-3. Wiring da `ProjectsView` no shell quando existir seleção de workspace (EPIC-02 app).
+1. **UC-08.02 (Agente B)** — persistência: migrations SQL (5 tabelas), pool, `tools/db.ps1`.
+2. **UC-08.06a (Agente B)** — autoria de `docs/api/openapi.yaml` (13 rotas, envelope de erro).
+3. Depois: UC-08.03 (auth), 08.04 (workspace), 08.05 (projetos), 08.06 (gate de contrato), 08.07 (app), 08.08 (descomissionar).

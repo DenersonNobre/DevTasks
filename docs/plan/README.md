@@ -20,6 +20,7 @@
 | **05 — Comentários** | [epic-05-comentarios.md](epics/epic-05-comentarios.md) | EPIC-04 | Média | ⏳ Pendente |
 | **06 — Dashboard** | [epic-06-dashboard.md](epics/epic-06-dashboard.md) | EPIC-04 | Alta | ⏳ Pendente |
 | **07 — Deploy & Medição** | [epic-07-deploy.md](epics/epic-07-deploy.md) | EPIC-00, EPIC-06 | Alta | ⏳ Pendente |
+| **08 — Migração Serverpod → shelf** | [epic-08-migracao-shelf.md](epics/epic-08-migracao-shelf.md) | EPIC-01, EPIC-02, EPIC-03 | **Crítica** | 🔄 Em execução |
 
 > **Gate de DAG (hard)**: o runner da EPIC-00 parseia este arquivo e falha se (a) um épico estiver ✅ com pré-requisito aberto ou (b) qualquer nó da DAG não tiver arquivo correspondente no disco. Documento é soft-compliance; exit code é o enforcement.
 
@@ -37,6 +38,9 @@ flowchart TD
   E04 --> E06[EPIC-06 · Dashboard<br/>RF-13 · INV-07]
   E05 --> E07[EPIC-07 · Deploy & Medição<br/>RNF-01/NFR-01 · Lighthouse]
   E06 --> E07
+  E02 --> E08[EPIC-08 · Migração shelf<br/>contrato neutro OpenAPI]
+  E03 --> E08
+  E08 --> E04
 
   classDef crit fill:#7f1d1d,color:#fff,stroke:#000
   class E00,E01,E04 crit

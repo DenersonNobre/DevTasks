@@ -131,12 +131,12 @@
 
 ## 8. Decisões de Engenharia (D-ENG)
 
-- **D-ENG-01 — Stack**: Flutter Web/Mobile + Serverpod + PostgreSQL + Docker (PRD §13 mantido; Serverpod escolhido por stack Dart única).
-- **D-ENG-02 — Monorepo**: pub workspace nativo na raiz com membros `solution/{app,server,client}` (skill `flutter-pub-workspace`); lock único na raiz.
-- **D-ENG-03 — Contrato**: **`serverpod generate` é a fonte de verdade** — modelos em `protocol.yaml` geram classes server + **pacote `client` tipado** consumido pelo app. Serverpod não expõe REST clássico com paths (chamadas tipadas via `callServerEndpoint`), portanto **OpenAPI não é o contrato executável**; `docs/api/` conterá documentação de endpoints legível para humanos, derivada dos modelos — nunca duplicada à mão (regra: duas fontes divergem).
-- **D-ENG-04 — Auth**: usar o módulo oficial **`serverpod_auth_server`** (e-mail/senha). Sessão gerenciada por `SessionManager` no cliente (restaura sessão do armazenamento local — atende "manter sessão" do PRD); servidor lê `session.authenticated` (`userId` + `scopes`). Hash de senha: gerador/validador do próprio framework com **`allowUnsecureRandom: false`** (CSPRNG obrigatório). Reset de senha: callbacks `sendPasswordResetEmail` existem no framework mas **fora do MVP** (PRD §5.6). ⚠️ `RNF-03` do PRD menciona "JWT" — decisão: **tokens de sessão opacos do Serverpod** (não rolar JWT manualmente); justificativa e registro da mudança ficam na revisão do RNF-03.
+- **D-ENG-01 — Stack** ⚠️ **SUPERADA pela D-08**: Flutter Web/Mobile + Serverpod + PostgreSQL + Docker. O Serverpod foi abandonado em 2026-10-24 (ver §14); stack alvo = Flutter + **shelf** + PostgreSQL + Docker.
+- **D-ENG-02 — Monorepo**: pub workspace nativo na raiz com membros `solution/{app,api}` (skill `flutter-pub-workspace`); lock único na raiz. (`server`/`client` existem só até o UC-08.08.)
+- **D-ENG-03 — Contrato** ⚠️ **SUPERADA pela D-08**: `serverpod generate` era a fonte de verdade. Motivo da reversão: o pacote `client` era derivado do **código do servidor**, acoplando o cliente à tecnologia do backend. Nova fonte: `docs/api/openapi.yaml` (OpenAPI 3.1).
+- **D-ENG-04 — Auth** ⚠️ **SUPERADA pela D-08**: o módulo `serverpod_auth_server` deixa de ser usado. Auth própria em shelf: Argon2 (pointycastle) + token opaco com hash SHA-256 em `devtasks_session` + rate limit por IP.
 - **D-ENG-05 — Isolamento multi-tenant**: toda mutação/leitura de endpoint valida membership (RF-06) — a invariante formal (`INV-XX`) nasce na `SPEC.md`.
-- **D-ENG-06 — Estrutura do app (VSA)**: `solution/app/lib/modules/<modulo>/{domain,infrastructure,presentation}` + kernel `global/` (theme, router, shared widgets). Backend: `solution/server/lib/src/endpoints/` + `features` por módulo.
+- **D-ENG-06 — Estrutura do app (VSA)**: `solution/app/lib/modules/<modulo>/{domain,infrastructure,presentation}` + kernel `global/` (theme, router, shared widgets). Backend: `solution/api/lib/src/http/routes/` + `lib/src/modules/` (VSA no servidor).
 - **D-ENG-07 — Estado no app**: **Riverpod** — decidido (**D-03**, 2026-10-21): testabilidade e padrão de mercado transferível para portfólio; alternativa GetX (skill existente do autor) descartada.
 - **D-ENG-08 — Ambientes & Docker**: compose local (`devtasks_postgres`, `devtasks_server`, rede `devtasks_net`, binding `0.0.0.0` p/ testes LAN — convenção anti-colisão do oráculo); deploy alvo Railway/Render + Flutter Web estático (PRD roadmap Fase 8).
 - **D-ENG-09 — Testes**: pirâmide do oráculo — unit de domínio com fakes (invariantes 100%), contract no client/server, poucos E2E; runner único de comando (EPIC-00).
@@ -145,18 +145,24 @@
 
 ## 9. C4 — Contêineres & Topologia do Repositório
 
+> **Alvo após o EPIC-08** (`D-08`). Durante a migração, `server/` e `client/` coexistem congelados
+> até o `UC-08.08`.
+
 ```mermaid
 flowchart LR
   subgraph Clientes
     A[App Flutter Web/Mobile]
   end
   subgraph devtasks repo
-    C[Client gerado\nserverpod generate]
-    S[Serverpod Server\nendpoints + auth]
+    AD[Adaptadores HTTP<br/>infrastructure/]
+    CT[Contrato neutro<br/>docs/api/openapi.yaml]
+    S[API shelf<br/>routes + modules]
     P[(PostgreSQL)]
   end
-  A -- tipo-seguro --> C
-  C -- JSON tipado --> S
+  A -- portas DIP --> AD
+  AD -- HTTP/JSON --> S
+  CT -. valida .-> S
+  CT -. valida .-> AD
   S --> P
   D[Docker Compose] -.-> S
   D -.-> P
@@ -164,13 +170,13 @@ flowchart LR
 
 ```text
 devtasks/
-├── pubspec.yaml            # workspace raiz (app, server, client)
-├── docs/{product,architecture,plan,api}/
+├── pubspec.yaml            # workspace raiz (app, api)
+├── docs/{product,architecture,plan,api}/   # api/openapi.yaml = contrato
 ├── docker/
 ├── solution/
 │   ├── app/                # Flutter (VSA: lib/modules/* + global/)
-│   ├── server/             # Serverpod (endpoints, protocol.yaml, migrations)
-│   └── client/             # GERADO — nunca editado à mão
+│   └── api/                # shelf: bin/, lib/src/{http,db,modules}, migrations/, test/
+└── tools/                  # db.ps1, contract-gate.ps1, dip-gate.ps1, test.ps1
 ```
 
 ---
@@ -251,3 +257,41 @@ O wireframe é **mais rico que o MVP aprovado**. Recomendação padrão: **PRD g
 - [x] D-01, D-02, D-03 decididos (2026-10-21) → PRD e DESIGN ajustados; SPEC nasce já coerente com as decisões
 - [ ] Tabela §11 com aceite/rejeção por linha (o que vira pós-MVP no plano)
 - [x] Validação de contraste (WCAG) reatribuída para a EPIC-01 (D-06)
+- [x] **D-08** registrada (2026-10-24): migração Serverpod → shelf + contrato neutro OpenAPI
+
+---
+
+## 14. D-08 — Migração Serverpod → shelf + contrato neutro (2026-10-24)
+
+**Decisão do PO**: abandonar o Serverpod e reescrever o servidor em **shelf**, com **PostgreSQL via
+SQL puro** e **OpenAPI 3.1 como fonte de verdade do contrato**.
+
+**Motivo (arquitetural, não técnico)**: o pacote `solution/client/` era **gerado a partir do código do
+servidor**, então o cliente dependia da tecnologia do backend. O desacoplamento não vem da troca de
+framework — vem do **contrato neutro + adaptador**. Por isso o contrato (`docs/api/openapi.yaml`) é
+gate bloqueante (`UC-08.06`), com prova negativa versionada.
+
+**Escolhas e alternativas descartadas:**
+
+| Tema | Escolha | Alternativa descartada | Por quê |
+|:--|:--|:--|:--|
+| HTTP | `shelf` + `shelf_router` | `dart_frog` | shelf é o mínimo oficial; dart_frog é outro framework opinativo (novo acoplamento) |
+| Dados | `postgres` + SQL puro + migrations `.sql` | `drift` / ORM | SQL explícito, sem codegen; DIP preservado pelas portas |
+| Contrato | OpenAPI 3.1 + teste de contrato | geração a partir do código | geração a partir do código **é** o defeito original |
+| Dados existentes | recriar schema (demo) | migrar dados | não há Postgres em uso; sem dado real a preservar |
+
+**Custo assumido (medido, não estimado)**: 14 arq / 891 LOC portáveis sem mudança; 12 arq / ~840 LOC
+com troca de DTO; 7 arq / ~650 LOC reescritos; 21 arq / 2.541 LOC de teste (unit com fakes sobrevive).
+Fatiado em 8 UCs em `docs/plan/epics/epic-08-migracao-shelf.md`.
+
+**Consequências vinculantes:**
+
+1. `solution/server/` e `solution/client/` ficam **congelados** (sem features novas) e são removidos no `UC-08.08`.
+2. Nenhum identificador de transporte (`devtasks_client`, `serverpod`) pode aparecer em `domain/` ou `presentation/`;
+   o `dip-gate` passa a proibi-los e a varrer `presentation/`.
+3. `AGENTS.md` (Stack/Topologia/Contrato) atualizado no mesmo commit desta decisão.
+4. `RNF-03` mantém **token opaco** (não JWT): decisão anterior preservada, agora com implementação própria.
+
+**Não-objetivo declarado**: melhorar performance ou reduzir custo de infra. A migração é por
+integridade arquitetural; se o resultado não produzir um cliente testável sem o pacote do servidor,
+o épico **falhou**, mesmo que os testes estejam verdes.

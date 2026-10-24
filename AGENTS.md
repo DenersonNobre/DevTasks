@@ -5,11 +5,14 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
 
 ## Stack & Topologia
 
-- Stack Dart única: **Flutter** (`solution/app`) + **Serverpod** (`solution/server`) + **PostgreSQL** + **Docker**.
-- Topologia `solution/{app,server,client}` é **decisão consciente do PO** — desvio da topologia `lib/` raiz
+- Stack Dart única: **Flutter** (`solution/app`) + **Dart/shelf** (`solution/api`) + **PostgreSQL** + **Docker**.
+  *(Serverpod está em descomissionamento — EPIC-08 / `D-08`. `solution/{server,client}` permanecem no disco
+  apenas até o `UC-08.08`, quando são removidos.)*
+- Topologia alvo `solution/{app,api}` é **decisão consciente do PO** — desvio da topologia `lib/` raiz
   prevista para stack mobile no oráculo; registrada em `docs/architecture/DESIGN.md` §9. Não "consertar" para `lib/` raiz.
-- Pub workspace nativo na raiz (membros: `app`, `server`, `client`) — **lock único na raiz** (EPIC-00).
-- `solution/client/` é **código gerado** (`serverpod generate`) — nunca editar à mão.
+- Pub workspace nativo na raiz (membros: `app`, `api`; `server`/`client` até o UC-08.08) — **lock único na raiz** (EPIC-00).
+- `solution/client/` é **código gerado** (`serverpod generate`) e está **congelado**: não recebe features novas,
+  não é editado à mão, e é removido no `UC-08.08`.
 
 ## Código
 
@@ -25,7 +28,7 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
   com `export` relativo a esse diretório — a raiz do módulo só tem o barrel de superfície (`.auth.dart`);
   (e) `global/` **não** importa `modules/` (a porta transversal `SessionStore` mora em `global/session/`).
 - Falha de negócio esperada → `Result`/erro tipado capturado na fronteira; exceção só para falha impredizável.
-- Fonte de verdade do contrato client↔server: modelos Serverpod (`serverpod generate`), não OpenAPI manual.
+- Fonte de verdade do contrato client↔server: **`docs/api/openapi.yaml` (OpenAPI 3.1)** — validado por teste de contrato (`D-08`). O cliente **nunca** é derivado do código do servidor; adaptadores falam HTTP e vivem em `infrastructure/`.
 
 ## Qualidade
 
