@@ -1,0 +1,31 @@
+// solution/app/lib/modules/projects/domain/project_client.dart
+// Porta de projetos consumida pela apresentação (DIP).
+// SRP: declarar o contrato. NÃO faz: I/O, HTTP, armazenamento ou serialização.
+
+import 'package:devtasks_app/global/kernel/failures.dart';
+import 'package:devtasks_app/global/kernel/result.dart';
+
+import 'project_summary.dart';
+
+/// Contrato de projetos do app: falha esperada é valor tipado, não exceção.
+///
+/// O `token` é explícito porque a sessão é estado transversal (`global/session/`),
+/// nunca responsabilidade do slice (INV-SEC-16: header Bearer).
+abstract interface class ProjectClient {
+  Future<IResult<List<ProjectSummary>, IFailure>> listByWorkspace({
+    required int workspaceId,
+    required String token,
+  });
+
+  Future<IResult<ProjectSummary, IFailure>> create({
+    required int workspaceId,
+    required String name,
+    required String token,
+  });
+
+  Future<IResult<ProjectSummary, IFailure>> rename({
+    required int projectId,
+    required String name,
+    required String token,
+  });
+}

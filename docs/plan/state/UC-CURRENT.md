@@ -5,7 +5,7 @@
 
 ## UC corrente
 
-**UC-03.01** — CRUD de Projetos (`EPIC-03 · F3.1`). Status: **Em execução 🔄** (TASK-01 e TASK-02 concluídas; TASK-03 pendente).
+**UC-03.01** — CRUD de Projetos (`EPIC-03 · F3.1`). Status: **Concluído ✅** (TASK-01/02/03; aguardando Gate 3/4).
 
 **Gate 2.5: INVOKED** — superfície nova (endpoint autenticado + autorização por papel):
 - `INV-01`: não-membro e workspace/projeto inexistente devolvem idêntico `ERR_NOT_FOUND`;
@@ -18,7 +18,7 @@
 
 - [x] `TASK-01`: teste Red de criação/edição/listagem + guardas `INV-01`/`INV-06`.
 - [x] `TASK-02`: `project_endpoint` + módulo `projects/` (domain, ports, service, repositório Serverpod) + modelos de protocolo.
-- [ ] `TASK-03`: módulo app `projects/` (listagem, form de criação/edição, states §3).
+- [x] `TASK-03`: módulo app `projects/` (VO + porta `ProjectClient`, adaptador Serverpod, ViewModel MVVM/Riverpod, View de listagem + form, testes unit + widget).
 
 ## Interfaces & Portas
 
@@ -41,18 +41,38 @@
 - `solution/server/lib/src/modules/projects/serverpod_project_repository.dart` [NEW]
 - `solution/server/lib/src/endpoints/project_endpoint.dart` [NEW]
 - `solution/server/test/unit/projects/project_service_red_test.dart` [NEW]
+- `solution/app/lib/modules/projects/domain/project_summary.dart` [NEW]
+- `solution/app/lib/modules/projects/domain/project_client.dart` [NEW]
+- `solution/app/lib/modules/projects/infrastructure/serverpod_project_client.dart` [NEW]
+- `solution/app/lib/modules/projects/infrastructure/project_client_provider.dart` [NEW]
+- `solution/app/lib/modules/projects/presentation/projects_state.dart` [NEW]
+- `solution/app/lib/modules/projects/presentation/projects_view_model.dart` [NEW]
+- `solution/app/lib/modules/projects/presentation/projects_view.dart` [NEW]
+- `solution/app/test/support/fake_project_client.dart` [NEW]
+- `solution/app/test/unit/projects/projects_view_model_test.dart` [NEW]
+- `solution/app/test/widget/projects_view_test.dart` [NEW]
 
 ## Evidência
 
 ```text
-[EVIDÊNCIA] (UC-03.01 · TASK-01/02)
+[EVIDÊNCIA] (UC-03.01 · TASK-01/02/03)
 - Red: dart test test/unit/projects → exit 1 (compile failure: modules/projects ausente).
-- Green: dart test test/unit/projects → 10/10 passed.
-- Contrato: serverpod generate → ✓ Done.
-- Migration: serverpod create-migration → tabela devtasks_project.
+- Green server: dart test test/unit/projects → 10/10 passed.
+- Suíte server: dart test test/unit → 101/101 passed.
+- Contrato: serverpod generate → ✓ Done; serverpod create-migration → devtasks_project.
+- Green app: flutter test test/unit/projects test/widget/projects_view_test.dart → 12/12 passed.
+- Suíte app: flutter test → 91/91 passed.
+- Analyze: flutter analyze → 0 issues.
 ```
+
+## Gap conhecido (declarado, não escondido)
+
+- `ProjectsView` exige `workspaceId` + `token` e **ainda não está ligada ao shell**: o app não possui
+  seleção de workspace (UI do EPIC-02 não foi entregue como módulo de app). Wiring depende dessa fatia.
+
 
 ## Próximo passo
 
-1. `TASK-03`: módulo `solution/app/lib/modules/projects/` (listagem + form) com testes de widget.
-2. Gate 3 (`review`) sobre o diff do UC; Gate 4 (suíte completa) antes do commit de fechamento.
+1. Gate 3 (`review`) sobre o diff do UC; Gate 4 (suíte completa via `tools/test.ps1`).
+2. `UC-03.02` (arquivamento `INV-05`) após fechamento deste.
+3. Wiring da `ProjectsView` no shell quando existir seleção de workspace (EPIC-02 app).
