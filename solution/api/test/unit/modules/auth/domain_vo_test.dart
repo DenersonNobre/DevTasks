@@ -1,5 +1,5 @@
-import 'package:devtasks_api/src/modules/auth/domain/email.dart';
-import 'package:devtasks_api/src/modules/auth/domain/password.dart';
+import 'package:devtasks_api/modules/auth/domain/email.dart';
+import 'package:devtasks_api/modules/auth/domain/password.dart';
 import 'package:test/test.dart';
 
 void main() {

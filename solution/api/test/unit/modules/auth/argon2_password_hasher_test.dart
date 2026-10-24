@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:devtasks_api/src/modules/auth/argon2_password_hasher.dart';
+import 'package:devtasks_api/modules/auth/argon2_password_hasher.dart';
 import 'package:test/test.dart';
 
 void main() {

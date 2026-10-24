@@ -1,4 +1,4 @@
-import 'package:devtasks_api/src/modules/auth/rate_limiter.dart';
+import 'package:devtasks_api/modules/auth/rate_limiter.dart';
 import 'package:test/test.dart';
 
 void main() {

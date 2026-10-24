@@ -1,4 +1,4 @@
-import 'package:devtasks_api/src/modules/workspace/domain/workspace_name.dart';
+import 'package:devtasks_api/modules/workspace/domain/workspace_name.dart';
 import 'package:test/test.dart';
 
 void main() {

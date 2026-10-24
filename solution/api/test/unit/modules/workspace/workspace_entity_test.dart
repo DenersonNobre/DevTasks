@@ -1,6 +1,6 @@
-import 'package:devtasks_api/src/modules/workspace/domain/workspace_entity.dart';
-import 'package:devtasks_api/src/modules/workspace/domain/workspace_member_role.dart';
-import 'package:devtasks_api/src/modules/workspace/ports.dart';
+import 'package:devtasks_api/modules/workspace/domain/workspace_entity.dart';
+import 'package:devtasks_api/modules/workspace/domain/workspace_member_role.dart';
+import 'package:devtasks_api/modules/workspace/ports.dart';
 import 'package:test/test.dart';
 
 /// UUID determinístico para testes (formato válido, sem depender do banco).

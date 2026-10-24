@@ -1,5 +1,5 @@
-import 'package:devtasks_api/src/modules/auth/ports.dart';
-import 'package:devtasks_api/src/modules/auth/sign_in_handler.dart';
+import 'package:devtasks_api/modules/auth/ports.dart';
+import 'package:devtasks_api/modules/auth/sign_in_handler.dart';
 import 'package:test/test.dart';
 
 class _Credentials implements CredentialRepository {

@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:devtasks_api/src/modules/auth/ports.dart';
-import 'package:devtasks_api/src/modules/auth/session_service.dart';
+import 'package:devtasks_api/modules/auth/ports.dart';
+import 'package:devtasks_api/modules/auth/session_service.dart';
 import 'package:test/test.dart';
 
 /// Repositório fake em memória (chave = tokenHash).

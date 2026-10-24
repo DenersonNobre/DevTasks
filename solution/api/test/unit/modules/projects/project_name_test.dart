@@ -1,4 +1,4 @@
-import 'package:devtasks_api/src/modules/projects/domain/project_name.dart';
+import 'package:devtasks_api/modules/projects/domain/project_name.dart';
 import 'package:test/test.dart';
 
 void main() {
