@@ -94,5 +94,29 @@ sem inventar design, **deixe de fora e relate** — não force.
 
 ## 8. Relatório final exigido
 
-(a) arquivos criados; (b) saída do Red (contagem) e do Green (contagem); (c) saída do analyze;
-(d) o que ficou de fora e por quê; (e) confirmação de que não tocou pubspec/barrel/auth nem rodou git de mutação.
+(a) arquivos criados:
+- `solution/api/lib/src/modules/workspace/domain/workspace_name.dart`
+- `solution/api/lib/src/modules/workspace/domain/workspace_entity.dart`
+- `solution/api/lib/src/modules/workspace/domain/workspace_member_role.dart` (enum puro: `owner`, `developer`, `viewer` + `toJson()`)
+- `solution/api/lib/src/modules/workspace/ports.dart` (`WorkspaceRepository`)
+- `solution/api/lib/src/modules/projects/domain/project_name.dart`
+- `solution/api/lib/src/modules/projects/domain/project_entity.dart`
+- `solution/api/lib/src/modules/projects/ports.dart` (`ProjectRepository`)
+- `solution/api/test/unit/modules/workspace/workspace_name_test.dart`
+- `solution/api/test/unit/modules/workspace/workspace_entity_test.dart`
+- `solution/api/test/unit/modules/projects/project_name_test.dart`
+- `solution/api/test/unit/modules/projects/project_entity_test.dart`
+
+(b) saída do Red e do Green:
+- **Red**: Falha de compilação capturada no `dart analyze solution/api` (50 issues) pela ausência dos tipos e módulos.
+- **Green**: `dart test test/unit/modules/workspace test/unit/modules/projects -r compact` -> 13/13 testes passando.
+
+(c) saída do analyze:
+- `dart analyze lib/src/modules/workspace lib/src/modules/projects test/unit/modules/workspace test/unit/modules/projects` -> 0 issues (`No issues found!`).
+
+(d) o que ficou de fora e por quê:
+- `workspace_service.dart`, `membership_guard.dart`, `project_service.dart` ficaram fora conforme §3 por dependerem de transporte/DTOs a serem especificados em `08.04b/08.05b`.
+
+(e) confirmação de governança:
+- `pubspec.yaml`, `pubspec.lock` e `lib/devtasks_api.dart` mantidos 100% intactos sem mutação externa.
+
