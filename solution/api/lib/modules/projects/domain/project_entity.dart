@@ -14,4 +14,11 @@ class ProjectEntity {
   final String workspaceId;
   final String name;
   final DateTime createdAt;
+
+  Map<String, Object?> toJson() => {
+        'id': id,
+        'workspaceId': workspaceId,
+        'name': name,
+        'createdAt': createdAt.toUtc().toIso8601String(),
+      };
 }

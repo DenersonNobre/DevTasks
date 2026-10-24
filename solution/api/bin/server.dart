@@ -36,10 +36,18 @@ Future<void> main() async {
     authenticator: sessionService,
   );
 
+  final projectRepo = PostgresProjectRepository(sql);
+  final projectRoutes = ProjectRoutes(
+    projectRepository: projectRepo,
+    workspaceRepository: workspaceRepo,
+    authenticator: sessionService,
+  );
+
   final handler = buildHandler(
     corsOrigin: config.corsOrigin,
     authRoutes: authRoutes,
     workspaceRoutes: workspaceRoutes,
+    projectRoutes: projectRoutes,
   );
 
   final server = await shelf_io.serve(

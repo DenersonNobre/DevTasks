@@ -2,23 +2,23 @@ import 'domain/project_entity.dart';
 
 /// Porta de persistência de Projetos (DIP · ISP).
 ///
-/// Apenas o que o caso de uso UC-03.01 consome. Sem tipos de infraestrutura.
+/// IDs são String (UUID) conforme contrato OpenAPI e schema PostgreSQL.
 abstract interface class ProjectRepository {
-  /// Busca um projeto por ID, independente de autorização.
-  Future<ProjectEntity?> findById(int projectId);
+  /// Busca um projeto por ID.
+  Future<ProjectEntity?> findById(String projectId);
 
   /// Cria um projeto dentro do workspace informado.
   Future<ProjectEntity> create({
-    required int workspaceId,
+    required String workspaceId,
     required String name,
   });
 
   /// Atualiza o nome de um projeto existente (`null` se não existir).
   Future<ProjectEntity?> updateName({
-    required int projectId,
+    required String projectId,
     required String name,
   });
 
-  /// Lista os projetos ativos de um workspace.
-  Future<List<ProjectEntity>> listActiveByWorkspace(int workspaceId);
+  /// Lista os projetos de um workspace.
+  Future<List<ProjectEntity>> listByWorkspace(String workspaceId);
 }
