@@ -79,7 +79,7 @@ final class EmailTaken extends CreateUserOutcome {
 }
 
 /// Porta de persistência de usuários.
-abstract interface class UserRepository {
+abstract interface class IUserRepository {
   /// `true` quando já existe usuário com o e-mail **já normalizado**.
   Future<bool> existsByEmail(String normalizedEmail);
 
@@ -95,7 +95,7 @@ abstract interface class UserRepository {
 }
 
 /// Porta de criptografia: a senha só cruza a fronteira já como hash.
-abstract interface class PasswordHasher {
+abstract interface class IPasswordHasher {
   Future<String> hash(String password);
 }
 
@@ -113,13 +113,13 @@ class CredentialRecord {
 }
 
 /// Porta de leitura de credenciais (o handler de cadastro não depende do hash).
-abstract interface class CredentialRepository {
+abstract interface class ICredentialRepository {
   Future<CredentialRecord?> findByEmail(String normalizedEmail);
   Future<String?> findEmailById(String userId);
 }
 
 /// Porta de verificação de senha contra um hash armazenado.
-abstract interface class PasswordVerifier {
+abstract interface class IPasswordVerifier {
   Future<bool> verify({required String password, required String passwordHash});
 }
 
@@ -143,7 +143,7 @@ enum SignInErrorCode {
 }
 
 /// Porta de validação de sessão (token → usuário autenticado | `null`).
-abstract interface class SessionAuthenticator {
+abstract interface class ISessionAuthenticator {
   Future<AuthenticatedUser?> authenticate(String token);
 }
 
@@ -168,7 +168,7 @@ class SessionRecord {
 }
 
 /// Abstração de persistência para registros de sessão (DIP/ISP).
-abstract interface class SessionRepository {
+abstract interface class ISessionRepository {
   Future<void> save(SessionRecord session);
   Future<SessionRecord?> findByTokenHash(String tokenHash);
   Future<void> revokeByTokenHash(String tokenHash, DateTime revokedAt);

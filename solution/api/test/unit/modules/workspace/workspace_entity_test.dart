@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 /// UUID determinístico para testes (formato válido, sem depender do banco).
 String _uuid(int n) => '00000000-0000-4000-8000-${n.toString().padLeft(12, '0')}';
 
-class _FakeWorkspaceRepository implements WorkspaceRepository {
+class _FakeWorkspaceRepository implements IWorkspaceRepository {
   final List<WorkspaceWithRole> workspaces = [];
 
   @override

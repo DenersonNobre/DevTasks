@@ -51,7 +51,7 @@ class TokenGenerator {
 /// Segurança (Gate 2.5):
 /// - A integridade e segurança temporal repousam no índice UNIQUE em `tokenHash` (256 bits SHA-256, INV-SEC-17);
 /// - Rejeição estrita fail-closed para tokens com formato inválido, expirados ou revogados.
-class SessionService implements SessionAuthenticator {
+class SessionService implements ISessionAuthenticator {
   SessionService({
     required this.repository,
     this.credentialRepository,
@@ -60,8 +60,8 @@ class SessionService implements SessionAuthenticator {
   })  : _now = now ?? DateTime.now,
         _generator = tokenGenerator ?? const TokenGenerator();
 
-  final SessionRepository repository;
-  final CredentialRepository? credentialRepository;
+  final ISessionRepository repository;
+  final ICredentialRepository? credentialRepository;
   final DateTime Function() _now;
   final TokenGenerator _generator;
 

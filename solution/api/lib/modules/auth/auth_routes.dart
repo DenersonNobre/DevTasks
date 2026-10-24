@@ -30,8 +30,8 @@ class AuthRoutes {
   final SignUpHandler signUpHandler;
   final SignInHandler signInHandler;
   final SessionService sessionService;
-  final UserRepository userRepository;
-  final RateLimiter? rateLimiter;
+  final IUserRepository userRepository;
+  final IRateLimiter? rateLimiter;
 
   /// Registra as rotas de auth no roteador do shelf.
   void register(Router router) {

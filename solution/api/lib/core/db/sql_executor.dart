@@ -4,7 +4,7 @@ import 'package:postgres/postgres.dart';
 ///
 /// SRP: abstrair o driver para permitir teste sem banco.
 /// NÃO faz: montar DSN, decidir transação ou interpretar resultado de negócio.
-abstract interface class SqlExecutor {
+abstract interface class ISqlExecutor {
   Future<void> execute(String sql, {Map<String, Object?>? parameters});
 
   Future<List<Map<String, Object?>>> query(
@@ -14,7 +14,7 @@ abstract interface class SqlExecutor {
 }
 
 /// Implementação sobre uma sessão do driver `postgres`.
-class PgSqlExecutor implements SqlExecutor {
+class PgSqlExecutor implements ISqlExecutor {
   const PgSqlExecutor(this._session);
 
   final Session _session;

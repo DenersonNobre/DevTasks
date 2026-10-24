@@ -13,6 +13,7 @@ em conflito, este arquivo documenta as **decisões específicas deste repo**.
 ## Código
 
 - Identificadores em **inglês**; documentação (`docs/`, `LEARNINGS.md`) em **pt-BR**.
+- **Interfaces e classes abstratas iniciam com `'I'`** (regra do Oráculo: `abstract interface class IWorkspaceRepository`, `abstract class IProjectRepository`, etc.).
 - VSA no app: `lib/modules/<modulo>/{domain,infrastructure,presentation}` + kernel `global/`.
 - Domínio/Handlers sem imports de infra (DIP); Port só com o que a Feature usa (ISP).
 - **Barrels pontuados** (`.<dir>.dart` — ex.: `modules/auth/.domain.dart`, `global/session/.session.dart`)

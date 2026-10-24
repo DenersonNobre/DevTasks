@@ -3,7 +3,7 @@ import 'package:devtasks_api/modules/auth/infrastructure/postgres_session_reposi
 import 'package:devtasks_api/modules/auth/ports.dart';
 import 'package:test/test.dart';
 
-class _MockSqlExecutor implements SqlExecutor {
+class _MockSqlExecutor implements ISqlExecutor {
   String? lastSql;
   Map<String, Object?>? lastParameters;
   List<Map<String, Object?>> queryResult = [];

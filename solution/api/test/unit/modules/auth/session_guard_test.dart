@@ -2,7 +2,7 @@ import 'package:devtasks_api/modules/auth/ports.dart';
 import 'package:devtasks_api/modules/auth/session_guard.dart';
 import 'package:test/test.dart';
 
-class _Auth implements SessionAuthenticator {
+class _Auth implements ISessionAuthenticator {
   int calls = 0;
 
   @override

@@ -47,8 +47,8 @@ class SignInHandler {
   /// Hash de descarte: garante custo de verificação mesmo sem usuário (timing).
   static const String dummyHash = Argon2PasswordHasher.dummyHash;
 
-  final CredentialRepository _credentials;
-  final PasswordVerifier _verifier;
+  final ICredentialRepository _credentials;
+  final IPasswordVerifier _verifier;
 
   Future<SignInOutcome> execute(SignInCommand command) async {
     final emailResult = Email.parse(command.email);

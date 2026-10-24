@@ -4,7 +4,7 @@ import 'package:devtasks_api/devtasks_api.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
-class _FakeWorkspaceRepository implements WorkspaceRepository {
+class _FakeWorkspaceRepository implements IWorkspaceRepository {
   final Map<String, WorkspaceEntity> workspaces = {};
   final List<({String workspaceId, String userId, WorkspaceMemberRole role})> members = [];
   final Set<String> existingUsers = {'owner-1', 'dev-1', 'viewer-1', 'other-owner'};
@@ -111,7 +111,7 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
   }
 }
 
-class _FakeAuthenticator implements SessionAuthenticator {
+class _FakeAuthenticator implements ISessionAuthenticator {
   final Map<String, AuthenticatedUser> tokens = {
     'valid-token-owner': const AuthenticatedUser(id: 'owner-1', email: 'owner@test.com'),
     'valid-token-dev': const AuthenticatedUser(id: 'dev-1', email: 'dev@test.com'),

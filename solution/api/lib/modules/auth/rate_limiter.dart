@@ -28,7 +28,7 @@ final class RateLimited extends RateLimitOutcome {
 }
 
 /// Porta de controle de taxa de requisições.
-abstract interface class RateLimiter {
+abstract interface class IRateLimiter {
   RateLimitOutcome check(String key);
 }
 
@@ -51,7 +51,7 @@ class _RateLimitEntry {
 /// Utiliza [LinkedHashMap] como cache LRU. Ao atingir [maxTrackedKeys], desalija a chave
 /// menos recentemente usada (oldest key da cabeça do mapa) em tempo O(1), prevenindo
 /// exaustão de heap (DoS via criação massiva de chaves) e sem qualquer varredura O(N) no caminho quente.
-class InMemoryRateLimiter implements RateLimiter {
+class InMemoryRateLimiter implements IRateLimiter {
   InMemoryRateLimiter({
     required this.now,
     this.maxAttempts = 10,

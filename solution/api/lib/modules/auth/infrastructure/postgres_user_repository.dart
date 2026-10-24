@@ -5,14 +5,14 @@ import '../ports.dart';
 
 /// Adaptador PostgreSQL para persistência de usuários e leitura de credenciais.
 ///
-/// Implementa [UserRepository] e [CredentialRepository] garantindo:
+/// Implementa [IUserRepository] e [ICredentialRepository] garantindo:
 /// - Unicidade de e-mail tratada na persistência (INV-08, código 23505);
 /// - ISP: handlers consomem apenas os métodos da interface necessária;
-/// - DIP: sem dependência do framework web shelf; apenas [SqlExecutor].
-class PostgresUserRepository implements UserRepository, CredentialRepository {
+/// - DIP: sem dependência do framework web shelf; apenas [ISqlExecutor].
+class PostgresUserRepository implements IUserRepository, ICredentialRepository {
   const PostgresUserRepository(this._sql);
 
-  final SqlExecutor _sql;
+  final ISqlExecutor _sql;
 
   static const String _uniqueViolationCode = '23505';
 

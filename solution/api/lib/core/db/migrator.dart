@@ -22,15 +22,15 @@ class MigrationReport {
 /// ([loadMigrations]) nem armazenamento do controle ([MigrationStore]).
 class Migrator {
   Migrator({
-    required SqlExecutor sql,
-    required MigrationStore store,
+    required ISqlExecutor sql,
+    required IMigrationStore store,
     required List<Migration> migrations,
   })  : _sql = sql,
         _store = store,
         _migrations = _validated(migrations);
 
-  final SqlExecutor _sql;
-  final MigrationStore _store;
+  final ISqlExecutor _sql;
+  final IMigrationStore _store;
   final List<Migration> _migrations;
 
   /// Aplica o que falta e devolve quantas foram aplicadas/ignoradas.

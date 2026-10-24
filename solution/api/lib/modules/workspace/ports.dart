@@ -39,7 +39,7 @@ final class CannotRemoveLastOwner extends RemoveMemberOutcome {
 /// Porta de persistência de Workspace (DIP · ISP).
 ///
 /// IDs são String (UUID) conforme contrato OpenAPI.
-abstract interface class WorkspaceRepository {
+abstract interface class IWorkspaceRepository {
   Future<WorkspaceEntity?> findById(String id);
 
   Future<WorkspaceWithRole> createWithRole({

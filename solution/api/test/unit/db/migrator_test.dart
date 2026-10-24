@@ -2,7 +2,7 @@ import 'package:devtasks_api/devtasks_api.dart';
 import 'package:test/test.dart';
 
 /// Executor fake: registra a ordem dos comandos executados.
-class _FakeExecutor implements SqlExecutor {
+class _FakeExecutor implements ISqlExecutor {
   final List<String> executed = [];
 
   @override
@@ -18,7 +18,7 @@ class _FakeExecutor implements SqlExecutor {
 }
 
 /// Store fake: simula o controle de versão em memória.
-class _FakeStore implements MigrationStore {
+class _FakeStore implements IMigrationStore {
   _FakeStore([Set<String>? applied]) : applied = {...?applied};
 
   final Set<String> applied;

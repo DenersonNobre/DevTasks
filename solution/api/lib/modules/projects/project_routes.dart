@@ -24,9 +24,9 @@ class ProjectRoutes {
     required this.authenticator,
   });
 
-  final ProjectRepository projectRepository;
-  final WorkspaceRepository workspaceRepository;
-  final SessionAuthenticator authenticator;
+  final IProjectRepository projectRepository;
+  final IWorkspaceRepository workspaceRepository;
+  final ISessionAuthenticator authenticator;
 
   /// Registra as rotas de Projeto no roteador principal.
   void register(Router router) {

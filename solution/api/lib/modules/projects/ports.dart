@@ -3,7 +3,7 @@ import 'domain/project_entity.dart';
 /// Porta de persistência de Projetos (DIP · ISP).
 ///
 /// IDs são String (UUID) conforme contrato OpenAPI e schema PostgreSQL.
-abstract interface class ProjectRepository {
+abstract interface class IProjectRepository {
   /// Busca um projeto por ID.
   Future<ProjectEntity?> findById(String projectId);
 

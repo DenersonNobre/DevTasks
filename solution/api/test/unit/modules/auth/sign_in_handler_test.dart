@@ -2,7 +2,7 @@ import 'package:devtasks_api/modules/auth/ports.dart';
 import 'package:devtasks_api/modules/auth/sign_in_handler.dart';
 import 'package:test/test.dart';
 
-class _Credentials implements CredentialRepository {
+class _Credentials implements ICredentialRepository {
   _Credentials({Map<String, String>? hashes}) : _hashes = hashes ?? {};
 
   final Map<String, String> _hashes;
@@ -22,7 +22,7 @@ class _Credentials implements CredentialRepository {
   Future<String?> findEmailById(String userId) async => 'user-1@ex.com';
 }
 
-class _Verifier implements PasswordVerifier {
+class _Verifier implements IPasswordVerifier {
   int verifyCalls = 0;
   final List<String> hashes = [];
 

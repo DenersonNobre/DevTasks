@@ -15,6 +15,16 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-24 — Padronização de Interfaces com Prefixo 'I' no Módulo API (Convenção do Oráculo)
+
+- **Sintoma**: Classes abstratas e interfaces puras na camada de portas e infraestrutura de `solution/api` estavam sem o prefixo `'I'` (ex.: `WorkspaceRepository`, `ProjectRepository`, `SqlExecutor`, `UserRepository`), divergindo da convenção arquitetural do Oráculo.
+- **Causa raiz**: Declarações iniciais das portas em Dart utilizaram nomenclatura sem prefixo húngaro/tipado.
+- **Fix**:
+  1. Renomeadas todas as interfaces e classes abstratas de `solution/api` para prefixo `'I'`: `IMigrationStore`, `ISqlExecutor`, `IUserRepository`, `IPasswordHasher`, `ICredentialRepository`, `IPasswordVerifier`, `ISessionAuthenticator`, `ISessionRepository`, `IRateLimiter`, `IProjectRepository`, `IWorkspaceRepository`.
+  2. Atualizadas todas as implementações concretas (`Postgres*`), rotas HTTP (`*Routes`), serviços e adaptadores.
+  3. Atualizados todos os fakes e mocks da suíte de testes unitários e de integração.
+- **Prevenção**: Classes abstratas e interfaces puras declaradas no projeto devem adotar o prefixo `'I'` (`I<Nome>`) como regra explícita de arquitetura.
+
 ## 2026-10-23 — Emissão e Validação de Token de Sessão Opaco e Persistência Serverpod (UC-01.07)
 
 - **Sintoma**: Necessidade de autenticar chamadas de API e manter sessões ativas com token de segurança opaco (bearer token), sem reutilizar a tabela `AuthKey` do `serverpod_auth_server-3.4.13` (que carece de TTL e revogação explícita), eliminando vazamento de credenciais no cliente e mitigando ataques de canal lateral.

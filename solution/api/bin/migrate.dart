@@ -42,7 +42,7 @@ Future<void> main(List<String> args) async {
   }
 }
 
-Future<void> _printStatus(MigrationStore store, List<Migration> migrations) async {
+Future<void> _printStatus(IMigrationStore store, List<Migration> migrations) async {
   await store.ensureReady();
   final applied = await store.appliedVersions();
   for (final migration in migrations) {
@@ -51,7 +51,7 @@ Future<void> _printStatus(MigrationStore store, List<Migration> migrations) asyn
   }
 }
 
-Future<void> _resetGuarded(SqlExecutor sql) async {
+Future<void> _resetGuarded(ISqlExecutor sql) async {
   final allowed = Platform.environment['DEVTASKS_ALLOW_RESET'] == 'true';
   if (!allowed) {
     stderr.writeln(

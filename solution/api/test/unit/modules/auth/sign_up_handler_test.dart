@@ -14,7 +14,7 @@ class _Created {
   final String passwordHash;
 }
 
-class _FakeUserRepository implements UserRepository {
+class _FakeUserRepository implements IUserRepository {
   _FakeUserRepository({
     this.existingEmails = const {},
     this.failOnCreateEmails = const {},
@@ -56,7 +56,7 @@ class _FakeUserRepository implements UserRepository {
   }
 }
 
-class _SpyPasswordHasher implements PasswordHasher {
+class _SpyPasswordHasher implements IPasswordHasher {
   int hashCalls = 0;
 
   @override

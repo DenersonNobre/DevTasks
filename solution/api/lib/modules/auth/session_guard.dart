@@ -27,7 +27,7 @@ class GuardOutcome {
 }
 
 /// Autenticador padrão enquanto a emissão de token não existe (follow-up).
-class NoSessionAuthenticator implements SessionAuthenticator {
+class NoSessionAuthenticator implements ISessionAuthenticator {
   const NoSessionAuthenticator();
 
   @override
@@ -43,7 +43,7 @@ class SessionGuard {
 
   static const String notAuthenticatedMessage = 'Sessão ausente ou inválida.';
 
-  final SessionAuthenticator _authenticator;
+  final ISessionAuthenticator _authenticator;
 
   Future<GuardOutcome> requireSession(String? token) async {
     if (token == null || token.isEmpty) {

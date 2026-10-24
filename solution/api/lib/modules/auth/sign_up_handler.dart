@@ -37,8 +37,8 @@ class SignUpOutcome {
 class SignUpHandler {
   SignUpHandler(this._repository, this._hasher);
 
-  final UserRepository _repository;
-  final PasswordHasher _hasher;
+  final IUserRepository _repository;
+  final IPasswordHasher _hasher;
 
   Future<SignUpOutcome> execute(SignUpCommand command) async {
     final name = command.name.trim();

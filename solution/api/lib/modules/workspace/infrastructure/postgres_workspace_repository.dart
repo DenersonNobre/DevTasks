@@ -13,10 +13,10 @@ import '../ports.dart';
 /// - Criação atômica workspace + owner em transação/CTE única (INV-09);
 /// - Restrição de membros duplicados (INV-09, código PG 23505);
 /// - Recusa de remoção do último owner (SPEC §4.1).
-class PostgresWorkspaceRepository implements WorkspaceRepository {
+class PostgresWorkspaceRepository implements IWorkspaceRepository {
   const PostgresWorkspaceRepository(this._sql);
 
-  final SqlExecutor _sql;
+  final ISqlExecutor _sql;
 
   static const String _uniqueViolationCode = '23505';
 

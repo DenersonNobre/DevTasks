@@ -5,7 +5,7 @@ import 'package:devtasks_api/modules/auth/session_service.dart';
 import 'package:test/test.dart';
 
 /// Repositório fake em memória (chave = tokenHash).
-class _FakeSessionRepository implements SessionRepository {
+class _FakeSessionRepository implements ISessionRepository {
   final Map<String, SessionRecord> byHash = {};
 
   @override
@@ -28,7 +28,7 @@ class _FakeSessionRepository implements SessionRepository {
   }
 }
 
-class _FakeCredentialRepository implements CredentialRepository {
+class _FakeCredentialRepository implements ICredentialRepository {
   _FakeCredentialRepository(this.email);
 
   final String? email;

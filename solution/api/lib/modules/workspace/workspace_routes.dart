@@ -25,8 +25,8 @@ class WorkspaceRoutes {
     required this.authenticator,
   });
 
-  final WorkspaceRepository workspaceRepository;
-  final SessionAuthenticator authenticator;
+  final IWorkspaceRepository workspaceRepository;
+  final ISessionAuthenticator authenticator;
 
   /// Registra as rotas de Workspace no roteador principal.
   void register(Router router) {

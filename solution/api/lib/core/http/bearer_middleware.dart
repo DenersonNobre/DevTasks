@@ -11,9 +11,9 @@ const String sessionTokenKey = 'sessionToken';
 
 /// Middleware de autenticação Bearer (INV-SEC-16).
 ///
-/// Exige cabeçalho `Authorization: Bearer <token>` e valida via [SessionAuthenticator].
+/// Exige cabeçalho `Authorization: Bearer <token>` e valida via [ISessionAuthenticator].
 /// Não vaza detalhes de usuário no log nem em mensagens de erro.
-Middleware bearerMiddleware(SessionAuthenticator authenticator) {
+Middleware bearerMiddleware(ISessionAuthenticator authenticator) {
   return (Handler innerHandler) {
     return (Request request) async {
       final header = request.headers['authorization'] ??

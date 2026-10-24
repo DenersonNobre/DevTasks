@@ -4,14 +4,14 @@ import '../ports.dart';
 
 /// Adaptador PostgreSQL para persistência de Projetos (D-08).
 ///
-/// Implementa [ProjectRepository] garantindo:
+/// Implementa [IProjectRepository] garantindo:
 /// - IDs UUID conformes ao contrato OpenAPI;
 /// - Isolamento por workspace através da chave estrangeira `workspace_id` (INV-01);
 /// - DIP: desacoplado de HTTP e camada de transporte.
-class PostgresProjectRepository implements ProjectRepository {
+class PostgresProjectRepository implements IProjectRepository {
   const PostgresProjectRepository(this._sql);
 
-  final SqlExecutor _sql;
+  final ISqlExecutor _sql;
 
   @override
   Future<ProjectEntity?> findById(String projectId) async {

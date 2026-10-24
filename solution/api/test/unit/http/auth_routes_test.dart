@@ -4,7 +4,7 @@ import 'package:devtasks_api/devtasks_api.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
-class _FakeUserRepository implements UserRepository, CredentialRepository {
+class _FakeUserRepository implements IUserRepository, ICredentialRepository {
   final Map<String, RegisteredUser> usersByEmail = {};
   final Map<String, String> passwordsByEmail = {};
   final Map<String, RegisteredUser> usersById = {};
@@ -55,7 +55,7 @@ class _FakeUserRepository implements UserRepository, CredentialRepository {
       usersById[userId]?.email;
 }
 
-class _FakeSessionRepository implements SessionRepository {
+class _FakeSessionRepository implements ISessionRepository {
   final Map<String, SessionRecord> sessions = {};
 
   @override
@@ -82,7 +82,7 @@ class _FakeSessionRepository implements SessionRepository {
   }
 }
 
-class _FastPasswordHasher implements PasswordHasher, PasswordVerifier {
+class _FastPasswordHasher implements IPasswordHasher, IPasswordVerifier {
   @override
   Future<String> hash(String password) async => 'fast-hash:$password';
 

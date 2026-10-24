@@ -16,7 +16,7 @@ void main() {
 
   group('UC-08.02 — migrations contra Postgres real', () {
     late Pool<Session> pool;
-    late SqlExecutor sql;
+    late ISqlExecutor sql;
     late SqlMigrationStore store;
     late List<Migration> migrations;
 

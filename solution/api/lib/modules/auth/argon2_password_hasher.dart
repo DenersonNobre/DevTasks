@@ -20,7 +20,7 @@ import 'ports.dart';
 ///
 /// Formato de hash versionado e autodescritivo (PHC string format, RFC 9106):
 /// `$argon2id$v=19$m=19456,t=2,p=1$<salt_base64>$<hash_base64>`
-class Argon2PasswordHasher implements PasswordHasher, PasswordVerifier {
+class Argon2PasswordHasher implements IPasswordHasher, IPasswordVerifier {
   const Argon2PasswordHasher({
     this.memoryKiB = defaultMemoryKiB,
     this.iterations = defaultIterations,

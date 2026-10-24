@@ -4,7 +4,7 @@ import 'package:devtasks_api/devtasks_api.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
-class _FakeProjectRepository implements ProjectRepository {
+class _FakeProjectRepository implements IProjectRepository {
   final Map<String, ProjectEntity> projects = {};
 
   @override
@@ -49,7 +49,7 @@ class _FakeProjectRepository implements ProjectRepository {
   }
 }
 
-class _FakeWorkspaceRepository implements WorkspaceRepository {
+class _FakeWorkspaceRepository implements IWorkspaceRepository {
   final Map<String, WorkspaceEntity> workspaces = {};
   final Map<String, WorkspaceMemberRole> roles = {};
 
@@ -71,7 +71,7 @@ class _FakeWorkspaceRepository implements WorkspaceRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _FakeAuthenticator implements SessionAuthenticator {
+class _FakeAuthenticator implements ISessionAuthenticator {
   final Map<String, AuthenticatedUser> tokens = {
     'token-owner': const AuthenticatedUser(id: 'owner-1', email: 'owner@test.com'),
     'token-dev': const AuthenticatedUser(id: 'dev-1', email: 'dev@test.com'),

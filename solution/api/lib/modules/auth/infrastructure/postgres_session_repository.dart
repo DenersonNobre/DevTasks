@@ -7,10 +7,10 @@ import '../ports.dart';
 /// - Persistência apenas do hash SHA-256 do token (INV-SEC-17);
 /// - Revogação idempotente via marcação temporal `revoked_at`;
 /// - DIP: sem acoplamento com HTTP ou framework web.
-class PostgresSessionRepository implements SessionRepository {
+class PostgresSessionRepository implements ISessionRepository {
   const PostgresSessionRepository(this._sql);
 
-  final SqlExecutor _sql;
+  final ISqlExecutor _sql;
 
   @override
   Future<void> save(SessionRecord session) async {

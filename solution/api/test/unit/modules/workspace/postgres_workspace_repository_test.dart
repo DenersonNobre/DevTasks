@@ -16,7 +16,7 @@ class _FakeUniqueViolationException implements ServerException {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _MockSqlExecutor implements SqlExecutor {
+class _MockSqlExecutor implements ISqlExecutor {
   String? lastSql;
   Map<String, Object?>? lastParameters;
   List<Map<String, Object?>> queryResult = [];

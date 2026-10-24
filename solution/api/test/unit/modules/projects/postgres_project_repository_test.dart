@@ -2,7 +2,7 @@ import 'package:devtasks_api/core/db/sql_executor.dart';
 import 'package:devtasks_api/modules/projects/infrastructure/postgres_project_repository.dart';
 import 'package:test/test.dart';
 
-class _MockSqlExecutor implements SqlExecutor {
+class _MockSqlExecutor implements ISqlExecutor {
   String? lastSql;
   Map<String, Object?>? lastParameters;
   List<Map<String, Object?>> queryResult = [];

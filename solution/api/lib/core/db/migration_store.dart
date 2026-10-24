@@ -5,7 +5,7 @@ import 'sql_executor.dart';
 ///
 /// SRP: ler e escrever o controle de versão do schema.
 /// NÃO faz: executar o SQL da migration (isso é do [Migrator]).
-abstract interface class MigrationStore {
+abstract interface class IMigrationStore {
   Future<void> ensureReady();
 
   Future<Set<String>> appliedVersions();
@@ -14,10 +14,10 @@ abstract interface class MigrationStore {
 }
 
 /// Implementação em tabela `schema_migrations`.
-class SqlMigrationStore implements MigrationStore {
+class SqlMigrationStore implements IMigrationStore {
   const SqlMigrationStore(this._sql);
 
-  final SqlExecutor _sql;
+  final ISqlExecutor _sql;
 
   static const String _createTable = '''
 CREATE TABLE IF NOT EXISTS schema_migrations (
