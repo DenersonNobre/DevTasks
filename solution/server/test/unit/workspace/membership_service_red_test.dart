@@ -1,6 +1,5 @@
 import 'package:devtasks_server/src/generated/protocol.dart';
 import 'package:devtasks_server/src/modules/workspace/domain/workspace_entity.dart';
-import 'package:devtasks_server/src/modules/workspace/domain/workspace_name.dart';
 import 'package:devtasks_server/src/modules/workspace/ports.dart';
 import 'package:devtasks_server/src/modules/workspace/workspace_service.dart';
 import 'package:test/test.dart';
