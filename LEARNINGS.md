@@ -15,6 +15,19 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-24 — Validação de Contrato OpenAPI 3.1 com Paridade Bidirecional e Prova Negativa (UC-08.06)
+
+- **Sintoma**: Risco de "drift" silencioso entre o documento OpenAPI 3.1 (`docs/api/openapi.yaml`) e os endpoints implementados no servidor shelf, ou de campos do contrato divergirem dos tipos estritos (ex.: inteiros x UUIDs, ISO-8601 UTC).
+- **Causa raiz**: Servidores shelf não possuem geração automática intrínseca do OpenAPI; sem um gate mecanizado e testes de contrato, rotas novas ou alteradas em código podem ficar sem documentação ou violar o contrato do cliente.
+- **Fix**:
+  1. Criado `tools/contract-gate.ps1` que extrai as rotas registradas em `shelf_router` e as compara com as operações declaradas no `openapi.yaml`, impondo paridade 1:1.
+  2. Implementado teste em Dart (`solution/api/test/contract/openapi_contract_test.dart`) cobrindo:
+     - Validação estrita de formatos (`format: uuid` para IDs e `format: date-time` para datas);
+     - Prova negativa demonstrando que remoção ou adição não autorizada de rota falha a suite;
+     - Garantia de que rotas autenticadas declaram resposta 401 e que envelopes de erro canônicos são mantidos.
+  3. Adicionada suíte de testes de governança `tools/tests/test_contract_gate.ps1` integrada ao runner `tools/test.ps1`.
+- **Prevenção**: `tools/contract-gate.ps1` acionado no pipeline de CI/governança como gate obrigatório.
+
 ## 2026-10-24 — Padronização de Interfaces com Prefixo 'I' no App Flutter (Convenção do Oráculo)
 
 - **Sintoma**: Portas e abstrações puras de `solution/app` (`AuthClient`, `ProjectClient`, `SessionStore`, `SecureKeyValueStore`, `BaseFailure`, `EntityId`) não continham o prefixo `'I'`, gerando assimetria com as regras de Dart do usuário documentadas em `~/.agents/rules/topics/flutter.md`.

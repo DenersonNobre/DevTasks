@@ -14,7 +14,7 @@ void main() {
   late YamlMap schemas;
 
   setUpAll(() {
-    final file = File('../../docs/api/openapi.yaml');
+    final file = _resolveContractFile();
     expect(file.existsSync(), isTrue, reason: 'contrato não encontrado: ${file.path}');
     contract = loadYaml(file.readAsStringSync()) as YamlMap;
     paths = contract['paths'] as YamlMap;
@@ -107,6 +107,166 @@ void main() {
       expect(missing, isEmpty, reason: 'refs órfãos: $missing');
     });
   });
+
+  group('OpenAPI — Paridade bidirecional com código da API (UC-08.06)', () {
+    test('todas as rotas registradas no código shelf existem no OpenAPI', () {
+      final codeRoutes = _extractRoutesFromCode();
+      final openApiRoutes = _extractRoutesFromOpenApi(paths);
+
+      final missingInOpenApi = codeRoutes.difference(openApiRoutes);
+      expect(
+        missingInOpenApi,
+        isEmpty,
+        reason: 'Rotas implementadas no código mas ausentes no OpenAPI: $missingInOpenApi',
+      );
+
+      final missingInCode = openApiRoutes.difference(codeRoutes);
+      expect(
+        missingInCode,
+        isEmpty,
+        reason: 'Rotas documentadas no OpenAPI mas ausentes no código: $missingInCode',
+      );
+    });
+
+    test('prova negativa: divergência de rota detecta falha', () {
+      final openApiRoutes = _extractRoutesFromOpenApi(paths);
+      final fakeCodeRoutes = Set<String>.from(openApiRoutes)..remove('GET /health');
+
+      expect(
+        openApiRoutes.difference(fakeCodeRoutes),
+        contains('GET /health'),
+        reason: 'Prova negativa: remoção de rota deve ser detectada pela checagem de diferença',
+      );
+    });
+  });
+
+  group('OpenAPI — Tipagem e Contratos de Dados (D-08 / UC-08.06)', () {
+    test('todos os schemas requerem formato uuid para identificadores', () {
+      final entitySchemas = ['User', 'Workspace', 'WorkspaceWithRole', 'Project', 'Session'];
+      for (final name in entitySchemas) {
+        if (!schemas.containsKey(name)) continue;
+        final schema = schemas[name] as YamlMap;
+        final props = schema['properties'] as YamlMap?;
+        if (props == null) continue;
+
+        if (props.containsKey('id')) {
+          final idProp = props['id'] as YamlMap;
+          expect(idProp['type'], equals('string'), reason: '$name.id deve ser string');
+          expect(idProp['format'], equals('uuid'), reason: '$name.id deve ter format: uuid');
+        }
+        if (props.containsKey('userId')) {
+          final userIdProp = props['userId'] as YamlMap;
+          expect(userIdProp['type'], equals('string'), reason: '$name.userId deve ser string');
+          expect(userIdProp['format'], equals('uuid'), reason: '$name.userId deve ter format: uuid');
+        }
+        if (props.containsKey('workspaceId')) {
+          final wsIdProp = props['workspaceId'] as YamlMap;
+          expect(wsIdProp['type'], equals('string'), reason: '$name.workspaceId deve ser string');
+          expect(wsIdProp['format'], equals('uuid'), reason: '$name.workspaceId deve ter format: uuid');
+        }
+      }
+    });
+
+    test('todos os timestamps requerem formato date-time', () {
+      final timeSchemas = ['Workspace', 'WorkspaceWithRole', 'Project', 'Session'];
+      for (final name in timeSchemas) {
+        if (!schemas.containsKey(name)) continue;
+        final schema = schemas[name] as YamlMap;
+        final props = schema['properties'] as YamlMap?;
+        if (props == null) continue;
+
+        if (props.containsKey('createdAt')) {
+          final createdAtProp = props['createdAt'] as YamlMap;
+          expect(createdAtProp['type'], equals('string'));
+          expect(createdAtProp['format'], equals('date-time'), reason: '$name.createdAt deve ser date-time');
+        }
+        if (props.containsKey('expiresAt')) {
+          final expiresAtProp = props['expiresAt'] as YamlMap;
+          expect(expiresAtProp['type'], equals('string'));
+          expect(expiresAtProp['format'], equals('date-time'), reason: '$name.expiresAt deve ser date-time');
+        }
+      }
+    });
+
+    test('todas as operações possuem contrato de request e response documentados', () {
+      for (final entry in paths.entries) {
+        final path = entry.key as String;
+        final pathItem = entry.value as YamlMap;
+        for (final method in ['get', 'post', 'patch', 'delete']) {
+          final operation = pathItem[method] as YamlMap?;
+          if (operation == null) continue;
+
+          final responses = operation['responses'] as YamlMap?;
+          expect(responses, isNotNull, reason: '$method $path deve declarar responses');
+
+          // Deve ter ao menos uma resposta de sucesso (200, 201, 204)
+          final hasSuccess = responses!.keys.any((k) => ['200', '201', '204'].contains(k.toString()));
+          expect(hasSuccess, isTrue, reason: '$method $path deve ter resposta 200, 201 ou 204');
+
+          // Rotas autenticadas devem documentar 401
+          if (path != '/health' && path != '/auth/signup' && path != '/auth/signin') {
+            expect(responses.containsKey('401'), isTrue, reason: '$method $path deve documentar 401');
+          }
+        }
+      }
+    });
+  });
+}
+
+/// Extrai rotas do documento OpenAPI no formato "METHOD /path".
+Set<String> _extractRoutesFromOpenApi(YamlMap paths) {
+  final routes = <String>{};
+  for (final pathEntry in paths.entries) {
+    final path = pathEntry.key as String;
+    final pathItem = pathEntry.value as YamlMap;
+    for (final method in ['get', 'post', 'patch', 'put', 'delete']) {
+      if (pathItem.containsKey(method)) {
+        routes.add('${method.toUpperCase()} $path');
+      }
+    }
+  }
+  return routes;
+}
+
+/// Resolve o arquivo de contrato independentemente do diretório de execução.
+File _resolveContractFile() {
+  const direct = 'docs/api/openapi.yaml';
+  if (File(direct).existsSync()) return File(direct);
+  const upTwo = '../../docs/api/openapi.yaml';
+  if (File(upTwo).existsSync()) return File(upTwo);
+  const upOne = '../docs/api/openapi.yaml';
+  if (File(upOne).existsSync()) return File(upOne);
+  return File(direct);
+}
+
+/// Extrai rotas dos arquivos Dart de rotas do shelf no formato "METHOD /path".
+Set<String> _extractRoutesFromCode() {
+  final routes = <String>{};
+  final prefix = Directory('solution/api/lib').existsSync() ? 'solution/api/' : '';
+  final candidateFiles = [
+    '${prefix}lib/core/http/router.dart',
+    '${prefix}lib/modules/auth/auth_routes.dart',
+    '${prefix}lib/modules/workspace/workspace_routes.dart',
+    '${prefix}lib/modules/projects/project_routes.dart',
+  ];
+
+  final regex = RegExp(r"router\.(get|post|patch|put|delete)\(\s*'([^']+)'");
+
+  for (final relPath in candidateFiles) {
+    final file = File(relPath);
+    if (!file.existsSync()) continue;
+    final content = file.readAsStringSync();
+    final matches = regex.allMatches(content);
+    for (final m in matches) {
+      final method = m.group(1)!.toUpperCase();
+      var path = m.group(2)!;
+      // Converte parâmetros shelf (<param>) para formato OpenAPI ({param})
+      path = path.replaceAllMapped(RegExp(r'<([^>]+)>'), (pm) => '{${pm.group(1)}}');
+      routes.add('$method $path');
+    }
+  }
+
+  return routes;
 }
 
 /// Resolve um `$ref` local (`#/components/...`) contra o documento.

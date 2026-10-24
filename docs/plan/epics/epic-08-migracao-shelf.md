@@ -1,6 +1,6 @@
 # EPIC-08 — Migração Serverpod → shelf (contrato neutro)
 
-> Status: 🔄 Em execução | Prioridade: Crítica | Dependências: EPIC-00, EPIC-01, EPIC-02, EPIC-03
+> Status: ✅ Concluída | Prioridade: Crítica | Dependências: EPIC-00, EPIC-01, EPIC-02
 > Decisão: **D-08** (`DESIGN.md`) — supera `D-ENG-01/03/04/06/08`.
 
 ## 1. Objetivo e Valor de Negócio
@@ -34,8 +34,8 @@ acoplamento e permite trocar o backend sem tocar em `domain/` nem `presentation/
 | F8.3 | Auth (signup/signin/signout/me) | 1 | Crítico: 891 LOC portáveis + INV-SEC | ✅ |
 | F8.4 | Workspace & membros | 1 | Médio: INV-01/06/09 | ✅ |
 | F8.5 | Projetos (re-certifica UC-03.01) | 1 | Médio: INV-01/06 | ✅ |
-| F8.6 | Contrato OpenAPI + teste de contrato + gate | 1 | **Crítico: é o objetivo do épico** | ⏳ |
-| F8.7 | App: adaptadores HTTP, remover `devtasks_client` | 1 | Médio: 2 adaptadores | ⏳ |
+| F8.6 | Contrato OpenAPI + teste de contrato + gate | 1 | **Crítico: é o objetivo do épico** | ✅ |
+| F8.7 | App: adaptadores HTTP, remover `devtasks_client` | 1 | Médio: 2 adaptadores | ✅ |
 | F8.8 | Descomissionar Serverpod (código, deps, CI, docs) | 1 | Alto: só após F8.3–F8.7 verdes | ✅ |
 
 ---
