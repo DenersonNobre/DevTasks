@@ -43,6 +43,25 @@ class RegisteredUser {
   final bool emailVerified;
 }
 
+/// Perfil do usuário autenticado exposto na API (OpenAPI #/components/schemas/UserProfile).
+class UserProfile {
+  const UserProfile({
+    required this.userId,
+    required this.name,
+    required this.email,
+  });
+
+  final String userId;
+  final String name;
+  final String email;
+
+  Map<String, Object?> toJson() => {
+        'userId': userId,
+        'name': name,
+        'email': email,
+      };
+}
+
 /// Resultado tipado da criação de usuário (falha esperada é valor, não exceção).
 sealed class CreateUserOutcome {
   const CreateUserOutcome();
@@ -70,6 +89,9 @@ abstract interface class UserRepository {
     required String email,
     required String passwordHash,
   });
+
+  /// Busca o perfil público de um usuário por ID (ou `null` se inexistente).
+  Future<UserProfile?> findById(String userId);
 }
 
 /// Porta de criptografia: a senha só cruza a fronteira já como hash.

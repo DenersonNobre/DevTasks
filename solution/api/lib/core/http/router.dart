@@ -1,6 +1,7 @@
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../../modules/auth/auth_routes.dart';
 import 'api_exception.dart';
 import 'cors_middleware.dart';
 import 'error_middleware.dart';
@@ -12,9 +13,13 @@ import 'json_response.dart';
 /// permite que testes invoquem o handler diretamente, sem porta TCP.
 ///
 /// [corsOrigin] deve ser uma allowlist em produção (`*` só em dev).
-Handler buildHandler({String corsOrigin = '*'}) {
+Handler buildHandler({
+  String corsOrigin = '*',
+  AuthRoutes? authRoutes,
+}) {
   final router = Router(notFoundHandler: _notFound);
   router.get('/health', _health);
+  authRoutes?.register(router);
 
   return const Pipeline()
       .addMiddleware(errorMiddleware())

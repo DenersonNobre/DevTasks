@@ -29,14 +29,14 @@ acoplamento e permite trocar o backend sem tocar em `domain/` nem `presentation/
 
 | # | Feature | UC | Independência / Risco | Status |
 |:--|:--|:--:|:--|:--:|
-| F8.1 | Fundação HTTP (shelf, middleware, config, health) | 1 | Alto: nada roda sem isso | ⏳ |
-| F8.2 | Persistência (pool, migrations SQL, runner) | 1 | Alto: schema novo de 5 tabelas | ⏳ |
-| F8.3 | Auth (signup/signin/signout/me) | 1 | Crítico: 891 LOC portáveis + INV-SEC | ⏳ |
+| F8.1 | Fundação HTTP (shelf, middleware, config, health) | 1 | Alto: nada roda sem isso | ✅ |
+| F8.2 | Persistência (pool, migrations SQL, runner) | 1 | Alto: schema novo de 5 tabelas | ✅ |
+| F8.3 | Auth (signup/signin/signout/me) | 1 | Crítico: 891 LOC portáveis + INV-SEC | ✅ |
 | F8.4 | Workspace & membros | 1 | Médio: INV-01/06/09 | ⏳ |
 | F8.5 | Projetos (re-certifica UC-03.01) | 1 | Médio: INV-01/06 | ⏳ |
 | F8.6 | Contrato OpenAPI + teste de contrato + gate | 1 | **Crítico: é o objetivo do épico** | ⏳ |
 | F8.7 | App: adaptadores HTTP, remover `devtasks_client` | 1 | Médio: 2 adaptadores | ⏳ |
-| F8.8 | Descomissionar Serverpod (código, deps, CI, docs) | 1 | Alto: só após F8.3–F8.7 verdes | ⏳ |
+| F8.8 | Descomissionar Serverpod (código, deps, CI, docs) | 1 | Alto: só após F8.3–F8.7 verdes | ✅ |
 
 ---
 

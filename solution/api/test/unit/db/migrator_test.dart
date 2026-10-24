@@ -6,10 +6,15 @@ class _FakeExecutor implements SqlExecutor {
   final List<String> executed = [];
 
   @override
-  Future<void> execute(String sql) async => executed.add(sql);
+  Future<void> execute(String sql, {Map<String, Object?>? parameters}) async =>
+      executed.add(sql);
 
   @override
-  Future<List<Map<String, Object?>>> query(String sql) async => const [];
+  Future<List<Map<String, Object?>>> query(
+    String sql, {
+    Map<String, Object?>? parameters,
+  }) async =>
+      const [];
 }
 
 /// Store fake: simula o controle de versão em memória.

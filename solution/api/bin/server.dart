@@ -3,13 +3,40 @@ import 'dart:io';
 import 'package:devtasks_api/devtasks_api.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
-/// Entrypoint da API (UC-08.01).
+/// Entrypoint da API (UC-08.01 / UC-08.03).
 ///
 /// Sobe o servidor shelf com o handler de [buildHandler] na porta configurada.
 Future<void> main() async {
   final config = AppConfig.current();
+  final pool = openPool(config.databaseUrl);
+  final sql = PgSqlExecutor(pool);
+
+  final userRepo = PostgresUserRepository(sql);
+  final sessionRepo = PostgresSessionRepository(sql);
+  final hasher = Argon2PasswordHasher();
+  final signUpHandler = SignUpHandler(userRepo, hasher);
+  final signInHandler = SignInHandler(userRepo, hasher);
+  final sessionService = SessionService(
+    repository: sessionRepo,
+    credentialRepository: userRepo,
+  );
+  final rateLimiter = InMemoryRateLimiter(now: DateTime.now);
+
+  final authRoutes = AuthRoutes(
+    signUpHandler: signUpHandler,
+    signInHandler: signInHandler,
+    sessionService: sessionService,
+    userRepository: userRepo,
+    rateLimiter: rateLimiter,
+  );
+
+  final handler = buildHandler(
+    corsOrigin: config.corsOrigin,
+    authRoutes: authRoutes,
+  );
+
   final server = await shelf_io.serve(
-    buildHandler(corsOrigin: config.corsOrigin),
+    handler,
     config.host,
     config.port,
   );

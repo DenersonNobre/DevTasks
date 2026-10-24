@@ -27,6 +27,7 @@ abstract final class JsonResponse {
     required String errorCode,
     required String message,
     String? field,
+    Map<String, String>? headers,
   }) =>
       Response(
         status,
@@ -35,6 +36,9 @@ abstract final class JsonResponse {
           'message': message,
           if (field != null) 'field': field,
         }),
-        headers: _headers,
+        headers: {
+          ..._headers,
+          if (headers != null) ...headers,
+        },
       );
 }

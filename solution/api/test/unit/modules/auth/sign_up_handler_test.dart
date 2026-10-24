@@ -47,6 +47,13 @@ class _FakeUserRepository implements UserRepository {
     created.add(_Created(name: name, email: email, passwordHash: passwordHash));
     return UserCreated(user);
   }
+
+  @override
+  Future<UserProfile?> findById(String userId) async {
+    final match = created.where((c) => c.name == userId);
+    if (match.isEmpty) return null;
+    return UserProfile(userId: userId, name: match.first.name, email: match.first.email);
+  }
 }
 
 class _SpyPasswordHasher implements PasswordHasher {

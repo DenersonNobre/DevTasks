@@ -5,9 +5,12 @@ import 'package:postgres/postgres.dart';
 /// SRP: abstrair o driver para permitir teste sem banco.
 /// NÃO faz: montar DSN, decidir transação ou interpretar resultado de negócio.
 abstract interface class SqlExecutor {
-  Future<void> execute(String sql);
+  Future<void> execute(String sql, {Map<String, Object?>? parameters});
 
-  Future<List<Map<String, Object?>>> query(String sql);
+  Future<List<Map<String, Object?>>> query(
+    String sql, {
+    Map<String, Object?>? parameters,
+  });
 }
 
 /// Implementação sobre uma sessão do driver `postgres`.
@@ -17,13 +20,25 @@ class PgSqlExecutor implements SqlExecutor {
   final Session _session;
 
   @override
-  Future<void> execute(String sql) async {
-    await _session.execute(sql);
+  Future<void> execute(String sql, {Map<String, Object?>? parameters}) async {
+    if (parameters != null && parameters.isNotEmpty) {
+      await _session.execute(Sql.named(sql), parameters: parameters);
+    } else {
+      await _session.execute(sql);
+    }
   }
 
   @override
-  Future<List<Map<String, Object?>>> query(String sql) async {
-    final result = await _session.execute(sql);
+  Future<List<Map<String, Object?>>> query(
+    String sql, {
+    Map<String, Object?>? parameters,
+  }) async {
+    final Result result;
+    if (parameters != null && parameters.isNotEmpty) {
+      result = await _session.execute(Sql.named(sql), parameters: parameters);
+    } else {
+      result = await _session.execute(sql);
+    }
     return result.map((row) => row.toColumnMap()).toList();
   }
 }

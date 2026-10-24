@@ -21,6 +21,7 @@ CREATE TABLE devtasks_session (
   token_hash text        NOT NULL,
   expires_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
+  revoked_at timestamptz,
   CONSTRAINT devtasks_session_token_hash_unique UNIQUE (token_hash)
 );
 
