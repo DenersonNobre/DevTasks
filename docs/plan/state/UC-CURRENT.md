@@ -5,50 +5,47 @@
 
 ## UC corrente
 
-**UC-08.01** — Fundação HTTP do servidor shelf (`EPIC-08 · F8.1`). Status: **Concluído ✅**.
+**UC-08.02** — Persistência (migrations + pool + runner) · `EPIC-08 · F8.2`. Status: **Concluído ✅ (com pendência declarada)**.
 
-**Gate 2.5: PULADO** — fatia de transporte (bootstrap/middleware), sem superfície de auth.
-Mitigação já aplicada: CORS deixou de ser `*` fixo e passou a ser configurável por `CORS_ORIGIN`
-(`*` aceito apenas em desenvolvimento; API usa token em header, não cookie).
+**Gate 2.5: PULADO** — schema novo, sem superfície de auth. Cercas de invariante aplicadas no DDL
+(`UNIQUE (email)` INV-08, `CHECK role` INV-06, `UNIQUE (workspace_id,user_id)` INV-09, FKs `ON DELETE CASCADE` INV-01).
 
-## Escopo (DoD da F8.1)
+## Escopo (DoD da F8.2)
 
-- [x] `solution/api` como membro do pub workspace (lock único na raiz).
-- [x] `bin/server.dart` sobe o servidor em porta/host configuráveis por ambiente.
-- [x] `GET /health` → 200 `{"status":"ok"}` e content-type JSON.
-- [x] Middleware de erro: `ApiException` → status/código declarados; inesperado → 500 genérico **sem stack**.
-- [x] CORS com preflight `OPTIONS` e allowlist configurável.
-- [x] Rota inexistente → 404 `ERR_NOT_FOUND`.
+- [x] `migrations/0001_initial.sql` com as 5 tabelas + índices + cercas de invariante.
+- [x] `loadMigrations` determinístico (`<versao>_<nome>.sql`), recusa versão duplicada/não numérica.
+- [x] `Migrator.up()` idempotente, ordem por versão, `skipped` correto.
+- [x] `SqlMigrationStore` em `schema_migrations` (`ON CONFLICT DO NOTHING`).
+- [x] `tools/db.ps1` (`up|status|reset`, reset exige `-Force` + `DEVTASKS_ALLOW_RESET=true`).
+- [ ] **Prova contra Postgres real** — bloqueada: não há banco na máquina. Teste de integração existe
+      e é **declaradamente pulado** sem `DEVTASKS_TEST_DATABASE_URL`. Nada de "validado" sem isso.
 
 ## Interfaces & Portas
 
-- `AppConfig` (`port`, `host`, `databaseUrl`, `sessionTtlHours`, `corsOrigin`) — `toString` redige a senha do DSN.
-- `buildHandler({String corsOrigin})` — composição pura, testável sem rede.
-- `ApiException` com fábricas (`badRequest`, `unauthenticated`, `forbidden`, `notFound`, `conflict`, `rateLimited`).
-- `JsonResponse` (`ok`/`created`/`error`) com envelope canônico `{errorCode, message, field?}`.
+- `SqlExecutor` (`execute`/`query`) + `PgSqlExecutor` + `openPool(dsn)`.
+- `MigrationStore` (`ensureReady`/`appliedVersions`/`markApplied`) + `SqlMigrationStore`.
+- `Migrator({sql, store, migrations})` → `MigrationReport(applied, skipped)`.
+- `loadMigrations(Directory)` → `List<Migration>`, com `MigrationFormatException`.
 
-## Arquivos entregues
+## Bug encontrado e corrigido (pelo teste)
 
-- `solution/api/pubspec.yaml` [NEW]
-- `solution/api/bin/server.dart` [NEW]
-- `solution/api/lib/devtasks_api.dart` [NEW]
-- `solution/api/lib/src/config/env.dart` [NEW]
-- `solution/api/lib/src/http/{api_exception,json_response,error_middleware,cors_middleware,router}.dart` [NEW]
-- `solution/api/test/unit/http/router_test.dart` [NEW]
-- `pubspec.yaml` (raiz) — membro `solution/api` [MODIFY]
+`MigrationReport.skipped` lia o tamanho da coleção **viva** devolvida pelo store (aliasing): após
+marcar, `skipped` virava o total. Corrigido com snapshot (`{...appliedVersions()}`) e cálculo antes do
+loop. O teste que pegou isso permanece (migrator: "aplica pendentes em ordem...").
 
 ## Evidência
 
 ```text
-[EVIDÊNCIA] (UC-08.01)
-- Verificação: dart analyze (solution/api) → No issues found.
-- Confirmação: dart test (solution/api) → 11/11 passed.
-- Cobertura da fatia: /health, 404 canônico, ApiException→400, inesperado→500 sem stack,
-  FormatException→400, preflight OPTIONS, headers CORS, AppConfig defaults/override/redação.
+[EVIDÊNCIA] (UC-08.02)
+- Verificação: dart analyze lib/src/db bin/migrate.dart test/unit/db test/integration/db → No issues found.
+- Confirmação: dart test test/unit/db → 20/20 passed.
+- Cobertura: ordem por versão, skip de aplicadas, idempotência, duplicata recusada, loader (padrão,
+  ordenação, arquivo inválido, versão não numérica, diretório ausente), DDL (5 tabelas + cercas).
+- Pendente: integração real (skip explícito sem DEVTASKS_TEST_DATABASE_URL).
 ```
 
 ## Próximo passo
 
-1. **UC-08.02 (Agente B)** — persistência: migrations SQL (5 tabelas), pool, `tools/db.ps1`.
-2. **UC-08.06a (Agente B)** — autoria de `docs/api/openapi.yaml` (13 rotas, envelope de erro).
-3. Depois: UC-08.03 (auth), 08.04 (workspace), 08.05 (projetos), 08.06 (gate de contrato), 08.07 (app), 08.08 (descomissionar).
+1. **`UC-08.03a` em voo** (Agente B): port do módulo auth base para `solution/api/lib/src/modules/auth/**`.
+2. Depois: `08.03b` repositórios SQL + rotas → `08.04` → `08.05` → `08.06b` (gate de contrato) → `08.07` (app) → `08.08`.
+3. **Bloqueio transversal**: para validar persistência e E2E precisamos de Postgres (Docker, binário portátil sem admin, ou hospedado).

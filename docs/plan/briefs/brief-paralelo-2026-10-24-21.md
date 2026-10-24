@@ -1,5 +1,7 @@
 # Brief Paralelo 21 — EPIC-08 (migração shelf): divisão de trabalho entre 2 agentes
 
+> **Status: CONCLUÍDO (2026-10-24)** — `UC-08.01` (`57c70dd`) + contrato OpenAPI (`141d069`).
+
 > Data: 2026-10-24 · Épico: `docs/plan/epics/epic-08-migracao-shelf.md` · Decisão: `D-08`
 
 ## 1. Decisões fechadas pelo PO (não reabrir)
