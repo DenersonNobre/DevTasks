@@ -8,9 +8,9 @@ import 'package:devtasks_app/modules/auth/domain/auth_client.dart';
 /// segurar a resposta com [pendingSignIn] para observar o estado de carregamento.
 final class FakeAuthClient implements AuthClient {
   IResult<AuthSession, IFailure>? signInResult;
-  IResult<int, IFailure>? signUpResult;
+  IResult<String, IFailure>? signUpResult;
   Completer<IResult<AuthSession, IFailure>>? pendingSignIn;
-  Completer<IResult<int, IFailure>>? pendingSignUp;
+  Completer<IResult<String, IFailure>>? pendingSignUp;
 
   int signInCalls = 0;
   int signUpCalls = 0;
@@ -44,7 +44,7 @@ final class FakeAuthClient implements AuthClient {
   }
 
   @override
-  Future<IResult<int, IFailure>> signUp({
+  Future<IResult<String, IFailure>> signUp({
     required String name,
     required String email,
     required String password,

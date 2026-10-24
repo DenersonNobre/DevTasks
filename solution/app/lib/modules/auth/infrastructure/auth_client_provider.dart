@@ -1,11 +1,12 @@
+// solution/app/lib/modules/auth/infrastructure/auth_client_provider.dart
+// Provider da porta de autenticação (composição na borda).
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/auth_client.dart';
-import 'serverpod_auth_client.dart';
+import 'http_auth_client.dart';
 
-/// Provider do adaptador de autenticação [AuthClient].
-///
-/// Instancia [ServerpodAuthClient] por padrão, podendo receber override em testes.
+/// Instancia o adaptador HTTP por padrão; testes sobrescrevem com fake.
 final authClientProvider = Provider<AuthClient>(
-  (_) => ServerpodAuthClient(),
+  (_) => HttpAuthClient(),
 );

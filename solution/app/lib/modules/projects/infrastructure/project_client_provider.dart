@@ -4,9 +4,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/project_client.dart';
-import 'serverpod_project_client.dart';
+import 'http_project_client.dart';
 
-/// Instancia [ServerpodProjectClient] por padrão; testes sobrescrevem com fake.
+/// Instancia o adaptador HTTP por padrão; testes sobrescrevem com fake.
 final projectClientProvider = Provider<ProjectClient>(
-  (_) => ServerpodProjectClient(),
+  (_) => HttpProjectClient(),
 );

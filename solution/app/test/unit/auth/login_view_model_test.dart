@@ -64,7 +64,7 @@ void main() {
     });
 
     test('sucesso persiste a sessão e normaliza o e-mail', () async {
-      client.signInResult = const Success(AuthSession(userId: 7, token: 'tok-123'));
+      client.signInResult = const Success(AuthSession(userId: 'u-7', token: 'tok-123'));
 
       await viewModel().submit(rawEmail: '  USER@Example.COM ', rawPassword: _validPassword);
 
@@ -83,14 +83,14 @@ void main() {
 
       expect(readState().status, AuthFormStatus.loading);
 
-      client.pendingSignIn!.complete(const Success(AuthSession(userId: 1, token: 'tok')));
+      client.pendingSignIn!.complete(const Success(AuthSession(userId: 'u-1', token: 'tok')));
       await pending;
 
       expect(readState().status, AuthFormStatus.completed);
     });
 
     test('logout limpa a sessão global (o slice não retém token)', () async {
-      client.signInResult = const Success(AuthSession(userId: 7, token: 'tok-123'));
+      client.signInResult = const Success(AuthSession(userId: 'u-7', token: 'tok-123'));
       await viewModel().submit(rawEmail: _validEmail, rawPassword: _validPassword);
 
       await container.read(sessionControllerProvider).signOut();

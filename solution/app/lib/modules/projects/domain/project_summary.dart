@@ -1,6 +1,7 @@
 // solution/app/lib/modules/projects/domain/project_summary.dart
 // VO de leitura de projeto no app (D-07 / UC-03.01).
 // SRP: representar um projeto exibível. NÃO conhece DTO, HTTP, sessão nem Flutter (DIP).
+// IDs são UUID (String) — contrato OpenAPI (`D-08`).
 
 /// Projeto exibível na listagem do workspace.
 final class ProjectSummary {
@@ -10,8 +11,8 @@ final class ProjectSummary {
     required this.name,
   });
 
-  final int id;
-  final int workspaceId;
+  final String id;
+  final String workspaceId;
   final String name;
 
   @override

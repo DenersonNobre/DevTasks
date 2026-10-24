@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/fake_project_client.dart';
 
 const _token = 'tok-abc';
-const _workspaceId = 7;
+final _workspaceId = uuid(7);
 
 void main() {
   late FakeProjectClient client;
@@ -28,9 +28,9 @@ void main() {
 
   group('ProjectsViewModel — listagem (INV-01)', () {
     test('carrega os projetos do workspace e marca ready', () async {
-      client.listResult = const Success([
-        ProjectSummary(id: 1, workspaceId: _workspaceId, name: 'App Mobile'),
-        ProjectSummary(id: 2, workspaceId: _workspaceId, name: 'Site'),
+      client.listResult = Success([
+        ProjectSummary(id: uuid(1), workspaceId: _workspaceId, name: 'App Mobile'),
+        ProjectSummary(id: uuid(2), workspaceId: _workspaceId, name: 'Site'),
       ]);
 
       await viewModel().load(workspaceId: _workspaceId, token: _token);
@@ -103,13 +103,13 @@ void main() {
 
   group('ProjectsViewModel — renomeação', () {
     test('renomear substitui o item correspondente na lista', () async {
-      client.listResult = const Success([
-        ProjectSummary(id: 1, workspaceId: _workspaceId, name: 'Antigo'),
+      client.listResult = Success([
+        ProjectSummary(id: uuid(1), workspaceId: _workspaceId, name: 'Antigo'),
       ]);
       await viewModel().load(workspaceId: _workspaceId, token: _token);
 
       await viewModel().rename(
-        projectId: 1,
+        projectId: uuid(1),
         name: 'Novo',
         token: _token,
       );
@@ -122,7 +122,7 @@ void main() {
       client.renameResult = const Failure(NotFoundFailure());
 
       await viewModel().rename(
-        projectId: 99,
+        projectId: uuid(99),
         name: 'Invasão',
         token: _token,
       );

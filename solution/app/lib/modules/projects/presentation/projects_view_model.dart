@@ -20,7 +20,7 @@ final class ProjectsViewModel extends Notifier<ProjectsState> {
   ProjectsState build() => const ProjectsState();
 
   /// Intent: carregar os projetos ativos do workspace (INV-01 no servidor).
-  Future<void> load({required int workspaceId, required String token}) async {
+  Future<void> load({required String workspaceId, required String token}) async {
     state = state.copyWith(status: ProjectsStatus.loading, clearMessage: true);
 
     final result = await ref.read(projectClientProvider).listByWorkspace(
@@ -42,7 +42,7 @@ final class ProjectsViewModel extends Notifier<ProjectsState> {
 
   /// Intent: criar projeto (INV-06 é aplicado no servidor; erro sobe tipado).
   Future<void> create({
-    required int workspaceId,
+    required String workspaceId,
     required String name,
     required String token,
   }) async {
@@ -82,7 +82,7 @@ final class ProjectsViewModel extends Notifier<ProjectsState> {
 
   /// Intent: renomear um projeto existente.
   Future<void> rename({
-    required int projectId,
+    required String projectId,
     required String name,
     required String token,
   }) async {

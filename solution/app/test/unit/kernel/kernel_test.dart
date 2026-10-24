@@ -114,27 +114,27 @@ void main() {
     });
 
     test('Identificadores tipados possuem igualdade por valor', () {
-      final u1 = UserId(1);
-      final u2 = UserId(1);
-      final u3 = UserId(2);
+      final u1 = UserId('u-1');
+      final u2 = UserId('u-1');
+      final u3 = UserId('u-2');
 
       expect(u1, equals(u2));
       expect(u1 == u3, isFalse);
       expect(u1.hashCode, equals(u2.hashCode));
-      expect(u1.toString(), contains('UserId(1)'));
+      expect(u1.toString(), contains('UserId(u-1)'));
 
-      final w1 = WorkspaceId(10);
-      final p1 = ProjectId(20);
+      final w1 = WorkspaceId('w-10');
+      final p1 = ProjectId('p-20');
       final t1 = TaskId(30);
       final c1 = CommentId(40);
 
-      expect(w1.value, equals(10));
-      expect(p1.value, equals(20));
+      expect(w1.value, equals('w-10'));
+      expect(p1.value, equals('p-20'));
       expect(t1.value, equals(30));
       expect(c1.value, equals(40));
 
-      expect(w1.toString(), contains('WorkspaceId(10)'));
-      expect(p1.toString(), contains('ProjectId(20)'));
+      expect(w1.toString(), contains('WorkspaceId(w-10)'));
+      expect(p1.toString(), contains('ProjectId(p-20)'));
       expect(t1.toString(), contains('TaskId(30)'));
       expect(c1.toString(), contains('CommentId(40)'));
     });

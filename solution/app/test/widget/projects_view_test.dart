@@ -7,13 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/fake_project_client.dart';
 
 const _token = 'tok-abc';
-const _workspaceId = 7;
 
 Widget _harness(FakeProjectClient client) => ProviderScope(
       overrides: [projectClientProvider.overrideWithValue(client)],
-      child: const MaterialApp(
+      child: MaterialApp(
         home: Scaffold(
-          body: ProjectsView(workspaceId: _workspaceId, token: _token),
+          body: ProjectsView(workspaceId: uuid(7), token: _token),
         ),
       ),
     );
@@ -24,8 +23,8 @@ void main() {
   setUp(() => client = FakeProjectClient());
 
   testWidgets('lista renderiza os projetos carregados', (tester) async {
-    client.listResult = const Success([
-      ProjectSummary(id: 1, workspaceId: _workspaceId, name: 'App Mobile'),
+    client.listResult = Success([
+      ProjectSummary(id: uuid(1), workspaceId: uuid(7), name: 'App Mobile'),
     ]);
 
     await tester.pumpWidget(_harness(client));

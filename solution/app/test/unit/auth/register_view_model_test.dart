@@ -86,7 +86,7 @@ void main() {
     });
 
     test('sucesso conclui com userId e não cria sessão (contrato sem token)', () async {
-      client.signUpResult = const Success(42);
+      client.signUpResult = const Success('u-42');
 
       await viewModel().submit(
         rawName: '  Ana Silva ',
@@ -95,14 +95,14 @@ void main() {
       );
 
       expect(readState().status, AuthFormStatus.completed);
-      expect(readState().userId, 42);
+      expect(readState().userId, 'u-42');
       expect(store.token, isNull);
       expect(client.lastName, _validName);
       expect(client.lastEmail, _validEmail);
     });
 
     test('enquanto a porta responde o estado é loading', () async {
-      client.pendingSignUp = Completer<IResult<int, IFailure>>();
+      client.pendingSignUp = Completer<IResult<String, IFailure>>();
 
       final pending = viewModel().submit(
         rawName: _validName,
@@ -113,7 +113,7 @@ void main() {
 
       expect(readState().status, AuthFormStatus.loading);
 
-      client.pendingSignUp!.complete(const Success(42));
+      client.pendingSignUp!.complete(const Success('u-42'));
       await pending;
 
       expect(readState().status, AuthFormStatus.completed);

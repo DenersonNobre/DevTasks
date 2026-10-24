@@ -16,7 +16,7 @@ class ProjectsView extends ConsumerStatefulWidget {
     required this.token,
   });
 
-  final int workspaceId;
+  final String workspaceId;
   final String token;
 
   @override

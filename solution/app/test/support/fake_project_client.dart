@@ -3,6 +3,9 @@ import 'package:devtasks_app/global/kernel/result.dart';
 import 'package:devtasks_app/modules/projects/domain/project_client.dart';
 import 'package:devtasks_app/modules/projects/domain/project_summary.dart';
 
+/// UUID determinístico para testes.
+String uuid(int n) => '00000000-0000-4000-8000-${n.toString().padLeft(12, '0')}';
+
 /// Fake da porta `ProjectClient`: configura resultados e conta chamadas.
 final class FakeProjectClient implements ProjectClient {
   IResult<List<ProjectSummary>, IFailure>? listResult;
@@ -14,12 +17,12 @@ final class FakeProjectClient implements ProjectClient {
   int renameCalls = 0;
   String? lastToken;
   String? lastName;
-  int? lastWorkspaceId;
-  int? lastProjectId;
+  String? lastWorkspaceId;
+  String? lastProjectId;
 
   @override
   Future<IResult<List<ProjectSummary>, IFailure>> listByWorkspace({
-    required int workspaceId,
+    required String workspaceId,
     required String token,
   }) {
     listCalls++;
@@ -30,7 +33,7 @@ final class FakeProjectClient implements ProjectClient {
 
   @override
   Future<IResult<ProjectSummary, IFailure>> create({
-    required int workspaceId,
+    required String workspaceId,
     required String name,
     required String token,
   }) {
@@ -40,13 +43,13 @@ final class FakeProjectClient implements ProjectClient {
     lastToken = token;
     return Future.value(
       createResult ??
-          Success(ProjectSummary(id: 1, workspaceId: workspaceId, name: name)),
+          Success(ProjectSummary(id: uuid(1), workspaceId: workspaceId, name: name)),
     );
   }
 
   @override
   Future<IResult<ProjectSummary, IFailure>> rename({
-    required int projectId,
+    required String projectId,
     required String name,
     required String token,
   }) {
@@ -56,7 +59,7 @@ final class FakeProjectClient implements ProjectClient {
     lastToken = token;
     return Future.value(
       renameResult ??
-          Success(ProjectSummary(id: projectId, workspaceId: 1, name: name)),
+          Success(ProjectSummary(id: projectId, workspaceId: uuid(1), name: name)),
     );
   }
 }

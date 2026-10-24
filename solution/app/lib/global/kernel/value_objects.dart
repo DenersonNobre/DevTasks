@@ -25,18 +25,18 @@ abstract class EntityId<T> {
   String toString() => '$runtimeType($value)';
 }
 
-/// Identificador de Usuário.
-class UserId extends EntityId<int> {
+/// Identificador de Usuário (UUID — `D-08`).
+class UserId extends EntityId<String> {
   const UserId(super.value);
 }
 
-/// Identificador de Workspace.
-class WorkspaceId extends EntityId<int> {
+/// Identificador de Workspace (UUID — `D-08`).
+class WorkspaceId extends EntityId<String> {
   const WorkspaceId(super.value);
 }
 
-/// Identificador de Projeto.
-class ProjectId extends EntityId<int> {
+/// Identificador de Projeto (UUID — `D-08`).
+class ProjectId extends EntityId<String> {
   const ProjectId(super.value);
 }
 

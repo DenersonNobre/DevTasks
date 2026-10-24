@@ -21,7 +21,7 @@ final class RegisterState {
   final String? message;
 
   /// Id do usuário criado (o contrato de cadastro não emite token).
-  final int? userId;
+  final String? userId;
 
   bool get isLoading => status == AuthFormStatus.loading;
   bool get isCompleted => status == AuthFormStatus.completed;

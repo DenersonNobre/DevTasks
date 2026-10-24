@@ -102,7 +102,7 @@ void main() {
         isNull,
       );
 
-      client.pendingSignIn!.complete(const Success(AuthSession(userId: 1, token: 'tok')));
+      client.pendingSignIn!.complete(const Success(AuthSession(userId: 'u-1', token: 'tok')));
       await tester.pumpAndSettle();
     });
 
@@ -120,7 +120,7 @@ void main() {
     });
 
     testWidgets('completed: navega para a área privada e persiste o token', (tester) async {
-      client.signInResult = const Success(AuthSession(userId: 7, token: 'tok-123'));
+      client.signInResult = const Success(AuthSession(userId: 'u-7', token: 'tok-123'));
       await tester.pumpWidget(
         _harness(home: const LoginView(), client: client, store: store),
       );
@@ -159,7 +159,7 @@ void main() {
     });
 
     testWidgets('sucesso volta para o login', (tester) async {
-      client.signUpResult = const Success(42);
+      client.signUpResult = const Success('u-42');
       await tester.pumpWidget(
         _harness(home: const RegisterView(), client: client, store: store),
       );
@@ -171,7 +171,7 @@ void main() {
     });
 
     testWidgets('loading: indicador visível e botão desabilitado', (tester) async {
-      client.pendingSignUp = Completer<IResult<int, IFailure>>();
+      client.pendingSignUp = Completer<IResult<String, IFailure>>();
       await tester.pumpWidget(
         _harness(home: const RegisterView(), client: client, store: store),
       );
@@ -185,7 +185,7 @@ void main() {
         isNull,
       );
 
-      client.pendingSignUp!.complete(const Success(42));
+      client.pendingSignUp!.complete(const Success('u-42'));
       await tester.pumpAndSettle();
     });
   });
