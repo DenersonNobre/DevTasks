@@ -109,3 +109,4 @@ class PostgresUserRepository implements UserRepository, CredentialRepository {
     return rows.first['email'] as String?;
   }
 }
+
