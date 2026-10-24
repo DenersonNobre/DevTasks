@@ -291,6 +291,10 @@ Fatiado em 8 UCs em `docs/plan/epics/epic-08-migracao-shelf.md`.
    o `dip-gate` passa a proibi-los e a varrer `presentation/`.
 3. `AGENTS.md` (Stack/Topologia/Contrato) atualizado no mesmo commit desta decisão.
 4. `RNF-03` mantém **token opaco** (não JWT): decisão anterior preservada, agora com implementação própria.
+5. **IDs são UUID** (`uuid` no Postgres, `String` no Dart) em todas as entidades e no schema. Motivo:
+   o contrato já declara `format: uuid` (11 pontos) e identificador sequencial em API pública permite
+   enumeração. Consequência de teste: identificadores nunca são `int`; `createdAt` é **obrigatório**
+   onde o contrato o exige (`required: [id, name, role, createdAt]`).
 
 **Não-objetivo declarado**: melhorar performance ou reduzir custo de infra. A migração é por
 integridade arquitetural; se o resultado não produzir um cliente testável sem o pacote do servidor,

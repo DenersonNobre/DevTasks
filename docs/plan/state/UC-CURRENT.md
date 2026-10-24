@@ -5,42 +5,50 @@
 
 ## UC corrente
 
-**UC-08.03** — Auth no servidor shelf (parte 1: módulos puros). Status: **Concluído ✅** (parte 2 = repositórios SQL + rotas, pendente).
+**UC-08.07** — App desacoplado do transporte (adaptadores HTTP + remoção de `devtasks_client`).
+Dono: este agente. Status: **Em execução 🔄**.
 
-**Gate 2.5: PULADO nesta parte** — porte sem alteração de lógica; as invariantes de segurança
-(`INV-SEC-04/05/08/10/13/16/17`) são cobertas pelos testes portados e permanecem asserções executáveis.
+**UC-08.04** (workspace/projects) — **handover para o outro agente** (brief-24). O port entregue em
+`296d91a` ainda tem `id` **int** e `createdAt` **opcional**: divergência com o contrato, correção
+especificada no brief-24 (UUID + campo obrigatório). Claim liberado; a fatia é dele.
 
-## Escopo (parte 1 do UC-08.03)
+**UC-08.03** (auth) — parte 1 concluída (`18410a3`, 50/50). Parte 2 (repositórios SQL + rotas) pendente.
 
-- [x] 9 arquivos portados: `argon2_password_hasher`, `rate_limiter`, `session_guard`, `sign_in_handler`,
-      `sign_up_handler`, `session_service` (ex-`serverpod_session_service`), `ports`, `domain/email`, `domain/password`.
-- [x] 6 arquivos de teste em `test/unit/modules/auth/` (inclui `session_service_test` novo e `sign_up_handler_test` portado).
-- [x] Zero imports de `serverpod`/`devtasks_client`/`flutter` no módulo (verificado por grep).
-- [ ] Parte 2: `UserRepository`/`SessionRepository` SQL + rotas HTTP + `Bearer` middleware.
+## Incidente de concorrência (registrado, não maquiado)
 
-## Coordenação — dois fatos que custaram tempo (registrados)
+Dois escritores no mesmo slice (`modules/{workspace,projects}`) entre 11:48 e 11:49. Sintoma clássico:
+arquivo já gravado voltou ao conteúdo anterior (`workspace_entity` reverteu `String id` → `int id`) e
+o worktree passou a divergir do index. **Resolução do PO**: um único dono por slice; este agente
+liberou `UC-08.04` e saiu do path. Nenhum trabalho foi commitado em estado misturado.
 
-1. **`claims` rejeita sufixo**: só aceita `UC-XX.YY`. `UC-08.03a` → `[CLAIMS-ERROR] Slice inválido`.
-   Sub-fatias agora são recorte de *paths* no brief, nunca no ID.
-2. **Claim preso no próprio subagente**: o agente `coder` reservou `UC-08.03` e terminou sem liberar.
-   O orquestrador liberou explicitamente (`release`) antes de reclamar — decisão declarada, não
-   auto-reap silencioso.
-3. **Continuação de linha com backtick no PowerShell** quebrou o comando do brief-23: `-Paths` virou
-   argumento posicional literal. Comando de claim agora é linha única.
+Regra que passa a valer: **um agente por slice + stage por path + conferir `git diff --cached`** antes
+de commitar. `claims` é coordenação, não cerca.
 
-## Evidência
+## Decisão do PO registrada (`D-08`, consequência 5)
+
+**IDs são UUID** (`uuid` no Postgres, `String` no Dart) e `createdAt` é obrigatório onde o contrato
+exige. Motivo: contrato declara `format: uuid` (11 pontos) e id sequencial em API pública permite
+enumeração. Aplicação do lado servidor: brief-24 (outro agente).
+
+## Escopo do UC-08.07
+
+- [ ] Substituir `serverpod_auth_client.dart` por adaptador `http` falando o contrato (`/auth/*`, `/me`).
+- [ ] Substituir `serverpod_project_client.dart` por adaptador `http` (`/workspaces/{id}/projects`, `/projects/{id}`).
+- [ ] Adicionar `http` às dependências do app e **remover** `devtasks_client`.
+- [ ] Manter `IResult`/`IFailure` e o mapeamento de `errorCode` → failure tipada.
+- [ ] `flutter test` verde **sem** o pacote `devtasks_client` instalado.
+
+## Evidência já disponível (não do UC-08.07)
 
 ```text
-[EVIDÊNCIA] (UC-08.03 · parte 1)
-- Verificação: grep de imports proibidos em lib/src/modules/auth → nenhum resultado.
-- Verificação: dart analyze lib/src/modules/auth test/unit/modules/auth lib/devtasks_api.dart → No issues found.
-- Confirmação: dart test test/unit/modules/auth → 50/50 passed.
-- Defeito encontrado e corrigido: teste de CSPRNG usava TokenGenerator(Random(42)) e asseria tokens
-  distintos — fixture incoerente. Passou a usar o gerador seguro real; a propriedade agora é provada.
+[EVIDÊNCIA] (pacote api, antes do handover)
+- dart analyze → No issues found
+- dart test → 106 passed, 4 skipped (integração de banco sem DEVTASKS_TEST_DATABASE_URL)
 ```
 
-## Próximo passo
+## Pendências declaradas
 
-1. **`UC-08.03` parte 2** (repositórios SQL + rotas de auth) — depende de Postgres para prova real.
-2. **`UC-08.04`** (Agente C, em voo): port de workspace/projects puros.
-3. Bloqueio transversal: Postgres ausente ⇒ sem prova de persistência/E2E.
+1. `solution/api/analysis_options.yaml` ausente → pacote sem lints (mais fraco que app/server).
+2. Integração real de banco bloqueada: sem Postgres na máquina.
+3. Gate de contrato só valida forma (rotas/`$ref`), **não tipos por campo** — foi assim que
+   `uuid` × `bigserial` passou; o `UC-08.06b` precisa validar payload.
