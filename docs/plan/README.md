@@ -15,7 +15,7 @@
 | **00 — Fundação** | [epic-00-fundacao.md](epics/epic-00-fundacao.md) | Nenhuma (independência máxima) | Crítica | ✅ Concluída |
 | **01 — Autenticação** | [epic-01-autenticacao.md](epics/epic-01-autenticacao.md) | EPIC-00 | Crítica | ✅ Concluída |
 | **02 — Workspace & Membresias** | [epic-02-workspace.md](epics/epic-02-workspace.md) | EPIC-00, EPIC-01 | Alta | ✅ Concluída |
-| **03 — Projetos** | [epic-03-projetos.md](epics/epic-03-projetos.md) | EPIC-02 | Alta | 🔄 Em andamento |
+| **03 — Projetos** | [epic-03-projetos.md](epics/epic-03-projetos.md) | EPIC-02 | Alta | ✅ Concluída |
 | **04 — Tarefas & Kanban** | [epic-04-tarefas-kanban.md](epics/epic-04-tarefas-kanban.md) | EPIC-03 | Crítica | ⏳ Pendente |
 | **05 — Comentários** | [epic-05-comentarios.md](epics/epic-05-comentarios.md) | EPIC-04 | Média | ⏳ Pendente |
 | **06 — Dashboard** | [epic-06-dashboard.md](epics/epic-06-dashboard.md) | EPIC-04 | Alta | ⏳ Pendente |
@@ -140,5 +140,5 @@ flowchart TD
 > do próprio épico (1 UC por feature hoje); a linha do épico acima é o agregado. Projeção
 > reproduzível por `tools/sync-remotes.ps1` (`-DryRun` imprime a contagem). Esta matriz foi
 > reconstruída em 2026-10-24 porque divergia da §1 (marcava EPIC-02 como `0/3` com o épico ✅),
-> omitia o EPIC-08 (8 UCs) e totalizava 31 UCs contra os 39 existentes. Pendentes hoje:
-> `UC-03.02` e os épicos 04–07.
+> omitia o EPIC-08 (8 UCs) e totalizava 31 UCs contra os 39 existentes. Pendentes hoje: os
+> épicos 04–07 (9 UCs).
