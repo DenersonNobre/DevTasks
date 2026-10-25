@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../domain/project_summary.dart';
 import 'projects_state.dart';
 import 'projects_view_model.dart';
 
@@ -54,6 +55,20 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
     }
   }
 
+  Future<void> _rename(ProjectSummary project) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => _RenameProjectDialog(
+        initialName: project.name,
+        onSave: (newName) => ref.read(projectsViewModelProvider.notifier).rename(
+              projectId: project.id,
+              name: newName,
+              token: widget.token,
+            ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(projectsViewModelProvider);
@@ -67,7 +82,13 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
           onCreate: _create,
         ),
         const Divider(height: 32),
-        Expanded(child: _ProjectList(state: state, onRetry: _load)),
+        Expanded(
+          child: _ProjectList(
+            state: state,
+            onRetry: _load,
+            onRename: _rename,
+          ),
+        ),
       ],
     );
   }
@@ -128,10 +149,15 @@ class _CreateForm extends StatelessWidget {
 }
 
 class _ProjectList extends StatelessWidget {
-  const _ProjectList({required this.state, required this.onRetry});
+  const _ProjectList({
+    required this.state,
+    required this.onRetry,
+    required this.onRename,
+  });
 
   final ProjectsState state;
   final Future<void> Function() onRetry;
+  final void Function(ProjectSummary project) onRename;
 
   @override
   Widget build(BuildContext context) {
@@ -176,8 +202,90 @@ class _ProjectList extends StatelessWidget {
           key: Key('project-item-${project.id}'),
           leading: const Icon(Icons.folder_outlined),
           title: Text(project.name),
+          trailing: IconButton(
+            key: Key('project-rename-button-${project.id}'),
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Renomear',
+            onPressed: () => onRename(project),
+          ),
         );
       },
+    );
+  }
+}
+
+class _RenameProjectDialog extends StatefulWidget {
+  const _RenameProjectDialog({
+    required this.initialName,
+    required this.onSave,
+  });
+
+  final String initialName;
+  final Future<void> Function(String newName) onSave;
+
+  @override
+  State<_RenameProjectDialog> createState() => _RenameProjectDialogState();
+}
+
+class _RenameProjectDialogState extends State<_RenameProjectDialog> {
+  late final TextEditingController _controller;
+  final _formKey = GlobalKey<FormState>();
+  var _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isSubmitting = true);
+    await widget.onSave(_controller.text);
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      key: const Key('project-rename-dialog'),
+      title: const Text('Renomear projeto'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          key: const Key('project-rename-field'),
+          controller: _controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Novo nome',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) =>
+              value == null || value.trim().isEmpty ? 'Informe o nome do projeto.' : null,
+          onFieldSubmitted: (_) => _submit(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const Key('project-rename-cancel'),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          key: const Key('project-rename-submit'),
+          onPressed: _isSubmitting ? null : _submit,
+          child: Text(_isSubmitting ? 'Salvando...' : 'Salvar'),
+        ),
+      ],
     );
   }
 }

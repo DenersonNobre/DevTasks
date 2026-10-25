@@ -84,4 +84,35 @@ void main() {
     expect(find.text('Informe o nome do projeto.'), findsOneWidget);
     expect(client.createCalls, 0);
   });
+
+  testWidgets('renomear projeto abre dialog e atualiza o item na lista', (tester) async {
+    final projectId = uuid(1);
+    client.listResult = Success([
+      ProjectSummary(id: projectId, workspaceId: uuid(7), name: 'Nome Antigo'),
+    ]);
+
+    await tester.pumpWidget(_harness(client));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nome Antigo'), findsOneWidget);
+
+    // Toca no botão de editar
+    await tester.tap(find.byKey(Key('project-rename-button-$projectId')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('project-rename-dialog')), findsOneWidget);
+
+    // Altera o texto
+    await tester.enterText(
+      find.byKey(const Key('project-rename-field')),
+      'Nome Novo',
+    );
+    await tester.tap(find.byKey(const Key('project-rename-submit')));
+    await tester.pumpAndSettle();
+
+    expect(client.renameCalls, 1);
+    expect(client.lastName, 'Nome Novo');
+    expect(find.text('Nome Novo'), findsOneWidget);
+    expect(find.byKey(const Key('project-rename-dialog')), findsNothing);
+  });
 }

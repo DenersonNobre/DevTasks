@@ -1,33 +1,32 @@
 # UC-CURRENT — DevTasks
 
-> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-08-migracao-shelf.md`.
+> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-03-projetos.md`.
 > Ordem de leitura ao retomar: `CHECKPOINT.md` → este arquivo → código.
 
 ## UC corrente
 
-**UC-08.06** — Contrato OpenAPI + teste de contrato + gate (`D-08` / F8.6).
-Dono: este agente. Status: **Concluído ✅**.
+**UC-03.01** — CRUD de Projetos (criar, renomear, listar) (F3.1 / RF-07 / INV-01 / INV-06).
+Dono: Coder. Status: **Concluído ✅**.
 
-**EPIC-08 (Migração para shelf + OpenAPI 3.1)** — **100% Concluída ✅**.
+## Escopo do UC-03.01
 
-## Escopo do UC-08.06
+- [x] Endpoints na API shelf (`project_routes.dart`): `POST /workspaces/<id>/projects`, `GET /workspaces/<id>/projects`, `PATCH /projects/<id>` com isolamento multi-tenant (INV-01) e regra owner-only (INV-06).
+- [x] Cliente no App Flutter (`http_project_client.dart` / `IProjectClient`): integração HTTP com bearer token e tratamento tipado de erros.
+- [x] ViewModel no App (`projects_view_model.dart`): intents imutáveis `load`, `create` e `rename`.
+- [x] UI no App (`projects_view.dart`): listagem de projetos, criação inline e modal de renomeação com feedback reativo e ciclo de vida isolado de controller.
+- [x] Testes automatizados (TDD Red-Before-Green): testes de repositório, rotas HTTP e testes de widget (`projects_view_test.dart`) cobrindo o fluxo completo de renomeação.
 
-- [x] Gate de contrato (`tools/contract-gate.ps1`): valida paridade estrita entre rotas OpenAPI 3.1 e rotas registradas na API.
-- [x] Teste de contrato ampliado (`solution/api/test/contract/openapi_contract_test.dart`): valida schemas de payloads, serialização de UUIDs, datas ISO-8601 UTC e prova negativa.
-- [x] Integração do gate no pre-commit / suite de testes (`tools/tests/test_contract_gate.ps1` integrado em `tools/test.ps1`).
-- [x] Fechamento formal da EPIC-08 em `docs/plan/epics/epic-08-migracao-shelf.md` e `docs/plan/README.md`.
+## Evidência da Entrega
 
-## Evidência já disponível (não do UC-08.07)
+Gate 2.5: PULADO (mudança não expõe nem altera superfície de auth/criptografia direta; integridade multi-tenant coberta por testes INV-01/INV-06).
 
 ```text
-[EVIDÊNCIA] (pacote api, antes do handover)
-- dart analyze → No issues found
-- dart test → 106 passed, 4 skipped (integração de banco sem DEVTASKS_TEST_DATABASE_URL)
+[EVIDÊNCIA]
+1. Red-Before-Green comprovado no teste de widget de renomeação (failure -> success).
+2. flutter test solution/app/test/widget/projects_view_test.dart: 6 testes verdes.
+3. pwsh tools/test.ps1: 281 testes executados (104 app + 177 api), 100% VERDE.
 ```
 
-## Pendências declaradas
+## Próximo UC
 
-1. `solution/api/analysis_options.yaml` ausente → pacote sem lints (mais fraco que app/server).
-2. Integração real de banco bloqueada: sem Postgres na máquina.
-3. Gate de contrato só valida forma (rotas/`$ref`), **não tipos por campo** — foi assim que
-   `uuid` × `bigserial` passou; o `UC-08.06b` precisa validar payload.
+- **UC-03.02** — Ciclo de Vida: Arquivamento de Projeto e Regra de Somente-Leitura (F3.2 / RF-08 / INV-05).

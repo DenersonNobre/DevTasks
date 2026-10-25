@@ -15,6 +15,13 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-24 — Ciclo de Vida de TextEditingController em Diálogos Assíncronos no Flutter (UC-03.01)
+
+- **Sintoma**: `A TextEditingController was used after being disposed. Once you have called dispose() on a TextEditingController, it can no longer be used.` capturado pelo framework de testes durante a transição de fechamento de um `AlertDialog` (`Navigator.pop`).
+- **Causa raiz**: Ao instanciar `final controller = TextEditingController()` antes de `await showDialog(...)` e chamar `controller.dispose()` logo após o retorno do `await`, a animação de saída (*fade-out/pop route animation*) do diálogo ainda estava em execução em frames subsequentes do motor Flutter. Como o widget `TextFormField` ainda estava ativo na árvore durante o fade-out, ele tentou acessar o controller recém-descartado.
+- **Fix**: Encapsulado o diálogo em um `StatefulWidget` dedicado (`_RenameProjectDialog`), movendo a criação e descarte do `TextEditingController` para o ciclo de vida natural do widget (`initState` e `dispose`).
+- **Prevenção**: Diálogos com inputs e formulários no Flutter devem sempre gerenciar seus controllers dentro do próprio ciclo de vida de um `StatefulWidget` de diálogo, nunca no método que dispara `showDialog`.
+
 ## 2026-10-24 — Hardening da API: Rate Limit por IP Real, Isolate em Argon2, Multi-Statement DDL e Pureza DIP
 
 - **Sintoma**: Auditoria independente na API (`solution/api`) identificou 4 pontos de robustez e segurança:

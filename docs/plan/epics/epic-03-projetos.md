@@ -1,6 +1,6 @@
 # Epic 03 — Projetos (projetos)
 
-> Status: ⏳ Pendente | Prioridade: Alta | Dependências: EPIC-02
+> Status: 🔄 Em andamento | Prioridade: Alta | Dependências: EPIC-02
 
 ## 1. Objetivo e Valor de Negócio
 
@@ -8,7 +8,7 @@ Entregar o contêiner de organização do trabalho: projetos dentro de um worksp
 vida `active → archived` que protege o histórico sem poluir a lista ativa. É o agregado pai das
 tarefas (EPIC-04) e da cadeia `Comment ⊂ Task ⊂ Project ⊂ Workspace`.
 
-- **Stack**: endpoint Serverpod `project_endpoint` + módulo VSA `projects/` (domain/infrastructure/
+- **Stack**: API HTTP shelf (`project_routes.dart` / OpenAPI 3.1) + módulo VSA `projects/` (domain/infrastructure/
   presentation) no app.
 - **Invariantes**: INV-05 (arquivado = somente leitura) sob INV-01 (isolamento) e INV-06
   (criar/editar/arquivar projeto exige papel `owner` — PRD §7).
@@ -17,7 +17,7 @@ tarefas (EPIC-04) e da cadeia `Comment ⊂ Task ⊂ Project ⊂ Workspace`.
 
 | # | Feature | UCs/Histórias | Independência / Risco | Status |
 |:---|:---|:---:|:---|:---:|
-| F3.1 | CRUD de projetos (criar, editar, listar) | 1 | Alto: INV-06 (só owner), INV-01 | ⏳ |
+| F3.1 | CRUD de projetos (criar, editar, listar) | 1 | Alto: INV-06 (só owner), INV-01 | ✅ |
 | F3.2 | Arquivamento de projeto (só-leitura) | 1 | Depende de F3.1; INV-05 | ⏳ |
 
 ---
