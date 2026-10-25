@@ -28,3 +28,4 @@ class CommentEntity {
         'createdAt': createdAt.toUtc().toIso8601String(),
       };
 }
+

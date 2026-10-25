@@ -20,3 +20,4 @@ class CommentContent {
     return (CommentContent._(trimmed), null);
   }
 }
+

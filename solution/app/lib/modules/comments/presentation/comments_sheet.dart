@@ -13,21 +13,32 @@ class CommentsSheet extends ConsumerStatefulWidget {
     super.key,
     required this.task,
     required this.token,
+    this.isReadOnly = false,
+    this.readOnlyReason,
   });
 
   final TaskItem task;
   final String token;
+  final bool isReadOnly;
+  final String? readOnlyReason;
 
   static Future<void> show(
     BuildContext context, {
     required TaskItem task,
     required String token,
+    bool isReadOnly = false,
+    String? readOnlyReason,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (context) => CommentsSheet(task: task, token: token),
+      builder: (context) => CommentsSheet(
+        task: task,
+        token: token,
+        isReadOnly: isReadOnly,
+        readOnlyReason: readOnlyReason,
+      ),
     );
   }
 
@@ -140,50 +151,80 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
 
             const Divider(height: 1),
 
-            // Composer (campo de texto + botão enviar)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: const Key('comment-input-field'),
-                      controller: _commentController,
-                      maxLines: 3,
-                      minLines: 1,
-                      maxLength: 2000,
-                      decoration: InputDecoration(
-                        hintText: 'Escreva um comentário...',
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
+            // Composer ou Banner de Somente Leitura (INV-05 / INV-06 / F5.2)
+            if (widget.isReadOnly)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Container(
+                  key: const Key('comments-readonly-banner'),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_outline, size: 18, color: theme.colorScheme.outline),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.readOnlyReason ??
+                              'Comentários desabilitados neste item.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        errorText: state.contentError,
-                        counterText: '',
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('comment-input-field'),
+                        controller: _commentController,
+                        maxLines: 3,
+                        minLines: 1,
+                        maxLength: 2000,
+                        decoration: InputDecoration(
+                          hintText: 'Escreva um comentário...',
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          errorText: state.contentError,
+                          counterText: '',
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    key: const Key('comment-submit-button'),
-                    icon: state.isSubmitting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.send, size: 18),
-                    tooltip: 'Enviar comentário',
-                    onPressed: state.isSubmitting ? null : _submit,
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      key: const Key('comment-submit-button'),
+                      icon: state.isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send, size: 18),
+                      tooltip: 'Enviar comentário',
+                      onPressed: state.isSubmitting ? null : _submit,
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),

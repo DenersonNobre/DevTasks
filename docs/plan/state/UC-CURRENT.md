@@ -5,39 +5,45 @@
 
 ## UC corrente
 
-**UC-05.01** — Criação e Listagem de Comentários em Tarefas (F5.1 / RF-12).
+**UC-05.02** — Guardas de Comentário (composição, papel, arquivo - F5.2 / INV-02 / INV-05 / INV-06).
 Dono: Coder. Status: **Concluído ✅**.
 
-## Escopo do UC-05.01
+## Escopo do UC-05.02
 
-- [x] Migration PostgreSQL: `solution/api/migrations/0004_comments_schema.sql` criando tabela `devtasks_comment` com integridade referencial (`task_id`, `user_id`) e CHECK de tamanho (1..2000). Idempotência e tabela verificadas em `migration_integration_test.dart`.
-- [x] Contrato OpenAPI 3.1 (`docs/api/openapi.yaml`): rotas `POST /tasks/{id}/comments` e `GET /tasks/{id}/comments`, schemas `CreateCommentRequest`, `Comment`, `CommentResponse`, `CommentList`. Paridade 1:1 verificada via `tools/contract-gate.ps1` (23 operações).
-- [x] Backend (`solution/api`): módulo `comments` (`CommentEntity`, `CommentContent`, `ICommentRepository`, `PostgresCommentRepository`, `CommentRoutes`). Injeção no roteador e servidor Shelf.
-- [x] Testes de Backend: 10 testes unitários em `comment_routes_test.dart` e 2 testes de integração no PostgreSQL real WSL em `repositories_integration_test.dart`.
-- [x] Frontend (`solution/app`): módulo `comments` com `CommentItem`, `ICommentClient`, `HttpCommentClient`, `commentClientProvider`, `CommentsState`, `CommentsViewModel`, `CommentsSheet` com timeline e composer.
-- [x] Testes de Frontend: 4 testes unitários de `HttpCommentClient`, 6 testes de `CommentsViewModel`, 4 testes de widget de `CommentsSheet` e 12 testes de `tasks_view_test.dart` (todos verdes).
-- [x] Suíte de testes automatizados e gates completos (`dart analyze`, `tools/contract-gate.ps1`, `tools/test.ps1 -Unit`, `tools/test.ps1 -Database`, `tools/doc-gate.ps1`).
+- [x] Backend (`solution/api`): Validação completa e testes em `comment_routes_test.dart` para as 3 guardas de comentário:
+  - `INV-02`: Composição única (tarefa de outro workspace responde `ERR_NOT_FOUND` → 404).
+  - `INV-05`: Projeto arquivado não aceita comentário (`ERR_PROJECT_ARCHIVED` → 409).
+  - `INV-06`: Membro com papel `viewer` não pode comentar (`ERR_INSUFFICIENT_ROLE` → 403).
+- [x] Frontend (`solution/app`):
+  - `CommentsSheet` com suporte a `isReadOnly` e `readOnlyReason`.
+  - Quando somente leitura: composer de comentários desabilitado, exibindo banner amigável (`comments-readonly-banner`).
+  - Mapeamento explícito de erros 403 (`InsufficientRoleFailure`) e 409 (`ProjectArchivedFailure`) no `HttpCommentClient` e `CommentsViewModel`.
+- [x] Testes de Frontend:
+  - Testes unitários no `HttpCommentClient` e `CommentsViewModel` cobrindo 403 e 409.
+  - Testes de widget no `CommentsSheet` validando o estado com composer desabilitado e mensagem amigável quando `isReadOnly: true` ou ao receber erro 403/409.
+- [x] Gates completos (`dart analyze`, `tools/contract-gate.ps1`, `tools/test.ps1 -Unit`, `tools/test.ps1 -Database`, `tools/doc-gate.ps1`).
 
 ## Evidência da Entrega
 
-Gate 2.5: PULADO (mudança não expõe nem altera superfície de auth/criptografia direta; integridade de comentários e autor via sessão validada por testes).
+Gate 2.5: PULADO (não altera criptografia nem autenticação direta; reforça guardas de autorização RBAC e tenancy).
 
 ```text
 [EVIDÊNCIA]
 1. Leitura:
-   - Migration 0004_comments_schema.sql cria devtasks_comment com CHECK (1..2000 chars) e CASCADE em tasks.
-   - OpenAPI 3.1 com 23 operações validadas 1:1 pelo contract-gate.
+   - comment_routes.dart: guardas de tenant (404), RBAC (403 ERR_INSUFFICIENT_ROLE) e arquivo (409 ERR_PROJECT_ARCHIVED).
+   - comments_sheet.dart: modo isReadOnly substitui o composer pelo banner amigável com lock.
 2. Verificação:
    - dart analyze solution/app solution/api (0 issues).
    - pwsh tools/contract-gate.ps1 (23 operações em sincronia 1:1, testes de contrato verdes).
-   - pwsh tools/test.ps1 -Unit (332 testes unitários verdes: 124 app, 208 api).
+   - pwsh tools/test.ps1 -Unit (336 testes unitários verdes: 128 app, 208 api).
    - pwsh tools/test.ps1 -Database (25 testes contra PostgreSQL 18.6 real WSL verdes).
    - pwsh tools/doc-gate.ps1 (100% aprovado).
 3. Confirmação:
-   - Linha do tempo de comentários ordenada cronologicamente com autor e avatar.
-   - Composer com validação em tempo real e persistência na API e banco.
+   - Composer desabilita e exibe banner amigável em estado somente leitura.
+   - Respostas de erro 403 e 409 mapeadas com precisão em falhas tipadas do kernel.
 ```
 
 ## Próximo UC
 
-- **UC-05.02** — Guardas de Comentário (composição, papel, arquivo - F5.2 / INV-02 / INV-05 / INV-06).
+- **Bloco A reconciliado da Auditoria** (R1 Shell & Navegação, R2 Midpoint/INV-04, R4/R5 Tipos e Datas, A-1 UUID, A-3 MembershipAuthorizer).
+- **EPIC-06** — Dashboard (RF-13 / INV-07).

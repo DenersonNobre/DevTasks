@@ -128,5 +128,29 @@ void main() {
       final failure = (result as Failure<CommentItem, IFailure>).failure;
       expect(failure, isA<ValidationFailure>());
     });
+
+    test('create mapeia 403 em InsufficientRoleFailure (INV-06)', () async {
+      final client = _clientReturning(403, {
+        'errorCode': 'ERR_INSUFFICIENT_ROLE',
+        'message': 'Permissão insuficiente para esta ação.',
+      });
+      final result = await client.create(taskId: _taskId, content: 'Comentário viewer', token: _token);
+
+      expect(result, isA<Failure<CommentItem, IFailure>>());
+      final failure = (result as Failure<CommentItem, IFailure>).failure;
+      expect(failure, isA<InsufficientRoleFailure>());
+    });
+
+    test('create mapeia 409 em ProjectArchivedFailure (INV-05)', () async {
+      final client = _clientReturning(409, {
+        'errorCode': 'ERR_PROJECT_ARCHIVED',
+        'message': 'Projeto arquivado não aceita alterações.',
+      });
+      final result = await client.create(taskId: _taskId, content: 'Comentário em arquivado', token: _token);
+
+      expect(result, isA<Failure<CommentItem, IFailure>>());
+      final failure = (result as Failure<CommentItem, IFailure>).failure;
+      expect(failure, isA<ProjectArchivedFailure>());
+    });
   });
 }

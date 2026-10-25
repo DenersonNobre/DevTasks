@@ -1,6 +1,6 @@
 # Epic 05 — Comentários (comentarios)
 
-> Status: 🚀 Em Andamento | Prioridade: Média | Dependências: EPIC-04
+> Status: ✅ Concluída | Prioridade: Média | Dependências: EPIC-04
 
 ## 1. Objetivo e Valor de Negócio
 
@@ -17,7 +17,7 @@ append-only por decisão de produto.
 | # | Feature | UCs/Histórias | Independência / Risco | Status |
 |:---|:---|:---:|:---|:---:|
 | F5.1 | Criar comentário & histórico cronológico | 1 | Depende de EPIC-04 (tarefa existe) | ✅ |
-| F5.2 | Guardas de comentário (composição, papel, arquivo) | 1 | INV-02/05/06 | ⏳ |
+| F5.2 | Guardas de comentário (composição, papel, arquivo) | 1 | INV-02/05/06 | ✅ |
 
 ---
 

@@ -14,3 +14,4 @@ CREATE TABLE devtasks_comment (
 
 CREATE INDEX devtasks_comment_task_created_idx
   ON devtasks_comment (task_id, created_at ASC);
+

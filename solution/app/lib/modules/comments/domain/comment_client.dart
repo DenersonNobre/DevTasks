@@ -19,3 +19,4 @@ abstract interface class ICommentClient {
     required String token,
   });
 }
+

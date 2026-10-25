@@ -128,5 +128,44 @@ void main() {
       expect(state.comments.length, 1);
       expect(state.comments.first.content, 'Comentário submetido com sucesso');
     });
+
+    test('addComment em falha de permissão (INV-06) expõe mensagem e reseta isSubmitting', () async {
+      fakeClient.shouldFail = true;
+      fakeClient.failureToReturn = const InsufficientRoleFailure('Permissão insuficiente para esta ação.');
+
+      final container = _createContainer(fakeClient);
+      final vm = container.read(commentsViewModelProvider.notifier);
+
+      final success = await vm.addComment(
+        taskId: _taskId,
+        content: 'Tentativa de comentário',
+        token: _token,
+      );
+
+      expect(success, isFalse);
+      final state = container.read(commentsViewModelProvider);
+      expect(state.message, 'Permissão insuficiente para esta ação.');
+      expect(state.isSubmitting, isFalse);
+    });
+
+    test('addComment em projeto arquivado (INV-05) expõe mensagem', () async {
+      fakeClient.shouldFail = true;
+      fakeClient.failureToReturn = const ProjectArchivedFailure('Projeto arquivado não aceita alterações.');
+
+      final container = _createContainer(fakeClient);
+      final vm = container.read(commentsViewModelProvider.notifier);
+
+      final success = await vm.addComment(
+        taskId: _taskId,
+        content: 'Tentativa em arquivado',
+        token: _token,
+      );
+
+      expect(success, isFalse);
+      final state = container.read(commentsViewModelProvider);
+      expect(state.message, 'Projeto arquivado não aceita alterações.');
+      expect(state.isSubmitting, isFalse);
+    });
   });
 }
+

@@ -15,6 +15,13 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Guardas de Comentário e Desabilitação em Estados Protegidos (UC-05.02)
+
+- **Sintoma**: Necessidade de garantir que comentários respeitem a cadeia estrita de composição (`INV-02`), o bloqueio contra mutação em projetos arquivados (`INV-05`) e a restrição de escrita para o papel visualizador (`INV-06`), refletindo tais proteções de forma preventiva na UI sem depender apenas do erro 403/409 retornado pelo servidor.
+- **Causa raiz**: Embora o backend já respondesse 404 (`ERR_NOT_FOUND`) para tarefas de outros workspaces, 403 (`ERR_INSUFFICIENT_ROLE`) para `viewer` e 409 (`ERR_PROJECT_ARCHIVED`) para projetos arquivados, a UI (`CommentsSheet`) ainda expunha o composer ativo indiscriminadamente, permitindo que o usuário digitasse e tentasse submeter para só então receber um erro da API.
+- **Fix**: Estendido o `CommentsSheet` com suporte a `isReadOnly` e `readOnlyReason`. Quando em modo somente leitura (projeto arquivado ou papel visualizador), o composer de comentários (`TextField` e botão enviar) é suprimido e substituído por um banner amigável com ícone de bloqueio (`comments-readonly-banner`); no `HttpCommentClient` e `CommentsViewModel`, adicionados testes unitários cobrindo o mapeamento determinístico de `InsufficientRoleFailure` e `ProjectArchivedFailure`.
+- **Prevenção**: Testes de widget no `CommentsSheet` validando tanto a ocultação do composer com presença do banner de leitura quanto o tratamento e exibição de erro da API caso uma requisição rejeitada por 403/409 seja recebida (6 testes de widget e 14 testes unitários de comentários 100% verdes).
+
 ## 2026-10-25 — Criação e Linha do Tempo de Comentários em Tarefas (UC-05.01)
 
 - **Sintoma**: Necessidade de fornecer linha do tempo de conversas e criação de comentários associados a tarefas (RF-12 / F5.1), garantindo integridade referencial com cascata no banco, tamanho máximo de 2000 caracteres e isolamento multi-tenant/RBAC no contrato OpenAPI 3.1.

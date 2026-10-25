@@ -63,3 +63,4 @@ final class CommentItem {
       content.hashCode ^
       createdAt.hashCode;
 }
+

@@ -44,3 +44,4 @@ final class CommentsState {
         isSubmitting: isSubmitting ?? this.isSubmitting,
       );
 }
+

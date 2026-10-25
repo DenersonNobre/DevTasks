@@ -1,6 +1,7 @@
 // solution/app/test/widget/comments_sheet_test.dart
 // Testes de widget da timeline e criação de comentários (UC-05.01 / RF-12 / F5.1).
 
+import 'package:devtasks_app/global/kernel/failures.dart';
 import 'package:devtasks_app/modules/comments/domain/comment_item.dart';
 import 'package:devtasks_app/modules/comments/infrastructure/comment_client_provider.dart';
 import 'package:devtasks_app/modules/comments/presentation/comments_sheet.dart';
@@ -115,5 +116,49 @@ void main() {
 
     expect(find.text('Informe o comentário.'), findsOneWidget);
     expect(fakeClient.comments, isEmpty);
+  });
+
+  testWidgets('desabilita composer e exibe banner amigável em estado somente leitura (INV-05 / INV-06)', (tester) async {
+    final harness = ProviderScope(
+      overrides: [
+        commentClientProvider.overrideWithValue(fakeClient),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: CommentsSheet(
+            task: testTask,
+            token: _token,
+            isReadOnly: true,
+            readOnlyReason: 'Projeto arquivado: novos comentários desabilitados.',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(harness);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('comments-readonly-banner')), findsOneWidget);
+    expect(find.text('Projeto arquivado: novos comentários desabilitados.'), findsOneWidget);
+    expect(find.byKey(const Key('comment-input-field')), findsNothing);
+    expect(find.byKey(const Key('comment-submit-button')), findsNothing);
+  });
+
+  testWidgets('exibe banner de erro quando API recusa com 403 / 409 (INV-05 / INV-06)', (tester) async {
+    fakeClient.shouldFail = true;
+    fakeClient.failureToReturn = const InsufficientRoleFailure('Permissão insuficiente para esta ação.');
+
+    await tester.pumpWidget(_harness(fakeClient, testTask));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('comment-input-field')),
+      'Comentário bloqueado',
+    );
+    await tester.tap(find.byKey(const Key('comment-submit-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('comments-error-banner')), findsOneWidget);
+    expect(find.text('Permissão insuficiente para esta ação.'), findsOneWidget);
   });
 }
