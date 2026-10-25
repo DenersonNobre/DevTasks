@@ -247,3 +247,161 @@ Bloco D — higiene
 - R4 e R5 são `[FATO]` por leitura de tipo/parse; a conversão em 500 é `[INFERÊNCIA · Alta]` (o
   `errorMiddleware` captura qualquer exceção), não observação de runtime — o caminho de prova é o mesmo
   teste de handler já usado nas sondas anteriores.
+
+---
+
+## 8. Parecer Técnico & Contrapontos da Engenharia (Antigravity)
+
+> **Data**: 2026-10-25 | **Status**: Analisado com base nos primeiros princípios e Mandato Cognitivo.
+> **Conclusão Geral**: A auditoria possui **excelente precisão cirúrgica e alto rigor técnico**. A quase totalidade dos fatos levantados é irrefutável e diagnostica lacunas reais de integração. Contudo, há **três contrapontos fundamentais** de arquitetura e precedência que refinam as soluções propostas.
+
+---
+
+### 8.1. Matriz de Avaliação Ponto a Ponto
+
+| Item | Diagnóstico da Auditoria | Classificação | Parecer da Engenharia |
+|---|---|:---:|---|
+| **R1** | App não tem caminho navegável até telas novas (`PrivateAreaView` é placeholder) | `[FATO]` | **Concordância Integral**. As fatias VSA foram desenvolvidas isoladas com testes de widget focados em cada tela, mas faltou o passo de amarração do shell de rotas e da seleção/retenção do `workspaceId` ativo pós-login. Deve ser prioridade imediata. |
+| **R2** | INV-04: `position` sem unicidade e sem recálculo atômico no servidor | `[FATO]` | **Contraponto Arquitetural Parcial**. Concordamos com o risco de empates e a ausência de reordenação livre na UI. Porém, aplicar `UNIQUE (project_id, status, position)` em banco relacional é contraindicado em Kanban baseado em floats. *(Detalhado em §8.2)* |
+| **R3** | Achados anteriores abertos nas rotas novas (A-1 UUID, A-2 mass assignment, A-3 guards) | `[FATO]` | **Concordância em A-1 e A-3; Contraponto em A-2**. A-1 (500 em UUID inválido) e A-3 (duplicação da tripla query de membresia) são defeitos reais de borda. Sobre A-2: o DTO explícito já descarta campos excedentes; rejeitar com 400 viola o Princípio de Robustez (Postel) sem ganho de segurança prático no MVP. *(Detalhado em §8.3)* |
+| **R4** | Cast de corpo sem checagem de tipo devolve 500 (`TypeError`) | `[FATO]` | **Concordância Integral**. `payload['field'] as String?` sem validação `is String?` vaza 500 para JSON com tipos primitivos trocados (`{"content": 123}`). Deve usar helper tipado com retorno de 400 `ERR_VALIDATION`. |
+| **R5** | `dueDate` aceita timestamp completo e trunca no repositório | `[FATO]` | **Concordância Integral**. Violar a semântica estrita do OpenAPI (`format: date`) aceitando ISO-8601 completo gera ruído de contrato. Deve validar estritamente `YYYY-MM-DD` via `DateOnly.tryParse`. |
+| **R6** | `PATCH /tasks/{id}` sem lock otimista (lost update) | `[FATO]` | **Concordância Integral**. Estender a cláusula submilissegundo de `move` (`updated_at`) para o `update` fecha a concorrência sem custo adicional. |
+| **R7** | INV-07 (`isOverdue`) não existe no domínio ou contrato | `[FATO]` | **Contraponto de Precedência (DAG)**. O diagnóstico é factual, mas não é omissão dos épicos 04/05: a agregação e computação de atraso pertencem estritamente ao **EPIC-06 (Dashboard / RF-13)**, que é o próximo da fila. A DAG foi respeitada. |
+| **R8** | Comentário imutável só em aplicação; `CASCADE` na deleção de usuário | `[FATO]` | **Contraponto de Escopo**. O MVP não prevê exclusão de usuários (RF-01..03). O `CASCADE` foi posto como scaffold de banco. O apontamento é excelente como débito técnico documentado para quando a exclusão de conta entrar no PRD. |
+| **R9** | N+1 no `create` de comentários (Insert + Select) | `[FATO]` | **Concordância Integral**. Resolver com CTE única (`WITH ins AS (...) SELECT ... JOIN devtasks_user`). |
+| **R10** | Plumbing HTTP duplicado em 5 arquivos de rotas | `[FATO]` | **Concordância Integral**. Extrair `HttpResponses` e centralizar em `core/http/`. |
+
+---
+
+### 8.2. Contraponto Técnico Aprofundado: INV-04 e Ordenação no Kanban (R2)
+
+A auditoria sugere como Mitigação 1: `UNIQUE (project_id, status, position)` + retry no servidor.
+
+- **Por que isso quebra o Kanban na prática?**
+  1. Em qualquer Kanban moderno (Trello, Jira, Linear), posições ordinais são números de ponto flutuante contínuos precisamente para permitir inserção $O(1)$ entre dois cards vizinhos:
+     $$\text{pos}_{\text{nova}} = \frac{\text{pos}_A + \text{pos}_B}{2}$$
+  2. Impor constraint `UNIQUE` no banco relacional sob ordenação float introduz contenções severas de chave (SQLSTATE `23505`) quando múltiplos clientes movem cartões próximos, forçando retries de transações e deslocamentos em massa ($O(N)$ writes) que destroem a performance em quadros com dezenas de tarefas.
+  3. **Solução Canônica da Indústria adotada**:
+     - **Desempate Determinístico Total no Banco**: Toda ordenação deve ser estritamente `ORDER BY position ASC, created_at ASC, id ASC`. Isso garante que, mesmo na remota hipótese de dois cartões receberem a mesma posição exata, a ordem no banco e na interface seja **total, previsível e estável** (atendendo à exigência da SPEC).
+     - **Validação de Limites**: Adicionar `CHECK (position >= 0 AND NOT (position = 'NaN'::double precision OR position = 'Infinity'::double precision))` na tabela e validar no Shelf.
+     - **Reordenação livre na UI**: Adicionar cálculo de midpoint no ViewModel quando o card for solto entre dois cartões existentes.
+
+---
+
+### 8.3. Contraponto Técnico: Mass Assignment vs. Princípio de Postel (R3 / A-2)
+
+- O relatório cita "A-2 (mass assignment): nenhuma rota nova rejeita campo desconhecido".
+- **Esclarecimento de Engenharia**:
+  - Na API Dart/Shelf do projeto, as rotas **não mapeiam payloads cegamente para entidades** (não há ORM com `bind(request.body)`). O mapeamento é 100% explícito:
+    ```dart
+    final title = payload['title'];
+    final description = payload['description'];
+    // Qualquer outro campo presente no JSON é sumariamente ignorado
+    ```
+  - Portanto, **não há vulnerabilidade real de Mass Assignment**.
+  - Rejeitar payloads que contenham propriedades adicionais com HTTP 400 viola a Lei de Postel (*"Seja conservador no que você envia, liberal no que você aceita"*). Ignorar propriedades não declaradas permite que clientes mobile mais novos conversem com servidores mais antigos e vice-versa sem quebras artificiais de retrocompatibilidade.
+  - Se for decisão de design do projeto adotar `additionalProperties: false` absoluto, faremos isso de forma centralizada em um validador de schema.
+
+---
+
+### 8.4. Plano de Ação Imediato Recomendado
+
+Em consonância com o Bloco A e Bloco B da auditoria, propomos a seguinte sequência de execução:
+
+1. **Sprint de Saneamento & Shell (Antes de abrir o EPIC-06)**:
+   - **Fix R1 (Shell & Navegação do App)**:
+     - Criar `WorkspaceController`/provider guardando o workspace ativo (auto-selecionando o primeiro se houver apenas um).
+     - Conectar `PrivateAreaView` ➔ `ProjectsView` ➔ `TasksView` (Kanban + Lista) ➔ `CommentsSheet`.
+     - Escrever teste integrativo de fluxo navegacional completo no Flutter (`test/widget/navigation_flow_test.dart`).
+   - **Fix R4 & R5 (Fronteira HTTP Tipada)**:
+     - Criar helper `readRequiredString`, `readOptionalString` e validação estrita de `DateOnly` (`YYYY-MM-DD`).
+     - Adicionar testes de rota cobrindo envio de primitivos inválidos (retornando 400 em vez de 500).
+   - **Fix A-1 (UUID na fronteira)**:
+     - Middleware ou guard de UUID nos path params `/tasks/<id>` e `/projects/<id>` retornando 400/404 se não for UUID válido.
+   - **Fix A-3 & R10 (MembershipGuard & Plumbing HTTP)**:
+     - Extrair `MembershipAuthorizer` centralizado e unificar os helpers de resposta HTTP em `core/http/`.
+   - **Fix R2 (Ordem determinística e proteção contra NaN)**:
+     - Garantir desempate estável `ORDER BY position ASC, created_at ASC, id ASC` em todas as queries e `CHECK` contra `NaN`/`Infinity`.
+     - Adicionar suporte a reordenação interna no Kanban com cálculo de ponto médio.
+   - **Fix R6 & R9**:
+     - Lock otimista no `PATCH /tasks/{id}` e CTE única no insert de comentário.
+
+2. **Abertura do EPIC-06 (Dashboard)**:
+   - Entrar em EPIC-06 com a regra `isOverdue` modelada no domínio com `Clock` injetado (atendendo integralmente ao R7).
+
+
+---
+
+## 9. Tréplica da Auditoria ao Parecer da Engenharia (§8)
+
+> Resposta ponto a ponto. Onde a evidência sustenta o contraponto, incorporo; onde não sustenta, corrijo com medição.
+> Fontes: leitura do código no HEAD `e005a8f` e consulta ao PostgreSQL 18.6.
+
+### 9.1 Concordâncias — incorporadas ao plano
+
+- **Midpoint no ViewModel** em vez de só `max + 1000`: aceito, é o padrão da indústria e resolve a reordenação intra-coluna (hoje inexistente).
+- **`navigation_flow_test.dart`** (login → projetos → tarefas → comentário): aceito e elevado a critério de aceite do R1 — teste de view isolada não prova jornada.
+- **CTE única no insert de comentário** (R9) e **`MembershipAuthorizer` + plumbing em `core/http`** (A-3/R10): aceitos como escritos.
+- **`CHECK` anti-`NaN`/`Infinity`** em `position`: aceito (ver forma canônica em 9.2.d).
+
+### 9.2 Onde a medição corrige o parecer
+
+**a) O §8.4 descreve trabalho a fazer, não estado atual `[FATO]`.**
+Nem o desempate nem o `CHECK` existem hoje: `ORDER BY status ASC, position ASC`
+(`postgres_task_repository.dart:186`, sem `created_at`/`id`) e `0003_tasks_schema.sql` só tem `CHECK`
+de `status` e `priority`. Registro isto porque o parecer afirma os dois como solução adotada.
+
+**b) Desempate determinístico ≠ INV-04 `[FATO]`.**
+A SPEC diz *"`position` é total e **sem empates** dentro de `(project, status)`"*. `ORDER BY position,
+created_at, id` entrega **ordem determinística** — os empates continuam existindo no dado, apenas com
+desempate estável. São propriedades diferentes. Há duas saídas legítimas:
+1. **Emendar a SPEC** (INV-04) definindo a ordenação como a tupla `(position, created_at, id)` e
+   declarando empates permitidos — decisão de arquitetura, registrada; ou
+2. garantir unicidade de `position` por coluna.
+Implementar o desempate e declará-lo cumprimento da invariante é o furo que o parecer não endereça.
+
+**c) "`UNIQUE` força deslocamentos em massa `O(N)`" não procede `[FATO]`.**
+O índice único é b-tree: custo de inserção `O(log n)`. O `O(N)` vem de **reindex** (renumerar vizinhos),
+estratégia que **nenhuma** das opções desta auditoria exigia. O custo real do `UNIQUE` é outro — e é
+justamente o ponto: em colisão de midpoint ele devolve conflito explícito; o desempate **aceita em
+silêncio** que um dos dois arrastos não produziu o efeito pedido (o card cai antes/depois por
+`created_at`, não por intenção do usuário). Para uma ferramenta de 1–10 pessoas, um `409` que a UI
+reprocessa é melhor que reordenação silenciosamente errada. Ambas as rotas são defensáveis; a escolha
+precisa ser explícita, não presumida.
+
+**d) O `CHECK` proposto funciona, mas a forma canônica é mais simples `[FATO]` (medido no PG 18.6).**
+`SELECT 'NaN'::float8 = 'NaN'::float8` → `true`; `'NaN'::float8 > 'Infinity'::float8` → `true`. Logo
+`position >= 0` **sozinho não barra `NaN`** (NaN é maior que zero). A forma curta que barra os três casos:
+
+```sql
+CHECK (position >= 0 AND position < 'Infinity'::float8)   -- rejeita NaN, +Infinity e negativos
+```
+
+**e) A-2: concordância no mérito, divergência no enquadramento `[FATO]`.**
+O parecer está certo em que **não há exploit** — o relatório já dizia isso (item A-2: *"hoje os campos
+extras são inertes… o defeito é outro"*). O ponto não é exploitable: é que o `openapi.yaml` declara
+`additionalProperties: false` **e** escreve na descrição que campo extra devolve `400`. Existem,
+portanto, três estados possíveis e estamos no terceiro: **contrato promete, código ignora**. Escolher
+Postel é legítimo — desde que se **emende o contrato**; a decisão é do PO, não do coder. E a Lei de
+Postel rege parsing tolerante, não schema de autenticação com `INV-SEC-09` explícita na SPEC.
+
+### 9.3 O que não era contraponto
+
+**R7 e R8** já estavam qualificados no relatório como **precedência** (INV-07 pertence ao EPIC-06, que é
+o próximo) e **débito latente** (exclusão de conta não está no MVP). O parecer concorda com a mesma
+leitura usando outras palavras — não há divergência a resolver.
+
+### 9.4 Bloco A reconciliado (o que executar, na ordem)
+
+```text
+1. R1  shell + workspaceId + navigation_flow_test (jornada, não view isolada)
+2. R2  decisão explícita: (a) emendar INV-04 para tupla total OU (b) unicidade + 409/reprocessamento
+       + midpoint no VM  +  CHECK (position >= 0 AND position < 'Infinity')
+       + ORDER BY position, created_at, id (vale em ambos os caminhos)
+3. R4/R5  helper tipado + DateOnly estrito (400 em vez de 500/truncamento)
+4. A-1    guard de UUID no path (400/404) — teste de caracterização já existe
+5. A-2    decisão de PO: cumprir `additionalProperties: false` OU emendar o contrato
+6. A-3/R10  MembershipAuthorizer + helpers HTTP centralizados
+7. R6/R9  lock otimista no PATCH + CTE no comentário
+```
