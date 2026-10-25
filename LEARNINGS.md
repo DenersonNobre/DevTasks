@@ -15,6 +15,13 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Ordem Determinística do Kanban, Midpoint e CHECK Constraint (Auditoria R2 / UC-04.02)
+
+- **Sintoma**: A invariante `INV-04` exigia ordem total sem empates em tarefas de um mesmo projeto e status, mas no PostgreSQL a coluna `position` (float8) não possuía constraint contra valores aberrantes (`NaN`, `±Infinity` ou negativos), a query `listByProject` ordenava apenas por `position ASC` sem desempate estável em caso de float idêntico, e o frontend não possuía cálculo canônico de interpolação por ponto médio (Item R2 do laudo de auditoria).
+- **Causa raiz**: No PostgreSQL, `'NaN'::float8 > 'Infinity'::float8` é avaliado como `true`, portanto um simples `CHECK (position >= 0)` não barra `NaN`. Além disso, em sistemas Kanban com arrasto contínuo, impor `UNIQUE(project_id, status, position)` gera conflito de integridade em edições concorrentes de frações minúsculas; a solução arquitetural canônica (acordada em §9.2 da auditoria e formalizada em D-09) consiste em: (a) emendar a definição de `INV-04` para a tupla lexicográfica total `(position ASC, created_at ASC, id ASC)`, (b) aplicar `CHECK (position >= 0 AND position < 'Infinity'::float8)`, e (c) expor interpolação por ponto médio $\frac{pos_A + pos_B}{2}$ no ViewModel.
+- **Fix**: Adicionada a migration `0005_task_position_guard.sql` com a constraint canônica anti-`NaN`/`Infinity`; atualizado `PostgresTaskRepository.listByProject` para ordenar estritamente pela tupla `(status ASC, position ASC, created_at ASC, id ASC)`; implementados `TasksViewModel.calculateMidpoint` e `moveBetween` no Flutter com suporte a inserção no topo, no meio e no fim de coluna, além de ordenação lexicográfica estável em empates de float.
+- **Prevenção**: Testes de migração e de integração contra PostgreSQL real no WSL validando a rejeição com erro `23514` de números negativos, `NaN` e `Infinity`, além de teste comprovando o desempate estável por `(created_at, id)` na listagem; testes unitários em `tasks_view_model_test.dart` cobrindo os 4 cenários de midpoint e o desempate na ordenação local.
+
 ## 2026-10-25 — Shell e Navegação Ponta a Ponta do App (Auditoria R1 / UC-08.07)
 
 - **Sintoma**: O app Flutter possuía os módulos de autenticação, projetos, tarefas/Kanban e comentários desenvolvidos com MVVM isolado, mas o shell (`PrivateAreaView`) mantinha um placeholder estático, e não existia um módulo de cliente de workspace no frontend nem um teste de integração de jornada ponta a ponta conectando login -> seleção de workspace -> projetos -> tarefas/Kanban -> timeline de comentários (Item R1 do laudo de auditoria).

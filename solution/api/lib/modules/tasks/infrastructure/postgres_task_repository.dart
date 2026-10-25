@@ -183,7 +183,7 @@ class PostgresTaskRepository implements ITaskRepository {
       'assigned_user_id, due_date, created_at, updated_at '
       'FROM devtasks_task '
       'WHERE project_id = @projectId::uuid '
-      'ORDER BY status ASC, position ASC',
+      'ORDER BY status ASC, position ASC, created_at ASC, id ASC',
       parameters: {'projectId': projectId},
     );
 

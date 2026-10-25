@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:devtasks_app/global/kernel/result.dart';
 import 'package:devtasks_app/modules/tasks/domain/task_client.dart';
+import 'package:devtasks_app/modules/tasks/domain/task_item.dart';
 import 'package:devtasks_app/modules/tasks/domain/task_priority.dart';
 import 'package:devtasks_app/modules/tasks/domain/task_status.dart';
 import 'package:devtasks_app/modules/tasks/infrastructure/task_client_provider.dart';
@@ -228,7 +229,12 @@ final class TasksViewModel extends Notifier<TasksState> {
         updatedList.sort((a, b) {
           final s = a.status.value.compareTo(b.status.value);
           if (s != 0) return s;
-          return a.position.compareTo(b.position);
+          final p = a.position.compareTo(b.position);
+          if (p != 0) return p;
+          final c = (a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+              .compareTo(b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0));
+          if (c != 0) return c;
+          return a.id.compareTo(b.id);
         });
 
         state = state.copyWith(
@@ -237,6 +243,42 @@ final class TasksViewModel extends Notifier<TasksState> {
           clearMessage: true,
         );
     }
+  }
+
+  /// Calcula a posição ordinal (midpoint) para inserir uma tarefa entre vizinhos na mesma coluna (INV-04 / R2).
+  /// Se [before] e [after] forem ambos null: retorna 1000.0.
+  /// Se apenas [after] existir (topo da coluna): retorna after.position / 2.0.
+  /// Se apenas [before] existir (fim da coluna): retorna before.position + 1000.0.
+  /// Se ambos existirem (entre dois cards): retorna o ponto médio (before.position + after.position) / 2.0.
+  static double calculateMidpoint({TaskItem? before, TaskItem? after}) {
+    if (before == null && after == null) return 1000.0;
+    if (before == null) {
+      final pos = after!.position;
+      return pos > 0 ? pos / 2.0 : 0.0;
+    }
+    if (after == null) {
+      return before.position + 1000.0;
+    }
+    return (before.position + after.position) / 2.0;
+  }
+
+  /// Intent: mover tarefa para uma posição específica entre dois vizinhos no Kanban (INV-04 / R2).
+  Future<void> moveBetween({
+    required String taskId,
+    required TaskStatus targetStatus,
+    TaskItem? before,
+    TaskItem? after,
+    required DateTime expectedUpdatedAt,
+    required String token,
+  }) async {
+    final targetPosition = calculateMidpoint(before: before, after: after);
+    await move(
+      taskId: taskId,
+      targetStatus: targetStatus,
+      targetPosition: targetPosition,
+      expectedUpdatedAt: expectedUpdatedAt,
+      token: token,
+    );
   }
 
   double _nextPositionFor(TaskStatus status) {

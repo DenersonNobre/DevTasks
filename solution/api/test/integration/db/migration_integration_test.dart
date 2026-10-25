@@ -106,5 +106,46 @@ void main() {
         throwsA(isA<PgException>()),
       );
     });
+
+    test('CHECK de position rejeita valores negativos, NaN ou Infinity (INV-04 / R2)', () async {
+      await Migrator(sql: sql, store: store, migrations: migrations).up();
+      final user = await sql.query(
+        "INSERT INTO devtasks_user (name, email, password_hash) VALUES ('Dev', 'dev@kanban.com', 'h') RETURNING id",
+      );
+      final userId = user.first['id'];
+      final ws = await sql.query("INSERT INTO devtasks_workspace (name) VALUES ('W') RETURNING id");
+      final wsId = ws.first['id'];
+      await sql.execute(
+        "INSERT INTO devtasks_workspace_member (workspace_id, user_id, role) VALUES ('$wsId', '$userId', 'owner')",
+      );
+      final proj = await sql.query(
+        "INSERT INTO devtasks_project (workspace_id, name) VALUES ('$wsId', 'Proj') RETURNING id",
+      );
+      final projId = proj.first['id'];
+
+      // 1. Negativo -> CHECK violation
+      expect(
+        () => sql.execute(
+          "INSERT INTO devtasks_task (project_id, title, position) VALUES ('$projId', 'Negativo', -1.0)",
+        ),
+        throwsA(isA<PgException>()),
+      );
+
+      // 2. Infinity -> CHECK violation
+      expect(
+        () => sql.execute(
+          "INSERT INTO devtasks_task (project_id, title, position) VALUES ('$projId', 'Inf', 'Infinity'::float8)",
+        ),
+        throwsA(isA<PgException>()),
+      );
+
+      // 3. NaN -> CHECK violation
+      expect(
+        () => sql.execute(
+          "INSERT INTO devtasks_task (project_id, title, position) VALUES ('$projId', 'NaN', 'NaN'::float8)",
+        ),
+        throwsA(isA<PgException>()),
+      );
+    });
   }, skip: skipReason);
 }

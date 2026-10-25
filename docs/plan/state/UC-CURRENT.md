@@ -1,57 +1,55 @@
 # UC-CURRENT — DevTasks
 
-> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-08-infra-devops.md`.
+> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-04-tarefas-kanban.md`.
 > Ordem de leitura ao retomar: `CHECKPOINT.md` → este arquivo → código.
 
 ## UC corrente
 
-**UC-08.07** — Wiring do App & Shell de Navegação Completa (Auditoria R1 / D-07 / D-08).
+**UC-04.02** — Ordem Determinística do Kanban, Midpoint e CHECK Constraint (Auditoria R2 / INV-04 / D-09).
 Dono: Coder. Status: **Concluído ✅**.
 
-## Escopo do UC-08.07 (R1 - Shell & Navegação)
+## Escopo do UC-04.02 (R2 - Ordem Total e CHECK)
 
-- [x] Módulo `workspace` no frontend (`solution/app/lib/modules/workspace/`):
-  - `WorkspaceItem` (VO de exibição e seleção).
-  - Porta `IWorkspaceClient` (DIP).
-  - Adaptador `HttpWorkspaceClient` (consumindo `GET /workspaces` e `POST /workspaces`).
-  - `WorkspaceController` (Riverpod) para estado de seleção de workspace ativo.
-  - Barrels pontuados (`.domain.dart`, `.infrastructure.dart`, `.presentation.dart`, `.workspace.dart`).
-- [x] Shell `PrivateAreaView` (`solution/app/lib/global/shell/private_area_view.dart`):
-  - Conexão reativa com `workspaceControllerProvider`.
-  - Seletor de workspace ativo no AppBar via `PopupMenuButton`.
-  - Onboarding amigável (`first-workspace-form`) caso o usuário não possua nenhum workspace.
-  - Renderização integrada de `ProjectsView` filtrada pelo workspace selecionado.
-  - Navegação nativa para `TasksView` ao tocar num projeto e acionamento de `CommentsSheet`.
-- [x] Testes & Qualidade:
-  - `FakeWorkspaceClient` em `solution/app/test/support/fake_workspace_client.dart`.
-  - Teste de integração de jornada ponta a ponta `solution/app/test/widget/navigation_flow_test.dart` (Login ➔ Workspace ➔ Projetos ➔ Tarefas ➔ Comentários).
-  - Atualização dos testes de widget em `auth_screens_test.dart` e unitários em `auth_wiring_test.dart` para refletir o shell real de navegação.
-  - Suíte de widget do app com 36 testes passando (100% verde).
+- [x] Decisão explícita de arquitetura (D-09 / INV-04):
+  - Emendada a especificação de `INV-04` em `docs/architecture/SPEC.md` e registrado `D-09` em `docs/architecture/DESIGN.md`.
+  - Ordem total e estável formalizada pela tupla lexicográfica `(position ASC, created_at ASC, id ASC)`.
+  - Ponto flutuante contínuo com empates tolerados no dado e resolvidos estavelmente pela data de criação e UUID.
+- [x] Backend & Banco (`solution/api`):
+  - Migration `0005_task_position_guard.sql`: `CHECK (position >= 0 AND position < 'Infinity'::float8)`.
+  - Rejeição garantida a nível de banco de números negativos, `NaN` e `+Infinity`.
+  - Repositório `PostgresTaskRepository.listByProject` atualizado com ordenação estrita `ORDER BY status ASC, position ASC, created_at ASC, id ASC`.
+  - Testes de integração em `migration_integration_test.dart` e `repositories_integration_test.dart` comprovando a violação do CHECK para valores anômalos e o desempate determinístico.
+- [x] Frontend (`solution/app`):
+  - `TasksViewModel.calculateMidpoint({TaskItem? before, TaskItem? after})`: cálculo determinístico de ponto médio para inserções no topo, no meio e no fim de colunas.
+  - `TasksViewModel.moveBetween`: despacho de movimentação entre vizinhos.
+  - Ordenação estável no ViewModel desempatando empates em `position` por `createdAt` e `id`.
+  - Testes unitários no `tasks_view_model_test.dart` cobrindo todos os cenários ordinais e desempate estável.
 - [x] Gates completos (`dart analyze`, `tools/contract-gate.ps1`, `tools/test.ps1 -Unit`, `tools/test.ps1 -Database`, `tools/doc-gate.ps1`).
 
 ## Evidência da Entrega
 
-Gate 2.5: PULADO (não altera criptografia nem autenticação direta; conecta telas e módulos do cliente).
+Gate 2.5: PULADO (não altera criptografia nem autenticação direta; reforça restrições de banco e ordenação ordinal do Kanban).
 
 ```text
 [EVIDÊNCIA]
 1. Leitura:
-   - solution/app/lib/modules/workspace/: módulo completo de workspace no app com DIP e Riverpod.
-   - solution/app/lib/global/shell/private_area_view.dart: shell real conectando workspace -> projetos -> tarefas -> comentários.
-   - solution/app/test/widget/navigation_flow_test.dart: teste de integração de widget da jornada ponta a ponta.
+   - solution/api/migrations/0005_task_position_guard.sql: CHECK constraint rejeitando negativos, NaN e Infinity.
+   - solution/api/lib/modules/tasks/infrastructure/postgres_task_repository.dart: listByProject ordenando por status, position, created_at, id.
+   - solution/app/lib/modules/tasks/presentation/tasks_view_model.dart: calculateMidpoint e ordenação estável.
 2. Verificação:
    - dart analyze solution/app solution/api (0 issues).
    - pwsh tools/contract-gate.ps1 (23 operações em sincronia 1:1, testes de contrato verdes).
    - flutter test solution/app/test/widget/ (36 testes de widget verdes).
-   - pwsh tools/test.ps1 -Unit (336 testes unitários verdes).
-   - pwsh tools/test.ps1 -Database (25 testes contra PostgreSQL 18.6 real WSL verdes).
+   - pwsh tools/test.ps1 -Unit (338 testes unitários verdes: 130 app, 208 api).
+   - pwsh tools/test.ps1 -Database (27 testes contra PostgreSQL 18.6 real WSL verdes).
    - pwsh tools/doc-gate.ps1 (100% aprovado).
 3. Confirmação:
-   - O usuário consegue efetuar login, selecionar/criar workspaces, gerenciar projetos, acessar tarefas/Kanban e interagir com comentários.
-   - R1 da auditoria de 2026-10-25 completamente sanado com evidência executável.
+   - Posições no Kanban são calculadas sem colisão visual via ponto médio.
+   - Banco de dados PostgreSQL rejeita valores anômalos (-1, NaN, Infinity) com erro 23514.
+   - Desempate determinístico comprovado em teste de integração de banco.
 ```
 
 ## Próximo UC
 
-- **Auditoria Bloco A — Item 2: R2 (Decisão INV-04, Midpoint e CHECK no Postgres)**.
+- **Auditoria Bloco A — Item 3: R4/R5 (Helpers Tipados no Shelf e DateOnly Estrito)**.
 - **EPIC-06** — Dashboard (RF-13 / INV-07).

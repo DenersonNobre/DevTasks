@@ -386,6 +386,48 @@ void main() {
         expect(remaining.first.id, task2.id);
       });
 
+      test('listByProject ordena com desempate determinístico (position ASC, created_at ASC, id ASC) (INV-04 / R2)', () async {
+        final userRepo = PostgresUserRepository(sql);
+        final wsRepo = PostgresWorkspaceRepository(sql);
+        final projRepo = PostgresProjectRepository(sql);
+        final taskRepo = PostgresTaskRepository(sql);
+
+        final uRes = await userRepo.create(
+          name: 'Tiebreaker Tester',
+          email: 'tiebreaker@example.com',
+          passwordHash: 'hash',
+        );
+        final userId = (uRes as UserCreated).user.id;
+        final ws = await wsRepo.createWithRole(
+          name: 'Tiebreaker WS',
+          ownerUserId: userId,
+        );
+        final proj = await projRepo.create(
+          workspaceId: ws.workspace.id,
+          name: 'Tiebreaker Proj',
+        );
+
+        // Insere 2 tarefas com a mesma posição através do SQL direto para simular empate no float
+        final t1 = DateTime.utc(2026, 10, 25, 12, 0);
+        final t2 = DateTime.utc(2026, 10, 25, 12, 5);
+
+        final r1 = await sql.query(
+          "INSERT INTO devtasks_task (project_id, title, status, position, created_at) "
+          "VALUES (@projId::uuid, 'Primeira no tempo', 'backlog', 1000.0, @t1) RETURNING id",
+          parameters: {'projId': proj.id, 't1': t1},
+        );
+        final r2 = await sql.query(
+          "INSERT INTO devtasks_task (project_id, title, status, position, created_at) "
+          "VALUES (@projId::uuid, 'Segunda no tempo', 'backlog', 1000.0, @t2) RETURNING id",
+          parameters: {'projId': proj.id, 't2': t2},
+        );
+
+        final list = await taskRepo.listByProject(proj.id);
+        expect(list.length, 2);
+        expect(list.first.id, r1.first['id'].toString());
+        expect(list.last.id, r2.first['id'].toString());
+      });
+
       test('move altera status/posição e respeita lock otimista (UC-04.02 / INV-04 / NFR-02)', () async {
         final userRepo = PostgresUserRepository(sql);
         final wsRepo = PostgresWorkspaceRepository(sql);

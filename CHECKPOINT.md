@@ -7,30 +7,32 @@
 ## Contexto
 
 DevTasks — Flutter (`solution/app`) + Dart/Shelf + PostgreSQL puro + OpenAPI 3.1.
-Ciclo corrente: **Auditoria Bloco A — R1 (Shell & Navegação do App) CONCLUÍDO ✅ (UC-08.07)**.
+Ciclo corrente: **Auditoria Bloco A — R2 (INV-04 / Midpoint / CHECK) CONCLUÍDO ✅ (UC-04.02)**.
 
 ## Estado verificado (2026-10-25)
 
-- **Claim**: `UC-08.07` (Coder) — liberando após entrega de R1.
+- **Claim**: `UC-04.02` (Coder) — liberando após entrega de R2.
 - **UCs**: 39 no plano — **35 concluídos / 4 pendentes** (`docs/plan/README.md`).
+- **Arquitetura & Backend (`solution/api`)**:
+  - D-09 e INV-04: tupla de ordenação total lexicográfica `(position ASC, created_at ASC, id ASC)`.
+  - Migration `0005_task_position_guard.sql` com `CHECK (position >= 0 AND position < 'Infinity'::float8)`.
+  - Repositório `PostgresTaskRepository.listByProject` atualizado com a tupla de desempate determinístico estável.
+  - 27 testes contra PostgreSQL 18.6 real WSL 100% verdes (`tools/test.ps1 -Database`).
 - **Frontend (`solution/app`)**:
-  - Módulo `workspace` completo (`IWorkspaceClient`, `HttpWorkspaceClient`, `WorkspaceController`).
-  - `PrivateAreaView` conectado ao `workspaceController`: seletor de workspace no AppBar, onboarding, `ProjectsView` embutida, transição para `TasksView` e abertura de `CommentsSheet`.
-  - Teste de jornada ponta a ponta `navigation_flow_test.dart` (Login ➔ Workspace ➔ Projetos ➔ Tarefas ➔ Comentários) 100% verde.
+  - `TasksViewModel.calculateMidpoint`: interpolação ordinal de ponto médio entre cartões vizinhos.
+  - `TasksViewModel.moveBetween`: movimentação precisa no Kanban entre vizinhos.
+  - Ordenação estável no ViewModel desempatando float idêntico por `(created_at, id)`.
   - 36 testes de widget passando (100% verdes).
-- **Backend (`solution/api`)**:
-  - 23 operações OpenAPI 3.1 com paridade 1:1 verificada no scanner.
-  - Suíte de integração PostgreSQL real no WSL com 25 testes verdes (`tools/test.ps1 -Database`).
 - **Qualidade & Gates**:
   - `dart analyze solution/app solution/api` 100% limpo (0 issues).
   - `pwsh tools/contract-gate.ps1` 100% aprovado (23 rotas).
   - `pwsh tools/doc-gate.ps1` e DAG 100% aprovados.
-  - `pwsh tools/test.ps1 -Unit` 100% verde (336 testes unitários).
-  - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL (25 testes).
+  - `pwsh tools/test.ps1 -Unit` 100% verde (338 testes unitários: 130 app, 208 api).
+  - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL (27 testes).
 
 ## Próximo passo
 
-- **Item 2 do Bloco A da Auditoria: R2 (Decisão INV-04, Midpoint e CHECK no Postgres)**.
+- **Item 3 do Bloco A da Auditoria: R4/R5 (Helpers Tipados no Shelf e DateOnly Estrito)**.
 
 ## Travas vivas
 

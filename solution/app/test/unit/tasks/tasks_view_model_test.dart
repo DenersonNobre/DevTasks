@@ -332,4 +332,95 @@ void main() {
       expect(client.assignCalls, 1);
     });
   });
+
+  group('TasksViewModel — Midpoint & Ordenação Lexicográfica Estável (INV-04 / R2)', () {
+    test('calculateMidpoint calcula corretamente nos 4 cenários ordinais', () {
+      final taskA = TaskItem(id: uuid(1), projectId: _projectId, title: 'A', position: 1000.0);
+      final taskB = TaskItem(id: uuid(2), projectId: _projectId, title: 'B', position: 2000.0);
+
+      // 1. Coluna vazia
+      expect(TasksViewModel.calculateMidpoint(), 1000.0);
+
+      // 2. Fim da coluna (apenas before)
+      expect(TasksViewModel.calculateMidpoint(before: taskB), 3000.0);
+
+      // 3. Topo da coluna (apenas after)
+      expect(TasksViewModel.calculateMidpoint(after: taskA), 500.0);
+
+      // 4. Entre dois cards (ponto médio)
+      expect(TasksViewModel.calculateMidpoint(before: taskA, after: taskB), 1500.0);
+    });
+
+    test('moveBetween interpola midpoint entre vizinhos e chama client.move', () async {
+      final taskA = TaskItem(id: uuid(1), projectId: _projectId, title: 'A', position: 1000.0);
+      final taskB = TaskItem(id: uuid(2), projectId: _projectId, title: 'B', position: 2000.0);
+      final taskMoving = TaskItem(
+        id: uuid(3),
+        projectId: _projectId,
+        title: 'Mover',
+        status: TaskStatus.backlog,
+        position: 0.0,
+      );
+
+      final now = DateTime.now().toUtc();
+      client.moveResult = Success(taskMoving.copyWith(
+        status: TaskStatus.inProgress,
+        position: 1500.0,
+      ));
+
+      await viewModel().moveBetween(
+        taskId: taskMoving.id,
+        targetStatus: TaskStatus.inProgress,
+        before: taskA,
+        after: taskB,
+        expectedUpdatedAt: now,
+        token: _token,
+      );
+
+      expect(client.moveCalls, 1);
+      expect(client.lastTargetPosition, 1500.0);
+      expect(client.lastTargetStatus, TaskStatus.inProgress);
+    });
+
+    test('ordenação desempata posições idênticas de forma determinística por createdAt e id', () async {
+      final t1 = DateTime.utc(2026, 10, 25, 10, 0);
+      final t2 = DateTime.utc(2026, 10, 25, 11, 0);
+
+      final task1 = TaskItem(
+        id: uuid(2),
+        projectId: _projectId,
+        title: 'Task 1 (criada depois)',
+        status: TaskStatus.inProgress,
+        position: 1000.0,
+        createdAt: t2,
+      );
+      final task2 = TaskItem(
+        id: uuid(1),
+        projectId: _projectId,
+        title: 'Task 2 (criada antes)',
+        status: TaskStatus.inProgress,
+        position: 1000.0,
+        createdAt: t1,
+      );
+
+      client.listResult = Success([task1, task2]);
+      await viewModel().load(projectId: _projectId, token: _token);
+
+      // Dispara move em task2 para reexecutar a ordenação no estado
+      client.moveResult = Success(task2);
+      await viewModel().move(
+        taskId: task2.id,
+        targetStatus: TaskStatus.inProgress,
+        targetPosition: 1000.0,
+        expectedUpdatedAt: t1,
+        token: _token,
+      );
+
+      final tasks = readState().tasks;
+      expect(tasks.length, 2);
+      // task2 foi criada antes (t1 < t2), deve preceder no desempate
+      expect(tasks.first.id, uuid(1));
+      expect(tasks.last.id, uuid(2));
+    });
+  });
 }

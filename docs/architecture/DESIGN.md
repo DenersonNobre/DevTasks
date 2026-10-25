@@ -231,6 +231,7 @@ O wireframe é **mais rico que o MVP aprovado**. Recomendação padrão: **PRD g
 | **D-05** | Runner do Gitea Actions | **Adiado para janela dedicada de DevOps** | GitHub Actions garante oráculo verde de testes, lint e Docker build; runner Gitea será provisionado quando houver suporte a containers |
 | **D-06** | Tema Base & WCAG (NC-17) | **Reatribuído da EPIC-00 para a EPIC-01** | RNF-05/06/07 vinculados ao Design System e telas de autenticação, onde há UI real para validação de contraste e tema |
 | **D-07** | Padrão de apresentação (app) | **MVVM por slice, unidirecional**: 1 caso de uso = 1 ViewModel com **estado imutável** + **intents**; View renderiza e despacha; Model = VOs/handlers/portas | Riverpod é o **mecanismo** (D-03), não a arquitetura. Estado transversal (sessão/tema) em `global/` — slice **observa**, nunca duplica. VM sem `BuildContext`/I/O; **código enxuto** com Object Calisthenics, SOLID e Clean Code **ponta a ponta**, verificados no Gate 3 (2026-10-23) |
+| **D-09** | Ordem determinística do Kanban & INV-04 (R2 da auditoria) | **Tupla total `(position, created_at, id)` + CHECK anti-NaN/Infinity + Midpoint** | SPEC INV-04 formaliza tupla total determinística; PostgreSQL aplica `CHECK (position >= 0 AND position < 'Infinity'::float8)`; ViewModel calcula midpoint entre vizinhos no frontend (2026-10-25) |
 
 > Registradas aqui com data e efeito aplicado — nada foi mudado silenciosamente nos documentos.
 
@@ -278,4 +279,20 @@ A API do DevTasks é construída em **Dart/shelf**, com **PostgreSQL via SQL pur
 
 1. Nenhum identificador de transporte pode aparecer em `domain/` ou `presentation/`; o `dip-gate` audita e garante pureza.
 2. `RNF-03` adota **token opaco** de 256 bits com hash SHA-256 canônico em `devtasks_session`.
+
+---
+
+## 15. D-09 — Ordem Determinística do Kanban & Invariante INV-04
+
+Conforme reconciliado no laudo de auditoria de 2026-10-25 (§9.2 e §9.4):
+
+1. **Ordenação Lexicográfica Estável**: A ordem dos cartões Kanban dentro de `(project, status)` é total e determinística, regida pela tupla:
+   $$\text{Ordem} = (\text{position ASC}, \text{created\_at ASC}, \text{id ASC})$$
+2. **Restrição Finitária no Banco**: A coluna `position` (`double precision`) aceita exclusivamente valores não-negativos e finitos, barrando `NaN` e `±Infinity`:
+   ```sql
+   CONSTRAINT devtasks_task_position_finite_check
+     CHECK (position >= 0 AND position < 'Infinity'::float8)
+   ```
+3. **Midpoint no Cliente**: Inserções e arrastos entre cards vizinhos interpolam o ponto médio $\frac{pos_A + pos_B}{2}$ através de `TasksViewModel.calculateMidpoint()`. Empates transitórios ou simultâneos são desempatados de forma estável por `(created_at, id)` sem quebrar a visualização ou lançar 409 espúrio na UI.
+
 3. **IDs são UUID** (`uuid` no Postgres, `String` no Dart) em todas as entidades e no schema. Motivo: o contrato declara `format: uuid` e identificador sequencial em API pública permite enumeração. `createdAt` é obrigatório em formato ISO-8601 UTC.
