@@ -126,11 +126,19 @@ flowchart TD
 | Épico | UCs | UCs concluídos | Status |
 |:---|:---:|:---:|:---:|
 | 00 — Fundação | 8 | 8/8 | ✅ |
-| 01 — Autenticação | 9 | 5/9 | 🔄 |
-| 02 — Workspace & Membresias | 3 | 0/3 | ⏳ |
-| 03 — Projetos | 2 | 0/2 | ⏳ |
+| 01 — Autenticação | 9 | 9/9 | ✅ |
+| 02 — Workspace & Membresias | 3 | 3/3 | ✅ |
+| 03 — Projetos | 2 | 1/2 | 🔄 |
 | 04 — Tarefas & Kanban | 3 | 0/3 | ⏳ |
 | 05 — Comentários | 2 | 0/2 | ⏳ |
 | 06 — Dashboard | 1 | 0/1 | ⏳ |
 | 07 — Deploy & Medição | 3 | 0/3 | ⏳ |
-| **Total** | **31** | **13/31** | 🔄 |
+| 08 — Migração Serverpod → shelf | 8 | 8/8 | ✅ |
+| **Total** | **39** | **29/39** | 🔄 |
+
+> **Derivação**: o status de cada UC é o status da feature que o contém na `Matriz de Features`
+> do próprio épico (1 UC por feature hoje); a linha do épico acima é o agregado. Projeção
+> reproduzível por `tools/sync-remotes.ps1` (`-DryRun` imprime a contagem). Esta matriz foi
+> reconstruída em 2026-10-24 porque divergia da §1 (marcava EPIC-02 como `0/3` com o épico ✅),
+> omitia o EPIC-08 (8 UCs) e totalizava 31 UCs contra os 39 existentes. Pendentes hoje:
+> `UC-03.02` e os épicos 04–07.
