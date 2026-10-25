@@ -55,28 +55,32 @@ class SessionService implements ISessionAuthenticator {
   SessionService({
     required this.repository,
     this.credentialRepository,
+    Duration? defaultTtl,
     DateTime Function()? now,
     TokenGenerator? tokenGenerator,
-  })  : _now = now ?? DateTime.now,
+  })  : sessionTtl = defaultTtl ?? defaultSessionTtl,
+        _now = now ?? DateTime.now,
         _generator = tokenGenerator ?? const TokenGenerator();
 
   final ISessionRepository repository;
   final ICredentialRepository? credentialRepository;
+  final Duration sessionTtl;
   final DateTime Function() _now;
   final TokenGenerator _generator;
 
-  /// TTL padrão de 24 horas para tokens de sessão.
-  static const Duration defaultTtl = Duration(hours: 24);
+  /// TTL padrão de 24 horas para tokens de sessão (INV-SEC-10).
+  static const Duration defaultSessionTtl = Duration(hours: 24);
 
   /// Cria e persiste uma nova sessão com token opaco.
   Future<IssuedSession> createSession({
     required String userId,
-    Duration ttl = defaultTtl,
+    Duration? ttl,
   }) async {
+    final effectiveTtl = ttl ?? sessionTtl;
     final rawToken = _generator.generate();
     final tokenHash = TokenGenerator.hash(rawToken);
     final createdAt = _now();
-    final expiresAt = createdAt.add(ttl);
+    final expiresAt = createdAt.add(effectiveTtl);
 
     final record = SessionRecord(
       userId: userId,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -71,7 +72,7 @@ class AuthRoutes {
       return _validationError('O campo password é obrigatório.', field: 'password');
     }
 
-    final rateError = _checkRateLimit(request, 'signup:$email');
+    final rateError = _checkRateLimit(request, 'signup');
     if (rateError != null) {
       return rateError;
     }
@@ -103,7 +104,7 @@ class AuthRoutes {
       return _validationError('O campo password é obrigatório.', field: 'password');
     }
 
-    final rateError = _checkRateLimit(request, 'signin:$email');
+    final rateError = _checkRateLimit(request, 'signin');
     if (rateError != null) {
       return rateError;
     }
@@ -213,8 +214,18 @@ class AuthRoutes {
   }
 
   String _extractClientIp(Request request) {
-    return request.headers['x-forwarded-for'] ??
-        request.headers['x-real-ip'] ??
-        'localhost';
+    final connInfo = request.context['shelf.io.connection_info'];
+    if (connInfo is HttpConnectionInfo) {
+      return connInfo.remoteAddress.address;
+    }
+    final forwarded = request.headers['x-forwarded-for'];
+    if (forwarded != null && forwarded.trim().isNotEmpty) {
+      return forwarded.split(',').first.trim();
+    }
+    final realIp = request.headers['x-real-ip'];
+    if (realIp != null && realIp.trim().isNotEmpty) {
+      return realIp.trim();
+    }
+    return '127.0.0.1';
   }
 }

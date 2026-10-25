@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -50,8 +51,7 @@ class Argon2PasswordHasher implements IPasswordHasher, IPasswordVerifier {
   /// Utilizado por `SignInHandler` para blindar o timing attack (INV-SEC-04)
   /// em caso de usuário não encontrado, sem falhar no parse de formato e
   /// garantindo tempo de CPU idêntico ao de uma senha real.
-  static const String dummyHash =
-      r'$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA==$XuWpLPw6ty350Ater6UtNshJdgMODNFLeD6eZt3/hL0=';
+  static const String dummyHash = IPasswordVerifier.dummyHash;
 
   final int memoryKiB;
   final int iterations;
@@ -63,19 +63,26 @@ class Argon2PasswordHasher implements IPasswordHasher, IPasswordVerifier {
   @override
   Future<String> hash(String password) async {
     final salt = _generateSecureSalt(saltLength);
-    final derived = _derive(
-      password: password,
-      salt: salt,
-      iterations: iterations,
-      memoryKiB: memoryKiB,
-      parallelism: parallelism,
-      keyLength: derivedKeyLength,
-    );
+    final mem = memoryKiB;
+    final iter = iterations;
+    final par = parallelism;
+    final keyLen = derivedKeyLength;
 
-    final saltB64 = base64.encode(salt);
-    final hashB64 = base64.encode(derived);
+    return Isolate.run(() {
+      final derived = _derive(
+        password: password,
+        salt: salt,
+        iterations: iter,
+        memoryKiB: mem,
+        parallelism: par,
+        keyLength: keyLen,
+      );
 
-    return '\$argon2id\$v=19\$m=$memoryKiB,t=$iterations,p=$parallelism\$$saltB64\$$hashB64';
+      final saltB64 = base64.encode(salt);
+      final hashB64 = base64.encode(derived);
+
+      return '\$argon2id\$v=19\$m=$mem,t=$iter,p=$par\$$saltB64\$$hashB64';
+    });
   }
 
   @override
@@ -88,16 +95,18 @@ class Argon2PasswordHasher implements IPasswordHasher, IPasswordVerifier {
       return false;
     }
 
-    final computed = _derive(
-      password: password,
-      salt: parsed.salt,
-      iterations: parsed.iterations,
-      memoryKiB: parsed.memoryKiB,
-      parallelism: parsed.parallelism,
-      keyLength: parsed.hashBytes.length,
-    );
+    return Isolate.run(() {
+      final computed = _derive(
+        password: password,
+        salt: parsed.salt,
+        iterations: parsed.iterations,
+        memoryKiB: parsed.memoryKiB,
+        parallelism: parsed.parallelism,
+        keyLength: parsed.hashBytes.length,
+      );
 
-    return _constantTimeEquals(computed, parsed.hashBytes);
+      return _constantTimeEquals(computed, parsed.hashBytes);
+    });
   }
 
   Uint8List _generateSecureSalt(int length) {
@@ -109,7 +118,7 @@ class Argon2PasswordHasher implements IPasswordHasher, IPasswordVerifier {
     return bytes;
   }
 
-  Uint8List _derive({
+  static Uint8List _derive({
     required String password,
     required Uint8List salt,
     required int iterations,
@@ -193,7 +202,7 @@ class Argon2PasswordHasher implements IPasswordHasher, IPasswordVerifier {
   }
 
   /// Comparação em tempo constante para mitigar side-channel timing attacks.
-  bool _constantTimeEquals(Uint8List a, Uint8List b) {
+  static bool _constantTimeEquals(Uint8List a, Uint8List b) {
     if (a.length != b.length) {
       return false;
     }

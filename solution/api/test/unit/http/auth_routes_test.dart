@@ -324,6 +324,34 @@ void main() {
         expect(json['errorCode'], 'ERR_RATE_LIMITED');
         expect(response.headers['retry-after'], isNotNull);
       });
+
+      test('bloqueia tentativas do mesmo IP mesmo alternando e-mails (mitigação B-1 / credential stuffing)', () async {
+        for (var i = 0; i < 5; i++) {
+          final req = makeRequest(
+            'POST',
+            '/auth/signin',
+            body: {
+              'email': 'target_$i@example.com',
+              'password': 'WrongPassword999',
+            },
+          );
+          await appHandler(req);
+        }
+
+        final throttledReq = makeRequest(
+          'POST',
+          '/auth/signin',
+          body: {
+            'email': 'another_target@example.com',
+            'password': 'Password12345',
+          },
+        );
+        final response = await appHandler(throttledReq);
+        expect(response.statusCode, 429);
+
+        final json = jsonDecode(await response.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_RATE_LIMITED');
+      });
     });
 
     group('POST /auth/signout & GET /me (rotas protegidas)', () {

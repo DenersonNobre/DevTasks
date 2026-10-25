@@ -1,4 +1,3 @@
-import 'argon2_password_hasher.dart';
 import 'domain/email.dart';
 import 'ports.dart';
 
@@ -45,7 +44,7 @@ class SignInHandler {
   static const String invalidCredentialsMessage = 'E-mail ou senha inválidos.';
 
   /// Hash de descarte: garante custo de verificação mesmo sem usuário (timing).
-  static const String dummyHash = Argon2PasswordHasher.dummyHash;
+  static const String dummyHash = IPasswordVerifier.dummyHash;
 
   final ICredentialRepository _credentials;
   final IPasswordVerifier _verifier;

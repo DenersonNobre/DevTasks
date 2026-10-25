@@ -15,6 +15,27 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-24 — Hardening da API: Rate Limit por IP Real, Isolate em Argon2, Multi-Statement DDL e Pureza DIP
+
+- **Sintoma**: Auditoria independente na API (`solution/api`) identificou 4 pontos de robustez e segurança:
+  1. Rate limiter de signin/signup chaveado por `$clientIp:$action:$email`, permitindo que um atacante contornasse o rate limit por IP alternando e-mails (credential stuffing / DoS), além de confiar cegamente em headers `x-forwarded-for` sem extrair o IP real do socket (`shelf.io.connection_info`).
+  2. `Argon2PasswordHasher` executando a derivação criptográfica (19 MiB RAM / 2 passadas) de forma síncrona no event loop do isolate principal, congelando requisições HTTP simultâneas durante a computação.
+  3. `SignInHandler` (camada de domínio/aplicação) importava a implementação concreta de infraestrutura `Argon2PasswordHasher` apenas para obter a constante `dummyHash`, violando o Princípio de Inversão de Dependência (DIP).
+  4. `SESSION_TTL_HOURS` definido em `AppConfig`/ambiente não era injetado no construtor do `SessionService` no entrypoint `bin/server.dart`.
+  5. `PgSqlExecutor.execute` executava scripts SQL como instrução única, vulnerável a falhas de multi-statement DDL sob o protocolo estendido do PostgreSQL.
+- **Causa raiz**:
+  1. Extração de IP dependia exclusivamente de headers HTTP em vez da conexão TCP do shelf, e chaveamento concatenava o payload mutável (`$email`).
+  2. Implementação direta sem offload computacional para workers em background.
+  3. Definição da constante `dummyHash` alocada na infraestrutura ao invés da porta de verificação `IPasswordVerifier`.
+  4. Omissão do parâmetro `defaultTtl` no wiring de `server.dart`.
+- **Fix**:
+  1. Atualizado `AuthRoutes._extractClientIp` para inspecionar `request.context['shelf.io.connection_info']` prioritariamente, e chaveado o rate limit por IP + ação (`$clientIp:signin` e `$clientIp:signup`). Adicionado teste comprovando bloqueio contra ataques com múltiplos e-mails no mesmo IP.
+  2. Envolvidas as rotinas computacionais pesadas de hash e verificação do `Argon2PasswordHasher` em `Isolate.run(...)`.
+  3. Movido `dummyHash` para a porta `IPasswordVerifier.dummyHash`, eliminando o import de infraestrutura em `SignInHandler`.
+  4. `SessionService` passa a aceitar `Duration? defaultTtl` configurável e `server.dart` conecta `Duration(hours: config.sessionTtlHours)`.
+  5. Implementado parser léxico seguro `splitSqlStatements(String sql)` que divide scripts DDL respeitando literais de string, comentários de linha/bloco e dollar-quotes, executando cada instrução sequencialmente no `PgSqlExecutor.execute`. Coberto com testes unitários em `sql_split_test.dart`.
+- **Prevenção**: Suíte de 177 testes da API executando 100% verde e 0 avisos em `dart analyze`.
+
 ## 2026-10-24 — Validação de Contrato OpenAPI 3.1 com Paridade Bidirecional e Prova Negativa (UC-08.06)
 
 - **Sintoma**: Risco de "drift" silencioso entre o documento OpenAPI 3.1 (`docs/api/openapi.yaml`) e os endpoints implementados no servidor shelf, ou de campos do contrato divergirem dos tipos estritos (ex.: inteiros x UUIDs, ISO-8601 UTC).

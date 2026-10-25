@@ -19,6 +19,7 @@ Future<void> main() async {
   final sessionService = SessionService(
     repository: sessionRepo,
     credentialRepository: userRepo,
+    defaultTtl: Duration(hours: config.sessionTtlHours),
   );
   final rateLimiter = InMemoryRateLimiter(now: DateTime.now);
 

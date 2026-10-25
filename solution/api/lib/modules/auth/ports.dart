@@ -120,6 +120,11 @@ abstract interface class ICredentialRepository {
 
 /// Porta de verificação de senha contra um hash armazenado.
 abstract interface class IPasswordVerifier {
+  /// Hash dummy canônico pré-computado para mitigação de side-channel timing attack
+  /// quando o usuário não for encontrado (INV-SEC-04).
+  static const String dummyHash =
+      r'$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA==$XuWpLPw6ty350Ater6UtNshJdgMODNFLeD6eZt3/hL0=';
+
   Future<bool> verify({required String password, required String passwordHash});
 }
 
