@@ -15,6 +15,22 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Gate NFR-03 mede compilação a frio, não a duração da suíte
+
+- **Sintoma**: `tools/test.ps1 -Unit` sai 1 citando `206,26s - teto de 120s excedido`, enquanto os
+  dois membros reportam verde (`[OK] app`, `[OK] api 75,64s`). Gate vermelho com teste verde.
+- **Causa raiz**: a janela do cronômetro engloba a **compilação do bundle de teste do Flutter**. A
+  mesma suíte reexecutada com cache quente roda em **62s**, e o cronômetro do próprio `flutter test`
+  marca **00:22** — logo ~68s são tooling, não teste. É a mesma classe de defeito que o LEARNINGS de
+  2026-10-23 corrigiu para `pub get` (aquecido fora da janela); o bundle de teste ficou de fora.
+  Agravante estrutural: o teto de `-Unit` (120s) ficou **menor que um único membro a frio** (app
+  130,53s), então o gate é impossível de satisfazer sem cache.
+- **Fix proposto (não aplicado nesta sessão)**: aquecer o bundle na etapa de aquecimento que já
+  existe, antes do `StartNew()` — ou cronometrar o tempo reportado pelo runner, não o wall clock.
+- **Prevenção**: orçamento de tempo deve medir o que o requisito define (duração da suíte); resolução
+  de dependências e compilação pertencem ao aquecimento. Antes de atribuir vermelho a regressão,
+  medir a mesma suíte duas vezes e comparar frio × quente.
+
 ## 2026-10-24 — Status de UC derivado de commit subconta (e a projeção para os remotes)
 
 - **Sintoma**: ao projetar os 39 UCs como issues (Gitea + GitHub), `UC-02.02` e `UC-02.03` foram
