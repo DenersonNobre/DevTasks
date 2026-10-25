@@ -2,6 +2,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../../modules/auth/auth_routes.dart';
+import '../../modules/comments/comment_routes.dart';
 import '../../modules/projects/project_routes.dart';
 import '../../modules/tasks/task_routes.dart';
 import '../../modules/workspace/workspace_routes.dart';
@@ -22,6 +23,7 @@ Handler buildHandler({
   WorkspaceRoutes? workspaceRoutes,
   ProjectRoutes? projectRoutes,
   TaskRoutes? taskRoutes,
+  CommentRoutes? commentRoutes,
 }) {
   final router = Router(notFoundHandler: _notFound);
   router.get('/health', _health);
@@ -29,6 +31,7 @@ Handler buildHandler({
   workspaceRoutes?.register(router);
   projectRoutes?.register(router);
   taskRoutes?.register(router);
+  commentRoutes?.register(router);
 
   return const Pipeline()
       .addMiddleware(errorMiddleware())

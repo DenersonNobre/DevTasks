@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:devtasks_app/modules/comments/presentation/comments_sheet.dart';
 import '../domain/task_item.dart';
 import '../domain/task_priority.dart';
 import '../domain/task_status.dart';
@@ -164,6 +165,10 @@ class _TasksViewState extends ConsumerState<TasksView> {
         );
   }
 
+  void _openComments(TaskItem task) {
+    CommentsSheet.show(context, task: task, token: widget.token);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(tasksViewModelProvider);
@@ -223,6 +228,7 @@ class _TasksViewState extends ConsumerState<TasksView> {
                   onRetry: _load,
                   onMove: _move,
                   onAssign: _assign,
+                  onComments: _openComments,
                   onEdit: _edit,
                   onDelete: _delete,
                   onDrop: _onDrop,
@@ -231,6 +237,7 @@ class _TasksViewState extends ConsumerState<TasksView> {
                   state: state,
                   onRetry: _load,
                   onAssign: _assign,
+                  onComments: _openComments,
                   onEdit: _edit,
                   onDelete: _delete,
                 ),
@@ -321,6 +328,7 @@ class _TaskList extends StatelessWidget {
     required this.state,
     required this.onRetry,
     required this.onAssign,
+    required this.onComments,
     required this.onEdit,
     required this.onDelete,
   });
@@ -328,6 +336,7 @@ class _TaskList extends StatelessWidget {
   final TasksState state;
   final Future<void> Function() onRetry;
   final void Function(TaskItem task) onAssign;
+  final void Function(TaskItem task) onComments;
   final void Function(TaskItem task) onEdit;
   final void Function(TaskItem task) onDelete;
 
@@ -403,6 +412,12 @@ class _TaskList extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
+                key: Key('task-comments-button-${task.id}'),
+                icon: const Icon(Icons.comment_outlined),
+                tooltip: 'Comentários',
+                onPressed: () => onComments(task),
+              ),
+              IconButton(
                 key: Key('task-assign-button-${task.id}'),
                 icon: const Icon(Icons.person_add_alt_1_outlined),
                 tooltip: 'Atribuir',
@@ -434,6 +449,7 @@ class _KanbanBoard extends StatelessWidget {
     required this.onRetry,
     required this.onMove,
     required this.onAssign,
+    required this.onComments,
     required this.onEdit,
     required this.onDelete,
     required this.onDrop,
@@ -443,6 +459,7 @@ class _KanbanBoard extends StatelessWidget {
   final Future<void> Function() onRetry;
   final void Function(TaskItem task) onMove;
   final void Function(TaskItem task) onAssign;
+  final void Function(TaskItem task) onComments;
   final void Function(TaskItem task) onEdit;
   final void Function(TaskItem task) onDelete;
   final void Function(TaskItem task, TaskStatus targetStatus) onDrop;
@@ -483,6 +500,7 @@ class _KanbanBoard extends StatelessWidget {
               tasks: state.tasks.where((t) => t.status == status).toList(),
               onMove: onMove,
               onAssign: onAssign,
+              onComments: onComments,
               onEdit: onEdit,
               onDelete: onDelete,
               onDrop: onDrop,
@@ -499,6 +517,7 @@ class _KanbanColumn extends StatelessWidget {
     required this.tasks,
     required this.onMove,
     required this.onAssign,
+    required this.onComments,
     required this.onEdit,
     required this.onDelete,
     required this.onDrop,
@@ -508,6 +527,7 @@ class _KanbanColumn extends StatelessWidget {
   final List<TaskItem> tasks;
   final void Function(TaskItem task) onMove;
   final void Function(TaskItem task) onAssign;
+  final void Function(TaskItem task) onComments;
   final void Function(TaskItem task) onEdit;
   final void Function(TaskItem task) onDelete;
   final void Function(TaskItem task, TaskStatus targetStatus) onDrop;
@@ -570,6 +590,7 @@ class _KanbanColumn extends StatelessWidget {
                             task: task,
                             onMove: onMove,
                             onAssign: onAssign,
+                            onComments: onComments,
                             onEdit: onEdit,
                             onDelete: onDelete,
                           );
@@ -589,6 +610,7 @@ class _KanbanCard extends StatelessWidget {
     required this.task,
     required this.onMove,
     required this.onAssign,
+    required this.onComments,
     required this.onEdit,
     required this.onDelete,
   });
@@ -596,6 +618,7 @@ class _KanbanCard extends StatelessWidget {
   final TaskItem task;
   final void Function(TaskItem task) onMove;
   final void Function(TaskItem task) onAssign;
+  final void Function(TaskItem task) onComments;
   final void Function(TaskItem task) onEdit;
   final void Function(TaskItem task) onDelete;
 
@@ -622,6 +645,15 @@ class _KanbanCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        IconButton(
+                          key: Key('task-comments-button-${task.id}'),
+                          icon: const Icon(Icons.comment_outlined, size: 18),
+                          tooltip: 'Comentários',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () => onComments(task),
+                        ),
                         IconButton(
                           key: Key('task-assign-button-${task.id}'),
                           icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),

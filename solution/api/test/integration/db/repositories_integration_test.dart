@@ -37,7 +37,7 @@ void main() {
 
     setUp(() async {
       await sql.execute(
-        'TRUNCATE devtasks_task, devtasks_session, devtasks_workspace_member, devtasks_project, '
+        'TRUNCATE devtasks_comment, devtasks_task, devtasks_session, devtasks_workspace_member, devtasks_project, '
         'devtasks_workspace, devtasks_user CASCADE',
       );
     });
@@ -509,6 +509,71 @@ void main() {
           clearAssignedUser: true,
         );
         expect(cleared?.assignedUserId, isNull);
+      });
+    });
+
+    group('PostgresCommentRepository (EPIC-05 / UC-05.01 / UC-05.02 / RF-12)', () {
+      test('criação e listagem cronológica com joins de autor', () async {
+        final commentRepo = PostgresCommentRepository(sql);
+        final taskRepo = PostgresTaskRepository(sql);
+        final projRepo = PostgresProjectRepository(sql);
+        final wsRepo = PostgresWorkspaceRepository(sql);
+
+        final author1Id = await createUser(email: 'autor1@example.com');
+        final author2Id = await createUser(email: 'autor2@example.com');
+        final ws = await wsRepo.createWithRole(name: 'WS Comentários', ownerUserId: author1Id);
+        final proj = await projRepo.create(workspaceId: ws.workspace.id, name: 'Projeto Comentários');
+        final task = await taskRepo.create(projectId: proj.id, title: 'Tarefa com Comentários');
+
+        // Cria primeiro comentário
+        final c1 = await commentRepo.create(
+          taskId: task.id,
+          userId: author1Id,
+          content: 'Primeiro comentário de teste',
+        );
+        expect(c1.id, isNotEmpty);
+        expect(c1.taskId, task.id);
+        expect(c1.userId, author1Id);
+        expect(c1.content, 'Primeiro comentário de teste');
+        expect(c1.authorName, isNotEmpty);
+
+        // Cria segundo comentário
+        final c2 = await commentRepo.create(
+          taskId: task.id,
+          userId: author2Id,
+          content: 'Segundo comentário de teste',
+        );
+        expect(c2.id, isNotEmpty);
+        expect(c2.userId, author2Id);
+
+        // Listagem cronológica
+        final list = await commentRepo.listByTask(task.id);
+        expect(list.length, 2);
+        expect(list[0].id, c1.id);
+        expect(list[1].id, c2.id);
+        expect(list[0].content, 'Primeiro comentário de teste');
+        expect(list[1].content, 'Segundo comentário de teste');
+      });
+
+      test('tenta criar comentário com mais de 2000 caracteres e viola CHECK constraint', () async {
+        final commentRepo = PostgresCommentRepository(sql);
+        final taskRepo = PostgresTaskRepository(sql);
+        final projRepo = PostgresProjectRepository(sql);
+        final wsRepo = PostgresWorkspaceRepository(sql);
+
+        final authorId = await createUser(email: 'autor-longo@example.com');
+        final ws = await wsRepo.createWithRole(name: 'WS Longo', ownerUserId: authorId);
+        final proj = await projRepo.create(workspaceId: ws.workspace.id, name: 'Proj Longo');
+        final task = await taskRepo.create(projectId: proj.id, title: 'Tarefa Longa');
+
+        expect(
+          () => commentRepo.create(
+            taskId: task.id,
+            userId: authorId,
+            content: 'A' * 2001,
+          ),
+          throwsA(isA<PgException>()),
+        );
       });
     });
 

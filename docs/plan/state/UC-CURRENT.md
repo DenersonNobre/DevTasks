@@ -1,45 +1,43 @@
 # UC-CURRENT — DevTasks
 
-> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-04-tarefas-kanban.md`.
+> Hand-off por UC (INV-STATE-01). Escopo canônico: `docs/plan/epics/epic-05-comentarios.md`.
 > Ordem de leitura ao retomar: `CHECKPOINT.md` → este arquivo → código.
 
 ## UC corrente
 
-**UC-04.03** — Atribuição de Responsável (F4.3 / RF-11 / INV-03).
+**UC-05.01** — Criação e Listagem de Comentários em Tarefas (F5.1 / RF-12).
 Dono: Coder. Status: **Concluído ✅**.
 
-## Escopo do UC-04.03
+## Escopo do UC-05.01
 
-- [x] Contrato OpenAPI 3.1 (`docs/api/openapi.yaml`): rota `POST /tasks/{id}/assign` (e `PATCH /tasks/{id}` com `assignedUserId`), schema `AssignTaskRequest`, resposta 422 `ERR_INVALID_ASSIGNEE` (`INV-03`), 403 `ERR_INSUFFICIENT_ROLE`, 409 `ERR_PROJECT_ARCHIVED`, 404 `ERR_NOT_FOUND` e paridade 1:1 via `tools/contract-gate.ps1`.
-- [x] Backend (`solution/api`): método `assign` na porta `ITaskRepository` e implementação no `PostgresTaskRepository`; validação estrita de membresia no workspace do projeto (`INV-03`); rota Shelf em `task_routes.dart` com RBAC (`INV-06`), multi-tenant (`INV-01`) e projeto arquivado (`INV-05`).
-- [x] Testes de Backend: cobertura unitária em `task_routes_test.dart` (sucesso, 422 não-membro, 422 outro workspace, 403 viewer, 409 arquivado) e `repositories_integration_test.dart` contra PostgreSQL 18.6 real no WSL.
-- [x] Frontend (`solution/app`): suporte a `assign` em `ITaskClient` e `HttpTaskClient`; intent `assign` no `TasksViewModel`; UI com avatar/indicador de responsável no card/lista e seletor de responsável (`_AssignTaskDialog` / Avatar).
-- [x] Testes de Frontend: testes unitários TDD de cliente e ViewModel (`tasks_view_model_test.dart`) e testes de widget com avatar e atribuição (`tasks_view_test.dart`).
-- [x] Suíte de testes automatizados e gates completos (`dart analyze`, `tools/contract-gate.ps1`, `tools/test.ps1 -Unit`, `tools/test.ps1 -Database`).
+- [x] Migration PostgreSQL: `solution/api/migrations/0004_comments_schema.sql` criando tabela `devtasks_comment` com integridade referencial (`task_id`, `user_id`) e CHECK de tamanho (1..2000). Idempotência e tabela verificadas em `migration_integration_test.dart`.
+- [x] Contrato OpenAPI 3.1 (`docs/api/openapi.yaml`): rotas `POST /tasks/{id}/comments` e `GET /tasks/{id}/comments`, schemas `CreateCommentRequest`, `Comment`, `CommentResponse`, `CommentList`. Paridade 1:1 verificada via `tools/contract-gate.ps1` (23 operações).
+- [x] Backend (`solution/api`): módulo `comments` (`CommentEntity`, `CommentContent`, `ICommentRepository`, `PostgresCommentRepository`, `CommentRoutes`). Injeção no roteador e servidor Shelf.
+- [x] Testes de Backend: 10 testes unitários em `comment_routes_test.dart` e 2 testes de integração no PostgreSQL real WSL em `repositories_integration_test.dart`.
+- [x] Frontend (`solution/app`): módulo `comments` com `CommentItem`, `ICommentClient`, `HttpCommentClient`, `commentClientProvider`, `CommentsState`, `CommentsViewModel`, `CommentsSheet` com timeline e composer.
+- [x] Testes de Frontend: 4 testes unitários de `HttpCommentClient`, 6 testes de `CommentsViewModel`, 4 testes de widget de `CommentsSheet` e 12 testes de `tasks_view_test.dart` (todos verdes).
+- [x] Suíte de testes automatizados e gates completos (`dart analyze`, `tools/contract-gate.ps1`, `tools/test.ps1 -Unit`, `tools/test.ps1 -Database`, `tools/doc-gate.ps1`).
 
 ## Evidência da Entrega
 
-Gate 2.5: PULADO (mudança não expõe nem altera superfície de auth/criptografia direta; validação de integridade referencial de membros e RBAC cobertas por testes automatizados).
+Gate 2.5: PULADO (mudança não expõe nem altera superfície de auth/criptografia direta; integridade de comentários e autor via sessão validada por testes).
 
 ```text
 [EVIDÊNCIA]
-1. Leitura e Contrato:
-   - OpenAPI 3.1: operação `assignTask` (POST /tasks/{id}/assign) adicionada com 21 rotas em perfeita paridade.
-   - `pwsh tools/contract-gate.ps1`: APROVADO (21/21 rotas Shelf <-> OpenAPI 3.1).
-2. Verificação Backend:
-   - `solution/api/test/unit/http/task_routes_test.dart`: 24 testes verdes (incluindo 422 INV-03, 403 INV-06, 200 assign e desatribuição).
-   - `solution/api/test/integration/db/repositories_integration_test.dart`: 23 testes verdes contra PostgreSQL real no WSL validando persistência de `assigned_user_id`.
-3. Verificação Frontend:
-   - `solution/app/test/unit/tasks/http_task_client_test.dart`: 10 testes unitários verdes (sucesso e mapeamento de ERR_INVALID_ASSIGNEE).
-   - `solution/app/test/unit/tasks/tasks_view_model_test.dart`: 13 testes unitários verdes cobrindo atribuição, desatribuição e erro amigável de INV-03.
-   - `solution/app/test/widget/tasks_view_test.dart`: 12 testes de widget verdes cobrindo renderização de avatar, diálogo de atribuição e desatribuição.
-4. Análise Estática e Gates:
-   - `dart analyze solution/app solution/api`: 0 erros / 0 warnings.
-   - `pwsh tools/test.ps1 -Unit`: 100% verde (app=29.17s, api=23.18s).
-   - `pwsh tools/test.ps1 -Database`: 100% verde contra Postgres WSL.
-   - `pwsh tools/doc-gate.ps1`: 100% aprovado.
+1. Leitura:
+   - Migration 0004_comments_schema.sql cria devtasks_comment com CHECK (1..2000 chars) e CASCADE em tasks.
+   - OpenAPI 3.1 com 23 operações validadas 1:1 pelo contract-gate.
+2. Verificação:
+   - dart analyze solution/app solution/api (0 issues).
+   - pwsh tools/contract-gate.ps1 (23 operações em sincronia 1:1, testes de contrato verdes).
+   - pwsh tools/test.ps1 -Unit (332 testes unitários verdes: 124 app, 208 api).
+   - pwsh tools/test.ps1 -Database (25 testes contra PostgreSQL 18.6 real WSL verdes).
+   - pwsh tools/doc-gate.ps1 (100% aprovado).
+3. Confirmação:
+   - Linha do tempo de comentários ordenada cronologicamente com autor e avatar.
+   - Composer com validação em tempo real e persistência na API e banco.
 ```
 
 ## Próximo UC
 
-- **UC-05.01** — Criação e Listagem de Comentários em Tarefas (F5.1 / RF-12).
+- **UC-05.02** — Guardas de Comentário (composição, papel, arquivo - F5.2 / INV-02 / INV-05 / INV-06).

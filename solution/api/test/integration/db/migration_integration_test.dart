@@ -55,7 +55,7 @@ void main() {
       expect(second.skipped, migrations.length);
     });
 
-    test('as 6 tabelas existem após aplicar', () async {
+    test('as 7 tabelas existem após aplicar', () async {
       await Migrator(sql: sql, store: store, migrations: migrations).up();
 
       final rows = await sql.query(
@@ -72,6 +72,7 @@ void main() {
           'devtasks_workspace_member',
           'devtasks_project',
           'devtasks_task',
+          'devtasks_comment',
         ]),
       );
     });

@@ -7,31 +7,33 @@
 ## Contexto
 
 DevTasks — Flutter (`solution/app`) + Dart/Shelf + PostgreSQL puro + OpenAPI 3.1.
-Ciclo corrente: **EPIC-04 (Tarefas & Kanban) CONCLUÍDO ✅**. **UC-04.03 concluído**.
+Ciclo corrente: **EPIC-05 (Comentários) EM ANDAMENTO 🔄**. **UC-05.01 concluído ✅**.
 
 ## Estado verificado (2026-10-25)
 
-- **Claim**: liberando `UC-04.03` (Coder).
-- **UCs**: 39 no plano — **33 concluídos / 6 pendentes** (`docs/plan/README.md`).
+- **Claim**: liberando `UC-05.01` (Coder).
+- **UCs**: 39 no plano — **34 concluídos / 5 pendentes** (`docs/plan/README.md`).
 - **Backend (`solution/api`)**:
-  - Endpoint `POST /tasks/{id}/assign` com validação de membresia no workspace do projeto (`INV-03` / 422 `ERR_INVALID_ASSIGNEE`), RBAC (`INV-06`) e projeto arquivado (`INV-05`).
-  - Repositório `PostgresTaskRepository.assign` e `update` persistindo `assigned_user_id` e suporte a desatribuição com `null`.
-  - Suíte de integração PostgreSQL real no WSL com 23 testes verdes (`tools/test.ps1 -Database`).
-  - OpenAPI 3.1 com 21/21 rotas em paridade 1:1 verificada via `tools/contract-gate.ps1`.
+  - Migration `0004_comments_schema.sql` com tabela `devtasks_comment` e CHECK (1..2000 chars).
+  - Rotas `POST /tasks/{id}/comments` e `GET /tasks/{id}/comments` no Shelf com RBAC (`INV-06`) e multi-tenant (`INV-01`/`INV-02`).
+  - Repositório `PostgresCommentRepository` com ordenação cronológica e join de nome de autor.
+  - Suíte de integração PostgreSQL real no WSL com 25 testes verdes (`tools/test.ps1 -Database`).
+  - OpenAPI 3.1 com 23/23 rotas em paridade 1:1 verificada via `tools/contract-gate.ps1`.
 - **Frontend (`solution/app`)**:
-  - `ITaskClient.assign` e `HttpTaskClient.assign` com 10 testes unitários verdes.
-  - `TasksViewModel.assign` com atualização reativa do agregado (13 testes unitários).
-  - `TasksView` com renderização de avatar/indicador de responsável, diálogo de atribuição e desatribuição (12 testes de widget verdes).
+  - Módulo `comments` com `CommentItem`, `ICommentClient`, `HttpCommentClient`, `CommentsViewModel`.
+  - `CommentsSheet` com linha do tempo de comentários, composer e validação.
+  - `TasksView` com botão de comentários integrado na lista e nos cartões do Kanban.
+  - 4 testes unitários de cliente, 6 testes de ViewModel e 4 testes de widget de comments (todos verdes).
 - **Qualidade & Gates**:
   - `dart analyze solution/app solution/api` 100% limpo (0 issues).
-  - `pwsh tools/contract-gate.ps1` 100% aprovado (21 rotas).
+  - `pwsh tools/contract-gate.ps1` 100% aprovado (23 rotas).
   - `pwsh tools/doc-gate.ps1` e DAG 100% aprovados.
-  - `pwsh tools/test.ps1 -Unit` 100% verde (app=29.17s, api=23.18s).
-  - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL.
+  - `pwsh tools/test.ps1 -Unit` 100% verde (332 testes unitários).
+  - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL (25 testes).
 
 ## Próximo passo
 
-- **UC-05.01** — Criação e Listagem de Comentários em Tarefas (EPIC-05 / F5.1 / RF-12).
+- **UC-05.02** — Guardas de Comentário (composição, papel, arquivo - F5.2 / INV-02 / INV-05 / INV-06).
 
 ## Travas vivas
 

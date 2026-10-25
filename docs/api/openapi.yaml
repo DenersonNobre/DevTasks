@@ -891,6 +891,72 @@ paths:
         '500':
           $ref: '#/components/responses/ErrInfraFailure'
 
+  /tasks/{id}/comments:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identificador UUID da tarefa.
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Comments]
+      operationId: createComment
+      summary: Adiciona um comentário à tarefa (RF-12 / F5.1)
+      description: |
+        Cria um comentário na tarefa. O comentário é imutável no MVP (PRD §5 / SPEC §4.1).
+        O solicitante deve ser `owner` ou `developer` (`INV-06`).
+        Viewer recebe `403 ERR_INSUFFICIENT_ROLE`.
+        Não-membro do workspace da tarefa recebe `404 ERR_NOT_FOUND` (`INV-01` / `INV-02`).
+        Se o projeto pai estiver arquivado, a criação é bloqueada com `409 ERR_PROJECT_ARCHIVED` (`INV-05`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comentário criado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '409':
+          $ref: '#/components/responses/ErrProjectArchived'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+    get:
+      tags: [Comments]
+      operationId: listCommentsByTask
+      summary: Lista os comentários da tarefa em ordem cronológica (RF-12 / F5.1)
+      description: |
+        Retorna os comentários ordenados cronologicamente (`createdAt` ascendente).
+        Qualquer membro do workspace tem acesso à leitura (`owner`, `developer` ou `viewer`).
+        Não-membro recebe `404 ERR_NOT_FOUND` (`INV-01` / `INV-02`).
+      responses:
+        '200':
+          description: Lista de comentários da tarefa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentList'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1563,3 +1629,58 @@ components:
           format: uuid
           nullable: true
           description: Identificador UUID do usuário responsável (membro do mesmo workspace, INV-03) ou null para desatribuir.
+
+    CreateCommentRequest:
+      type: object
+      required: [content]
+      additionalProperties: false
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Conteúdo textual do comentário (não vazio, máx 2000 caracteres).
+
+    Comment:
+      type: object
+      required: [id, taskId, userId, authorName, content, createdAt]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+          description: Nome do autor do comentário para exibição direta (F5.1).
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        createdAt:
+          type: string
+          format: date-time
+
+    CommentResponse:
+      type: object
+      required: [comment]
+      additionalProperties: false
+      properties:
+        comment:
+          $ref: '#/components/schemas/Comment'
+
+    CommentList:
+      type: object
+      required: [comments]
+      additionalProperties: false
+      properties:
+        comments:
+          type: array
+          description: Comentários da tarefa ordenados cronologicamente.
+          items:
+            $ref: '#/components/schemas/Comment'

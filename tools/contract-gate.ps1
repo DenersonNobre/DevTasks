@@ -64,7 +64,8 @@ $routeFiles = @(
   "solution/api/lib/modules/auth/auth_routes.dart",
   "solution/api/lib/modules/workspace/workspace_routes.dart",
   "solution/api/lib/modules/projects/project_routes.dart",
-  "solution/api/lib/modules/tasks/task_routes.dart"
+  "solution/api/lib/modules/tasks/task_routes.dart",
+  "solution/api/lib/modules/comments/comment_routes.dart"
 )
 
 $codeRoutes = [System.Collections.Generic.HashSet[string]]::new()

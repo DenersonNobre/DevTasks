@@ -52,12 +52,22 @@ Future<void> main() async {
     authenticator: sessionService,
   );
 
+  final commentRepo = PostgresCommentRepository(sql);
+  final commentRoutes = CommentRoutes(
+    commentRepository: commentRepo,
+    taskRepository: taskRepo,
+    projectRepository: projectRepo,
+    workspaceRepository: workspaceRepo,
+    authenticator: sessionService,
+  );
+
   final handler = buildHandler(
     corsOrigin: config.corsOrigin,
     authRoutes: authRoutes,
     workspaceRoutes: workspaceRoutes,
     projectRoutes: projectRoutes,
     taskRoutes: taskRoutes,
+    commentRoutes: commentRoutes,
   );
 
   final server = await shelf_io.serve(

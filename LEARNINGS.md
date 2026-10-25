@@ -15,6 +15,13 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Criação e Linha do Tempo de Comentários em Tarefas (UC-05.01)
+
+- **Sintoma**: Necessidade de fornecer linha do tempo de conversas e criação de comentários associados a tarefas (RF-12 / F5.1), garantindo integridade referencial com cascata no banco, tamanho máximo de 2000 caracteres e isolamento multi-tenant/RBAC no contrato OpenAPI 3.1.
+- **Causa raiz**: Comentários são append-only por decisão de arquitetura e produto (PRD §5 / SPEC §4.1). Exigem join com `devtasks_user` para expor o nome do autor na listagem cronológica sem expor dados sensíveis (e-mail/hash). Na API Shelf, a inclusão do módulo de comentários exigiu extensão do contrato OpenAPI para 23 operações e sincronização das listas de rotas no scanner de contrato. No app Flutter, a linha do tempo foi implementada em `CommentsSheet` com desacoplamento via injeção de dependências e MVVM puro com Riverpod.
+- **Fix**: Criada migration `0004_comments_schema.sql` com tabela `devtasks_comment` e constraint `CHECK (length(content) >= 1 AND length(content) <= 2000)`; implementados `PostgresCommentRepository` e rotas `POST /tasks/{id}/comments` e `GET /tasks/{id}/comments` com validação de projeto arquivado (409) e papel viewer (403); contrato OpenAPI 3.1 atualizado e validado 1:1 via `tools/contract-gate.ps1` (23 operações); no Flutter (`solution/app`), implementados `CommentItem`, `ICommentClient`, `HttpCommentClient`, `CommentsViewModel`, `CommentsState` e `CommentsSheet` integrada ao card e lista de tarefas.
+- **Prevenção**: TDD Red-Before-Green ponta a ponta: 10 testes unitários de rotas, 2 testes de integração PostgreSQL real no WSL com violação de CHECK constraint, 4 testes unitários de client HTTP, 6 testes de ViewModel e 4 testes de widget de CommentsSheet (suíte completa com 332 testes unitários e 25 de banco verdes).
+
 ## 2026-10-25 — Atribuição de Responsável com Validação de Membresia no Workspace (UC-04.03)
 
 - **Sintoma**: Necessidade de atribuir e desatribuir responsáveis às tarefas com garantia estrita de integridade referencial ao workspace do projeto (`INV-03`), rejeitando usuários externos com `ERR_INVALID_ASSIGNEE` (422).
