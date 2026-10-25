@@ -15,6 +15,13 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — CRUD de Tarefas e Contrato OpenAPI 3.1 com Isolamento Multi-Tenant e RBAC (UC-04.01)
+
+- **Sintoma**: Necessidade de gerenciar o ciclo de vida de tarefas (criação, listagem, edição e exclusão) dentro de projetos com suporte a status fechados (INV-04), prioridades com badges de alto contraste (WCAG AA) e proteção contra mutações indevidas (INV-01, INV-05, INV-06).
+- **Causa raiz**: Conforme RF-09, D-01 e D-08, tarefas nascem em `backlog` na última posição ordinal e pertencem estritamente ao workspace do projeto; mutações sobre projetos arquivados devem falhar com 409 `ERR_PROJECT_ARCHIVED`, membros com papel `viewer` não podem mutar dados (403 `ERR_INSUFFICIENT_ROLE`), e toda a comunicação cliente-servidor deve respeitar o contrato canônico OpenAPI 3.1 validado em paridade 1:1.
+- **Fix**: Criada migration PostgreSQL `0003_tasks_schema.sql` com tabela `devtasks_task`, constraints e índices; implementado `PostgresTaskRepository` e rotas Shelf `/projects/{id}/tasks` e `/tasks/{id}`; atualizado `docs/api/openapi.yaml` e suíte de contrato (19 rotas com paridade bidirecional no `tools/contract-gate.ps1`); no Flutter (`solution/app`), implementado domínio puro (`TaskItem`, `TaskPriority`, `TaskStatus`, `ITaskClient`), infraestrutura (`HttpTaskClient`), apresentação MVVM com Riverpod (`TasksViewModel`, `TasksState`, `TasksView`, `PriorityBadge`) e testes de widget.
+- **Prevenção**: TDD Red-Before-Green rigoroso em todas as camadas (unitários de rotas, repositório real no Postgres WSL via `tools/test.ps1 -Database`, cliente HTTP, ViewModel e Widgets), cobrindo regras de negócio e códigos HTTP (200, 201, 400, 401, 403, 404, 409).
+
 ## 2026-10-25 — Gate NFR-03 mede compilação a frio, não a duração da suíte
 
 - **Sintoma**: `tools/test.ps1 -Unit` sai 1 citando `206,26s - teto de 120s excedido`, enquanto os

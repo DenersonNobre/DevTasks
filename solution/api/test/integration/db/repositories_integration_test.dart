@@ -37,7 +37,7 @@ void main() {
 
     setUp(() async {
       await sql.execute(
-        'TRUNCATE devtasks_session, devtasks_workspace_member, devtasks_project, '
+        'TRUNCATE devtasks_task, devtasks_session, devtasks_workspace_member, devtasks_project, '
         'devtasks_workspace, devtasks_user CASCADE',
       );
     });
@@ -313,6 +313,77 @@ void main() {
           ),
           throwsA(isA<PgException>()),
         );
+      });
+    });
+
+    group('PostgresTaskRepository', () {
+      test('create, listByProject, findById, update e delete persistem no Postgres (D-08 / INV-04)', () async {
+        final userRepo = PostgresUserRepository(sql);
+        final wsRepo = PostgresWorkspaceRepository(sql);
+        final projRepo = PostgresProjectRepository(sql);
+        final taskRepo = PostgresTaskRepository(sql);
+
+        final uRes = await userRepo.create(
+          name: 'Task Tester',
+          email: 'tasker@example.com',
+          passwordHash: 'hash',
+        );
+        final userId = (uRes as UserCreated).user.id;
+        final ws = await wsRepo.createWithRole(
+          name: 'Task WS',
+          ownerUserId: userId,
+        );
+        final proj = await projRepo.create(
+          workspaceId: ws.workspace.id,
+          name: 'Sprint 1',
+        );
+
+        // 1. Create - nasce no backlog com posição incremental
+        final task1 = await taskRepo.create(
+          projectId: proj.id,
+          title: 'Primeira Tarefa',
+          priority: TaskPriority.high,
+          description: 'Desc 1',
+        );
+        expect(task1.id, isNotEmpty);
+        expect(task1.title, 'Primeira Tarefa');
+        expect(task1.status, TaskStatus.backlog);
+        expect(task1.priority, TaskPriority.high);
+        expect(task1.position, 1000.0);
+
+        final task2 = await taskRepo.create(
+          projectId: proj.id,
+          title: 'Segunda Tarefa',
+        );
+        expect(task2.position, 2000.0);
+
+        // 2. List
+        final tasks = await taskRepo.listByProject(proj.id);
+        expect(tasks.length, 2);
+        expect(tasks.first.title, 'Primeira Tarefa');
+        expect(tasks.last.title, 'Segunda Tarefa');
+
+        // 3. FindById
+        final found = await taskRepo.findById(task1.id);
+        expect(found?.title, 'Primeira Tarefa');
+        expect(found?.description, 'Desc 1');
+
+        // 4. Update
+        final updated = await taskRepo.update(
+          taskId: task1.id,
+          title: 'Tarefa Atualizada',
+          priority: TaskPriority.low,
+        );
+        expect(updated?.title, 'Tarefa Atualizada');
+        expect(updated?.priority, TaskPriority.low);
+
+        // 5. Delete
+        final deleted = await taskRepo.delete(task1.id);
+        expect(deleted, isTrue);
+        expect(await taskRepo.findById(task1.id), isNull);
+        final remaining = await taskRepo.listByProject(proj.id);
+        expect(remaining.length, 1);
+        expect(remaining.first.id, task2.id);
       });
     });
 

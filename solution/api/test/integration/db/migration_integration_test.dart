@@ -24,7 +24,10 @@ void main() {
       pool = openPool(dsn!);
       sql = PgSqlExecutor(pool);
       store = SqlMigrationStore(sql);
-      migrations = loadMigrations(Directory('migrations'));
+      final migrationsDir = Directory('migrations').existsSync()
+          ? Directory('migrations')
+          : Directory('solution/api/migrations');
+      migrations = loadMigrations(migrationsDir);
       await sql.execute('DROP SCHEMA public CASCADE');
       await sql.execute('CREATE SCHEMA public');
     });
@@ -52,7 +55,7 @@ void main() {
       expect(second.skipped, migrations.length);
     });
 
-    test('as 5 tabelas existem após aplicar', () async {
+    test('as 6 tabelas existem após aplicar', () async {
       await Migrator(sql: sql, store: store, migrations: migrations).up();
 
       final rows = await sql.query(
@@ -68,6 +71,7 @@ void main() {
           'devtasks_workspace',
           'devtasks_workspace_member',
           'devtasks_project',
+          'devtasks_task',
         ]),
       );
     });

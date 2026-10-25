@@ -55,6 +55,8 @@ void main() {
         '/workspaces/{id}/projects',
         '/projects/{id}',
         '/projects/{id}/archive',
+        '/projects/{id}/tasks',
+        '/tasks/{id}',
       };
       expect(paths.keys.toSet(), expected);
     });
@@ -71,7 +73,7 @@ void main() {
           ids.add(operation['operationId'] as String);
         }
       }
-      expect(ids.length, 15, reason: 'esperadas 15 operações (14 de negócio + /health)');
+      expect(ids.length, 19, reason: 'esperadas 19 operações (18 de negócio + /health)');
       expect(ids.toSet().length, ids.length, reason: 'operationId duplicado');
     });
 
@@ -249,6 +251,7 @@ Set<String> _extractRoutesFromCode() {
     '${prefix}lib/modules/auth/auth_routes.dart',
     '${prefix}lib/modules/workspace/workspace_routes.dart',
     '${prefix}lib/modules/projects/project_routes.dart',
+    '${prefix}lib/modules/tasks/task_routes.dart',
   ];
 
   final regex = RegExp(r"router\.(get|post|patch|put|delete)\(\s*'([^']+)'");

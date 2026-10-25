@@ -3,6 +3,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../../modules/auth/auth_routes.dart';
 import '../../modules/projects/project_routes.dart';
+import '../../modules/tasks/task_routes.dart';
 import '../../modules/workspace/workspace_routes.dart';
 import 'api_exception.dart';
 import 'cors_middleware.dart';
@@ -20,12 +21,14 @@ Handler buildHandler({
   AuthRoutes? authRoutes,
   WorkspaceRoutes? workspaceRoutes,
   ProjectRoutes? projectRoutes,
+  TaskRoutes? taskRoutes,
 }) {
   final router = Router(notFoundHandler: _notFound);
   router.get('/health', _health);
   authRoutes?.register(router);
   workspaceRoutes?.register(router);
   projectRoutes?.register(router);
+  taskRoutes?.register(router);
 
   return const Pipeline()
       .addMiddleware(errorMiddleware())

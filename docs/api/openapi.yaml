@@ -648,6 +648,138 @@ paths:
         '500':
           $ref: '#/components/responses/ErrInfraFailure'
 
+  /projects/{id}/tasks:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      tags: [Tasks]
+      operationId: createTask
+      summary: Cria uma nova tarefa no projeto
+      description: |
+        Cria uma tarefa associada ao projeto. O solicitante deve ser `owner` ou `developer` do workspace (`INV-06`).
+        Viewer recebe `403 ERR_INSUFFICIENT_ROLE`.
+        Não-membro recebe `404 ERR_NOT_FOUND` (`INV-01`).
+        Se o projeto estiver arquivado, a criação é bloqueada com `409 ERR_PROJECT_ARCHIVED` (`INV-05`).
+        Nova tarefa sempre nasce com status `backlog` na última posição da coluna (`INV-04`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Tarefa criada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '409':
+          $ref: '#/components/responses/ErrProjectArchived'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+    get:
+      tags: [Tasks]
+      operationId: listTasksByProject
+      summary: Lista as tarefas de um projeto
+      description: |
+        Retorna as tarefas ordenadas por status e posição (`INV-04`).
+        Qualquer membro do workspace tem acesso à leitura (`owner`, `developer` ou `viewer`).
+        Não-membro recebe `404 ERR_NOT_FOUND` (`INV-01`).
+      responses:
+        '200':
+          description: Lista de tarefas do projeto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identificador UUID da tarefa.
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [Tasks]
+      operationId: updateTask
+      summary: Atualiza campos da tarefa (título, descrição, prioridade, prazo)
+      description: |
+        Atualização parcial de campos da tarefa.
+        O solicitante deve ser `owner` ou `developer` (`INV-06`).
+        Viewer recebe `403 ERR_INSUFFICIENT_ROLE`.
+        Não-membro recebe `404 ERR_NOT_FOUND` (`INV-01`).
+        Se o projeto pai estiver arquivado, a mutação é bloqueada com `409 ERR_PROJECT_ARCHIVED` (`INV-05`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Tarefa atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '409':
+          $ref: '#/components/responses/ErrProjectArchived'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+    delete:
+      tags: [Tasks]
+      operationId: deleteTask
+      summary: Exclui uma tarefa
+      description: |
+        Exclui a tarefa. O solicitante deve ser `owner` ou `developer` (`INV-06`).
+        Viewer recebe `403 ERR_INSUFFICIENT_ROLE`.
+        Não-membro recebe `404 ERR_NOT_FOUND` (`INV-01`).
+        Se o projeto pai estiver arquivado, a exclusão é bloqueada com `409 ERR_PROJECT_ARCHIVED` (`INV-05`).
+      responses:
+        '200':
+          description: Tarefa excluída com sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '409':
+          $ref: '#/components/responses/ErrProjectArchived'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1154,3 +1286,110 @@ components:
           description: Projetos do workspace. Pode ser vazio.
           items:
             $ref: '#/components/schemas/Project'
+
+    TaskStatus:
+      type: string
+      enum: [backlog, in_progress, done]
+      description: As 3 colunas fechadas do Kanban (`INV-04` / `D-01`).
+
+    TaskPriority:
+      type: string
+      enum: [low, medium, high]
+
+    CreateTaskRequest:
+      type: object
+      required: [title]
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+          default: medium
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+
+    UpdateTaskRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+
+    Task:
+      type: object
+      required: [id, projectId, title, status, priority, position, createdAt, updatedAt]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        position:
+          type: number
+          format: double
+        assignedUserId:
+          type: string
+          format: uuid
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskResponse:
+      type: object
+      required: [task]
+      additionalProperties: false
+      properties:
+        task:
+          $ref: '#/components/schemas/Task'
+
+    TaskList:
+      type: object
+      required: [tasks]
+      additionalProperties: false
+      properties:
+        tasks:
+          type: array
+          description: Tarefas do projeto ordenadas.
+          items:
+            $ref: '#/components/schemas/Task'

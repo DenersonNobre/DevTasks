@@ -15,10 +15,12 @@ class ProjectsView extends ConsumerStatefulWidget {
     super.key,
     required this.workspaceId,
     required this.token,
+    this.onSelectProject,
   });
 
   final String workspaceId;
   final String token;
+  final void Function(ProjectSummary project)? onSelectProject;
 
   @override
   ConsumerState<ProjectsView> createState() => _ProjectsViewState();
@@ -119,6 +121,7 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
             onRetry: _load,
             onRename: _rename,
             onArchive: _archive,
+            onSelect: widget.onSelectProject,
           ),
         ),
       ],
@@ -186,12 +189,14 @@ class _ProjectList extends StatelessWidget {
     required this.onRetry,
     required this.onRename,
     required this.onArchive,
+    this.onSelect,
   });
 
   final ProjectsState state;
   final Future<void> Function() onRetry;
   final void Function(ProjectSummary project) onRename;
   final void Function(ProjectSummary project) onArchive;
+  final void Function(ProjectSummary project)? onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -236,6 +241,7 @@ class _ProjectList extends StatelessWidget {
           key: Key('project-item-${project.id}'),
           leading: const Icon(Icons.folder_outlined),
           title: Text(project.name),
+          onTap: onSelect != null ? () => onSelect!(project) : null,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
