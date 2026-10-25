@@ -15,6 +15,13 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-24 — Arquivamento Idempotente e Regra de Somente-Leitura em Projetos (UC-03.02 / INV-05)
+
+- **Sintoma**: Risco de inconsistência de estado em projetos encerrados e possibilidade de mutações não autorizadas ou perda de histórico caso projetos fossem excluídos fisicamente em vez de arquivados.
+- **Causa raiz**: Conforme RF-08 e INV-05, o agregador de projetos não admite remoção destrutiva no MVP, exigindo ciclo de vida `active -> archived` onde o projeto torna-se estritamente somente-leitura e é excluído da listagem padrão do workspace.
+- **Fix**: Adicionada a coluna `archived_at timestamptz` na tabela `devtasks_project` via migration `0002_project_archival.sql` com índice condicional (`WHERE archived_at IS NULL`). Implementado endpoint `POST /projects/{id}/archive` idempotente (rearquivar é no-op e retorna `200`) e guarda `INV-05` em `PATCH /projects/{id}` rejeitando mutações com `409 ERR_PROJECT_ARCHIVED`. No app, a listagem ativa reage removendo o item arquivado da UI.
+- **Prevenção**: Testes de contrato OpenAPI 3.1 garantem a presença e semântica de `POST /projects/{id}/archive` e da resposta 409 em mutações. Testes de unidade e de widget cobrem a idempotência, os códigos HTTP esperados e a reatividade da interface.
+
 ## 2026-10-24 — Gate de banco que media a declaração, não a capacidade (B-2 da auditoria da API)
 
 - **Sintoma**: os 4 testes de integração de persistência rodavam `skipped` em toda execução; a suíte ficava

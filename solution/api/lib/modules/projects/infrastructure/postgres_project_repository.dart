@@ -16,7 +16,7 @@ class PostgresProjectRepository implements IProjectRepository {
   @override
   Future<ProjectEntity?> findById(String projectId) async {
     final rows = await _sql.query(
-      'SELECT id, workspace_id, name, created_at '
+      'SELECT id, workspace_id, name, created_at, archived_at '
       'FROM devtasks_project '
       'WHERE id = @projectId::uuid '
       'LIMIT 1',
@@ -37,7 +37,7 @@ class PostgresProjectRepository implements IProjectRepository {
     final rows = await _sql.query(
       'INSERT INTO devtasks_project (workspace_id, name) '
       'VALUES (@workspaceId::uuid, @name) '
-      'RETURNING id, workspace_id, name, created_at',
+      'RETURNING id, workspace_id, name, created_at, archived_at',
       parameters: {
         'workspaceId': workspaceId,
         'name': name,
@@ -56,7 +56,7 @@ class PostgresProjectRepository implements IProjectRepository {
       'UPDATE devtasks_project '
       'SET name = @name '
       'WHERE id = @projectId::uuid '
-      'RETURNING id, workspace_id, name, created_at',
+      'RETURNING id, workspace_id, name, created_at, archived_at',
       parameters: {
         'projectId': projectId,
         'name': name,
@@ -70,16 +70,50 @@ class PostgresProjectRepository implements IProjectRepository {
   }
 
   @override
-  Future<List<ProjectEntity>> listByWorkspace(String workspaceId) async {
+  Future<List<ProjectEntity>> listByWorkspace(
+    String workspaceId, {
+    bool includeArchived = false,
+  }) async {
+    final querySql = includeArchived
+        ? 'SELECT id, workspace_id, name, created_at, archived_at '
+            'FROM devtasks_project '
+            'WHERE workspace_id = @workspaceId::uuid '
+            'ORDER BY created_at ASC'
+        : 'SELECT id, workspace_id, name, created_at, archived_at '
+            'FROM devtasks_project '
+            'WHERE workspace_id = @workspaceId::uuid AND archived_at IS NULL '
+            'ORDER BY created_at ASC';
+
     final rows = await _sql.query(
-      'SELECT id, workspace_id, name, created_at '
-      'FROM devtasks_project '
-      'WHERE workspace_id = @workspaceId::uuid '
-      'ORDER BY created_at ASC',
+      querySql,
       parameters: {'workspaceId': workspaceId},
     );
 
     return rows.map(_toEntity).toList();
+  }
+
+  @override
+  Future<ProjectEntity?> archive(String projectId) async {
+    final existing = await findById(projectId);
+    if (existing == null) {
+      return null;
+    }
+    if (existing.isArchived) {
+      return existing;
+    }
+
+    final rows = await _sql.query(
+      'UPDATE devtasks_project '
+      'SET archived_at = now() '
+      'WHERE id = @projectId::uuid AND archived_at IS NULL '
+      'RETURNING id, workspace_id, name, created_at, archived_at',
+      parameters: {'projectId': projectId},
+    );
+    if (rows.isEmpty) {
+      return findById(projectId);
+    }
+
+    return _toEntity(rows.first);
   }
 
   ProjectEntity _toEntity(Map<String, Object?> row) {
@@ -88,6 +122,7 @@ class PostgresProjectRepository implements IProjectRepository {
       workspaceId: row['workspace_id']!.toString(),
       name: row['name']! as String,
       createdAt: (row['created_at']! as DateTime).toUtc(),
+      archivedAt: (row['archived_at'] as DateTime?)?.toUtc(),
     );
   }
 }

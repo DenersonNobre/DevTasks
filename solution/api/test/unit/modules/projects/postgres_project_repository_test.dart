@@ -137,6 +137,31 @@ void main() {
       expect(list[0].name, 'Proj A');
       expect(list[1].name, 'Proj B');
       expect(sql.lastParameters, {'workspaceId': 'ws-1'});
+      expect(sql.lastSql, contains('archived_at IS NULL'));
+    });
+
+    test('listByWorkspace com includeArchived traz todos os projetos', () async {
+      await repository.listByWorkspace('ws-1', includeArchived: true);
+      expect(sql.lastSql, isNot(contains('archived_at IS NULL')));
+    });
+
+    test('archive marca archived_at com now() e retorna entidade atualizada', () async {
+      final now = DateTime.utc(2026, 10, 24, 12, 0);
+      // 1. findById check
+      sql.queryResult = [
+        {
+          'id': 'proj-1',
+          'workspace_id': 'ws-1',
+          'name': 'Proj A',
+          'created_at': now,
+          'archived_at': null,
+        }
+      ];
+
+      // Chamada do archive
+      await repository.archive('proj-1');
+      expect(sql.lastSql, contains('UPDATE devtasks_project SET archived_at = now()'));
+      expect(sql.lastParameters, {'projectId': 'proj-1'});
     });
   });
 }

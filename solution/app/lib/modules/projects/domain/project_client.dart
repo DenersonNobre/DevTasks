@@ -29,6 +29,11 @@ abstract interface class IProjectClient {
     required String name,
     required String token,
   });
+
+  Future<IResult<ProjectSummary, IFailure>> archive({
+    required String projectId,
+    required String token,
+  });
 }
 
 /// Alias retrocompatível com a nomenclatura anterior.

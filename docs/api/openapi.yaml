@@ -605,6 +605,46 @@ paths:
           $ref: '#/components/responses/ErrInsufficientRole'
         '404':
           $ref: '#/components/responses/ErrNotFound'
+        '409':
+          $ref: '#/components/responses/ErrProjectArchived'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
+  /projects/{id}/archive:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      tags: [Projects]
+      operationId: archiveProject
+      summary: Arquiva um projeto (somente-leitura)
+      description: |
+        Exclusivo de `owner` do workspace dono do projeto (`INV-06`).
+        Idempotente: chamar archive em projeto já arquivado é no-op e retorna `200`.
+        Projeto arquivado sai da listagem ativa (`RF-08`) e bloqueia mutações posteriores com `409 ERR_PROJECT_ARCHIVED` (`INV-05`).
+        Projeto de outro workspace responde `404 ERR_NOT_FOUND` (`INV-01`).
+      responses:
+        '200':
+          description: Projeto arquivado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+              examples:
+                arquivado:
+                  summary: Projeto arquivado
+                  value:
+                    project:
+                      id: 8e0f2b45-3a6c-4d7e-9b81-5c3d7f9a1b23
+                      workspaceId: 5b7e2a41-9c3d-4e6f-8a10-2d4c6e8f0a12
+                      name: Onboarding 2026
+                      createdAt: '2026-10-24T21:10:00Z'
+                      archivedAt: '2026-10-24T22:30:00Z'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
         '500':
           $ref: '#/components/responses/ErrInfraFailure'
 
@@ -767,6 +807,18 @@ components:
                 errorCode: ERR_MEMBER_ALREADY_EXISTS
                 message: O usuário já é membro deste workspace.
                 field: userId
+    ErrProjectArchived:
+      description: Operação bloqueada porque o projeto está arquivado (`409`, `INV-05`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            arquivado:
+              summary: Mutação sobre projeto arquivado
+              value:
+                errorCode: ERR_PROJECT_ARCHIVED
+                message: Projeto arquivado não aceita alterações.
     ErrRateLimited:
       description: |
         Limite de tentativas excedido (`429`; `NFR-05` / `INV-SEC-02`: 10 requisições por
@@ -1078,6 +1130,11 @@ components:
         createdAt:
           type: string
           format: date-time
+        archivedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data/hora do arquivamento (nulo quando ativo). `INV-05`.
 
     ProjectResponse:
       type: object

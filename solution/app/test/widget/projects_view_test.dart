@@ -115,4 +115,31 @@ void main() {
     expect(find.text('Nome Novo'), findsOneWidget);
     expect(find.byKey(const Key('project-rename-dialog')), findsNothing);
   });
+
+  testWidgets('arquivar projeto confirma dialog e remove item da lista ativa', (tester) async {
+    final projectId = uuid(1);
+    client.listResult = Success([
+      ProjectSummary(id: projectId, workspaceId: uuid(7), name: 'Projeto Para Arquivar'),
+    ]);
+
+    await tester.pumpWidget(_harness(client));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Projeto Para Arquivar'), findsOneWidget);
+
+    // Toca no botão de arquivar
+    await tester.tap(find.byKey(Key('project-archive-button-$projectId')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('project-archive-dialog')), findsOneWidget);
+
+    // Confirma arquivamento
+    await tester.tap(find.byKey(const Key('project-archive-confirm-button')));
+    await tester.pumpAndSettle();
+
+    expect(client.archiveCalls, 1);
+    expect(client.lastProjectId, projectId);
+    expect(find.text('Projeto Para Arquivar'), findsNothing);
+    expect(find.byKey(const Key('projects-empty-state')), findsOneWidget);
+  });
 }

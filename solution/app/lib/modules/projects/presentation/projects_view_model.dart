@@ -120,6 +120,36 @@ final class ProjectsViewModel extends Notifier<ProjectsState> {
     }
   }
 
+  /// Intent: arquivar um projeto (INV-05 / RF-08).
+  ///
+  /// Ao arquivar com sucesso, o projeto é removido da lista ativa (RF-08).
+  Future<void> archive({
+    required String projectId,
+    required String token,
+  }) async {
+    state = state.copyWith(isSubmitting: true, clearMessage: true);
+
+    final result = await ref.read(projectClientProvider).archive(
+          projectId: projectId,
+          token: token,
+        );
+
+    switch (result) {
+      case Failure(:final failure):
+        state = state.copyWith(
+          isSubmitting: false,
+          message: failure.message,
+        );
+        return;
+      case Success():
+        state = state.copyWith(
+          isSubmitting: false,
+          projects: state.projects.where((p) => p.id != projectId).toList(),
+          clearMessage: true,
+        );
+    }
+  }
+
   String? _fieldErrorOf(IFailure failure) =>
       failure is ValidationFailure ? failure.message : null;
 

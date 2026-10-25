@@ -15,8 +15,9 @@ import 'ports.dart';
 ///
 /// Implementa:
 /// - `POST /workspaces/<id>/projects` (UC-03.01 / F8.5 / INV-01 / INV-06);
-/// - `GET /workspaces/<id>/projects` (UC-03.01 / F8.5 / INV-01);
-/// - `PATCH /projects/<id>` (UC-03.01 / F8.5 / INV-01 / INV-06).
+/// - `GET /workspaces/<id>/projects` (UC-03.01 / F8.5 / INV-01 / RF-08);
+/// - `PATCH /projects/<id>` (UC-03.01 / F8.5 / INV-01 / INV-05 / INV-06);
+/// - `POST /projects/<id>/archive` (UC-03.02 / F3.2 / INV-01 / INV-05 / INV-06 / RF-08).
 class ProjectRoutes {
   const ProjectRoutes({
     required this.projectRepository,
@@ -43,6 +44,10 @@ class ProjectRoutes {
     router.patch(
       '/projects/<id>',
       pipeline.addHandler(_handleUpdateProject),
+    );
+    router.post(
+      '/projects/<id>/archive',
+      pipeline.addHandler(_handleArchiveProject),
     );
   }
 
@@ -131,7 +136,12 @@ class ProjectRoutes {
       return _insufficientRole();
     }
 
-    // 4. Validação do corpo
+    // 4. Regra de somente-leitura para projeto arquivado (INV-05)
+    if (project.isArchived) {
+      return _projectArchived();
+    }
+
+    // 5. Validação do corpo
     final payload = await _readJson(request);
     if (payload == null) {
       return _validation('Corpo da requisição deve ser um objeto JSON válido.');
@@ -158,6 +168,39 @@ class ProjectRoutes {
     return JsonResponse.ok({'project': updated.toJson()});
   }
 
+  Future<Response> _handleArchiveProject(Request request) async {
+    final id = request.params['id'] ?? '';
+    final user = getAuthenticatedUser(request);
+
+    // 1. Existência do recurso
+    final project = await projectRepository.findById(id);
+    if (project == null) {
+      return _notFound();
+    }
+
+    // 2. Isolamento multi-tenant (INV-01): não-membro recebe 404, nunca 403
+    final role = await workspaceRepository.getMemberRole(
+      workspaceId: project.workspaceId,
+      userId: user.id,
+    );
+    if (role == null) {
+      return _notFound();
+    }
+
+    // 3. Papel owner-only (INV-06)
+    if (role != WorkspaceMemberRole.owner) {
+      return _insufficientRole();
+    }
+
+    // 4. Arquivamento idempotente (INV-05 / RF-08)
+    final archived = await projectRepository.archive(id);
+    if (archived == null) {
+      return _notFound();
+    }
+
+    return JsonResponse.ok({'project': archived.toJson()});
+  }
+
   Response _notFound([String message = 'Recurso não encontrado.']) =>
       JsonResponse.error(404, errorCode: 'ERR_NOT_FOUND', message: message);
 
@@ -167,6 +210,15 @@ class ProjectRoutes {
       JsonResponse.error(
         403,
         errorCode: 'ERR_INSUFFICIENT_ROLE',
+        message: message,
+      );
+
+  Response _projectArchived([
+    String message = 'Projeto arquivado não aceita alterações.',
+  ]) =>
+      JsonResponse.error(
+        409,
+        errorCode: 'ERR_PROJECT_ARCHIVED',
         message: message,
       );
 

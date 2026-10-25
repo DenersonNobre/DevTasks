@@ -3,7 +3,7 @@
 SaaS de gestão de tarefas para equipes de desenvolvimento — projeto de portfólio full-stack em Dart:
 quadro Kanban, prazos/prioridades, colaboração assíncrona (comentários/atribuição) e dashboard de indicadores.
 
-> **Status**: **EPIC-00 (Fundação) ✅** · **EPIC-01 (Autenticação) ✅** · **EPIC-02 (Workspace) ✅** · **EPIC-08 (Migração shelf) ✅** · Execução ativa em **EPIC-03 (Projetos)**.
+> **Status**: **EPIC-00 (Fundação) ✅** · **EPIC-01 (Autenticação) ✅** · **EPIC-02 (Workspace) ✅** · **EPIC-03 (Projetos) ✅** · **EPIC-08 (Migração shelf) ✅** · Próximo: **EPIC-04 (Tarefas & Kanban)**.
 > Todas as etapas seguem a esteira canônica de desenvolvimento com TDD Red-Before-Green e poka-yoke mecânico de claims.
 
 ---

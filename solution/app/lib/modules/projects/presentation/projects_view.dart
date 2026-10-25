@@ -69,6 +69,37 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
     );
   }
 
+  Future<void> _archive(ProjectSummary project) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        key: const Key('project-archive-dialog'),
+        title: const Text('Arquivar projeto'),
+        content: Text(
+          'Deseja arquivar o projeto "${project.name}"? '
+          'Ele sairá da lista ativa e se tornará somente-leitura.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            key: const Key('project-archive-confirm-button'),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await ref.read(projectsViewModelProvider.notifier).archive(
+                    projectId: project.id,
+                    token: widget.token,
+                  );
+            },
+            child: const Text('Arquivar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(projectsViewModelProvider);
@@ -87,6 +118,7 @@ class _ProjectsViewState extends ConsumerState<ProjectsView> {
             state: state,
             onRetry: _load,
             onRename: _rename,
+            onArchive: _archive,
           ),
         ),
       ],
@@ -153,11 +185,13 @@ class _ProjectList extends StatelessWidget {
     required this.state,
     required this.onRetry,
     required this.onRename,
+    required this.onArchive,
   });
 
   final ProjectsState state;
   final Future<void> Function() onRetry;
   final void Function(ProjectSummary project) onRename;
+  final void Function(ProjectSummary project) onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -202,11 +236,22 @@ class _ProjectList extends StatelessWidget {
           key: Key('project-item-${project.id}'),
           leading: const Icon(Icons.folder_outlined),
           title: Text(project.name),
-          trailing: IconButton(
-            key: Key('project-rename-button-${project.id}'),
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Renomear',
-            onPressed: () => onRename(project),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                key: Key('project-rename-button-${project.id}'),
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Renomear',
+                onPressed: () => onRename(project),
+              ),
+              IconButton(
+                key: Key('project-archive-button-${project.id}'),
+                icon: const Icon(Icons.archive_outlined),
+                tooltip: 'Arquivar',
+                onPressed: () => onArchive(project),
+              ),
+            ],
           ),
         );
       },

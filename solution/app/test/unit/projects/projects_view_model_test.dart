@@ -130,4 +130,36 @@ void main() {
       expect(readState().message, 'Recurso inexistente ou inacessível.');
     });
   });
+
+  group('ProjectsViewModel — arquivamento (INV-05 / RF-08)', () {
+    test('arquivar remove o projeto da lista ativa', () async {
+      client.listResult = Success([
+        ProjectSummary(id: uuid(1), workspaceId: _workspaceId, name: 'Projeto 1'),
+        ProjectSummary(id: uuid(2), workspaceId: _workspaceId, name: 'Projeto 2'),
+      ]);
+      await viewModel().load(workspaceId: _workspaceId, token: _token);
+
+      await viewModel().archive(projectId: uuid(1), token: _token);
+
+      expect(readState().projects.map((p) => p.id), [uuid(2)]);
+      expect(client.archiveCalls, 1);
+      expect(client.lastProjectId, uuid(1));
+    });
+
+    test('falha ao arquivar preserva a lista e expõe a mensagem de erro', () async {
+      client.listResult = Success([
+        ProjectSummary(id: uuid(1), workspaceId: _workspaceId, name: 'Projeto 1'),
+      ]);
+      await viewModel().load(workspaceId: _workspaceId, token: _token);
+
+      client.archiveResult = const Failure(
+        InsufficientRoleFailure('Apenas o owner do workspace pode executar esta ação.'),
+      );
+
+      await viewModel().archive(projectId: uuid(1), token: _token);
+
+      expect(readState().projects, hasLength(1));
+      expect(readState().message, 'Apenas o owner do workspace pode executar esta ação.');
+    });
+  });
 }

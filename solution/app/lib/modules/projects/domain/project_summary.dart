@@ -9,11 +9,15 @@ final class ProjectSummary {
     required this.id,
     required this.workspaceId,
     required this.name,
+    this.archivedAt,
   });
 
   final String id;
   final String workspaceId;
   final String name;
+  final DateTime? archivedAt;
+
+  bool get isArchived => archivedAt != null;
 
   @override
   bool operator ==(Object other) =>
@@ -21,8 +25,9 @@ final class ProjectSummary {
       other is ProjectSummary &&
           id == other.id &&
           workspaceId == other.workspaceId &&
-          name == other.name;
+          name == other.name &&
+          archivedAt == other.archivedAt;
 
   @override
-  int get hashCode => Object.hash(id, workspaceId, name);
+  int get hashCode => Object.hash(id, workspaceId, name, archivedAt);
 }

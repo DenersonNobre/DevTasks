@@ -44,8 +44,30 @@ class _FakeProjectRepository implements IProjectRepository {
   }
 
   @override
-  Future<List<ProjectEntity>> listByWorkspace(String workspaceId) async {
-    return projects.values.where((p) => p.workspaceId == workspaceId).toList();
+  Future<List<ProjectEntity>> listByWorkspace(
+    String workspaceId, {
+    bool includeArchived = false,
+  }) async {
+    return projects.values
+        .where((p) =>
+            p.workspaceId == workspaceId && (includeArchived || !p.isArchived))
+        .toList();
+  }
+
+  @override
+  Future<ProjectEntity?> archive(String projectId) async {
+    final current = projects[projectId];
+    if (current == null) return null;
+    if (current.isArchived) return current;
+    final updated = ProjectEntity(
+      id: current.id,
+      workspaceId: current.workspaceId,
+      name: current.name,
+      createdAt: current.createdAt,
+      archivedAt: DateTime.utc(2026, 10, 24, 22, 30),
+    );
+    projects[projectId] = updated;
+    return updated;
   }
 }
 
@@ -267,6 +289,99 @@ void main() {
         expect(res.statusCode, 200);
         final json = jsonDecode(await res.readAsString()) as Map;
         expect(json['project']['name'], 'Projeto Atualizado');
+      });
+
+      test('409 ERR_PROJECT_ARCHIVED rejeita alteração em projeto arquivado (INV-05)', () async {
+        await projectRepo.archive(projectId);
+
+        final req = makeRequest(
+          'PATCH',
+          '/projects/$projectId',
+          body: {'name': 'Tentativa em Arquivado'},
+          token: 'token-owner',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 409);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_PROJECT_ARCHIVED');
+      });
+    });
+
+    group('POST /projects/{id}/archive (INV-05 / INV-06 / RF-08)', () {
+      late String projectId;
+
+      setUp(() async {
+        final p = await projectRepo.create(workspaceId: wsId, name: 'Projeto Para Arquivar');
+        projectId = p.id;
+      });
+
+      test('404 quando projeto não existe', () async {
+        final req = makeRequest(
+          'POST',
+          '/projects/missing-id/archive',
+          token: 'token-owner',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 404);
+      });
+
+      test('404 para não-membro do workspace dono do projeto (INV-01)', () async {
+        final req = makeRequest(
+          'POST',
+          '/projects/$projectId/archive',
+          token: 'token-outsider',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 404);
+      });
+
+      test('403 para membro que não é owner (INV-06)', () async {
+        final req = makeRequest(
+          'POST',
+          '/projects/$projectId/archive',
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 403);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_INSUFFICIENT_ROLE');
+      });
+
+      test('200 arquiva projeto e sai da listagem ativa (RF-08)', () async {
+        final req = makeRequest(
+          'POST',
+          '/projects/$projectId/archive',
+          token: 'token-owner',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 200);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['project']['archivedAt'], isNotNull);
+
+        // Verifica que saiu da listagem ativa
+        final listReq = makeRequest(
+          'GET',
+          '/workspaces/$wsId/projects',
+          token: 'token-owner',
+        );
+        final listRes = await appHandler(listReq);
+        final listJson = jsonDecode(await listRes.readAsString()) as Map;
+        final projects = listJson['projects'] as List;
+        expect(projects.any((p) => p['id'] == projectId), isFalse);
+      });
+
+      test('200 é idempotente ao arquivar projeto já arquivado', () async {
+        await projectRepo.archive(projectId);
+
+        final req = makeRequest(
+          'POST',
+          '/projects/$projectId/archive',
+          token: 'token-owner',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 200);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['project']['archivedAt'], isNotNull);
       });
     });
   });

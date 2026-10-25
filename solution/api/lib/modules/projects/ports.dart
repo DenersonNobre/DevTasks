@@ -20,5 +20,15 @@ abstract interface class IProjectRepository {
   });
 
   /// Lista os projetos de um workspace.
-  Future<List<ProjectEntity>> listByWorkspace(String workspaceId);
+  ///
+  /// Se [includeArchived] for `false` (padrão), retorna apenas projetos ativos (INV-05 / RF-08).
+  Future<List<ProjectEntity>> listByWorkspace(
+    String workspaceId, {
+    bool includeArchived = false,
+  });
+
+  /// Arquiva um projeto tornando-o somente-leitura (INV-05 / RF-08).
+  ///
+  /// Idempotente: se já estiver arquivado, preserva o timestamp original e retorna a entidade.
+  Future<ProjectEntity?> archive(String projectId);
 }

@@ -96,6 +96,20 @@ class HttpProjectClient implements IProjectClient {
     });
   }
 
+  @override
+  Future<IResult<ProjectSummary, IFailure>> archive({
+    required String projectId,
+    required String token,
+  }) async {
+    return _guard(() async {
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/projects/$projectId/archive'),
+        headers: _headers(token),
+      );
+      return _single(response, 'Resposta de arquivamento inválida.');
+    });
+  }
+
   static IResult<ProjectSummary, IFailure> _single(
     http.Response response,
     String invalidMessage,
@@ -116,6 +130,9 @@ class HttpProjectClient implements IProjectClient {
         id: json['id']! as String,
         workspaceId: json['workspaceId']! as String,
         name: json['name']! as String,
+        archivedAt: json['archivedAt'] != null
+            ? DateTime.tryParse(json['archivedAt']! as String)?.toUtc()
+            : null,
       );
 
   static IFailure _failureOf(Map<String, Object?> body) => httpFailureFrom(

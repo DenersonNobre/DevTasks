@@ -100,6 +100,51 @@ void main() {
       expect(captured.url.path, '/projects/$_projectId');
     });
 
+    test('archive chama POST /projects/{id}/archive com Bearer', () async {
+      late http.Request captured;
+      final client = _clientReturning(
+        200,
+        {
+          'project': {
+            'id': _projectId,
+            'workspaceId': _workspaceId,
+            'name': 'App Mobile',
+            'createdAt': '2026-10-24T12:00:00Z',
+            'archivedAt': '2026-10-24T22:30:00Z',
+          },
+        },
+        onRequest: (request) => captured = request,
+      );
+
+      final result = await client.archive(
+        projectId: _projectId,
+        token: _token,
+      );
+
+      expect(result, isA<Success<ProjectSummary, IFailure>>());
+      final summary = (result as Success<ProjectSummary, IFailure>).value;
+      expect(summary.isArchived, isTrue);
+      expect(captured.method, 'POST');
+      expect(captured.url.path, '/projects/$_projectId/archive');
+      expect(captured.headers['authorization'], 'Bearer $_token');
+    });
+
+    test('409 vira ProjectArchivedFailure em mutações (INV-05)', () async {
+      final client = _clientReturning(409, {
+        'errorCode': 'ERR_PROJECT_ARCHIVED',
+        'message': 'Projeto arquivado não aceita alterações.',
+      });
+
+      final result = await client.rename(
+        projectId: _projectId,
+        name: 'Tentativa',
+        token: _token,
+      );
+
+      expect(result, isA<Failure>());
+      expect((result as Failure).failure, isA<ProjectArchivedFailure>());
+    });
+
     test('403 vira InsufficientRoleFailure (INV-06)', () async {
       final client = _clientReturning(403, {
         'errorCode': 'ERR_INSUFFICIENT_ROLE',

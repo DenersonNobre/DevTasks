@@ -11,10 +11,12 @@ final class FakeProjectClient implements IProjectClient {
   IResult<List<ProjectSummary>, IFailure>? listResult;
   IResult<ProjectSummary, IFailure>? createResult;
   IResult<ProjectSummary, IFailure>? renameResult;
+  IResult<ProjectSummary, IFailure>? archiveResult;
 
   int listCalls = 0;
   int createCalls = 0;
   int renameCalls = 0;
+  int archiveCalls = 0;
   String? lastToken;
   String? lastName;
   String? lastWorkspaceId;
@@ -60,6 +62,27 @@ final class FakeProjectClient implements IProjectClient {
     return Future.value(
       renameResult ??
           Success(ProjectSummary(id: projectId, workspaceId: uuid(1), name: name)),
+    );
+  }
+
+  @override
+  Future<IResult<ProjectSummary, IFailure>> archive({
+    required String projectId,
+    required String token,
+  }) {
+    archiveCalls++;
+    lastProjectId = projectId;
+    lastToken = token;
+    return Future.value(
+      archiveResult ??
+          Success(
+            ProjectSummary(
+              id: projectId,
+              workspaceId: uuid(1),
+              name: 'Archived',
+              archivedAt: DateTime.utc(2026, 10, 24, 22, 30),
+            ),
+          ),
     );
   }
 }

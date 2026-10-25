@@ -128,13 +128,13 @@ flowchart TD
 | 00 — Fundação | 8 | 8/8 | ✅ |
 | 01 — Autenticação | 9 | 9/9 | ✅ |
 | 02 — Workspace & Membresias | 3 | 3/3 | ✅ |
-| 03 — Projetos | 2 | 1/2 | 🔄 |
+| 03 — Projetos | 2 | 2/2 | ✅ |
 | 04 — Tarefas & Kanban | 3 | 0/3 | ⏳ |
 | 05 — Comentários | 2 | 0/2 | ⏳ |
 | 06 — Dashboard | 1 | 0/1 | ⏳ |
 | 07 — Deploy & Medição | 3 | 0/3 | ⏳ |
 | 08 — Migração Serverpod → shelf | 8 | 8/8 | ✅ |
-| **Total** | **39** | **29/39** | 🔄 |
+| **Total** | **39** | **30/39** | 🔄 |
 
 > **Derivação**: o status de cada UC é o status da feature que o contém na `Matriz de Features`
 > do próprio épico (1 UC por feature hoje); a linha do épico acima é o agregado. Projeção

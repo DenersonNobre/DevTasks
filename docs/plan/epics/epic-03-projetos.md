@@ -1,6 +1,6 @@
 # Epic 03 — Projetos (projetos)
 
-> Status: 🔄 Em andamento | Prioridade: Alta | Dependências: EPIC-02
+> Status: ✅ Concluído | Prioridade: Alta | Dependências: EPIC-02
 
 ## 1. Objetivo e Valor de Negócio
 
@@ -18,7 +18,7 @@ tarefas (EPIC-04) e da cadeia `Comment ⊂ Task ⊂ Project ⊂ Workspace`.
 | # | Feature | UCs/Histórias | Independência / Risco | Status |
 |:---|:---|:---:|:---|:---:|
 | F3.1 | CRUD de projetos (criar, editar, listar) | 1 | Alto: INV-06 (só owner), INV-01 | ✅ |
-| F3.2 | Arquivamento de projeto (só-leitura) | 1 | Depende de F3.1; INV-05 | ⏳ |
+| F3.2 | Arquivamento de projeto (só-leitura) | 1 | Depende de F3.1; INV-05 | ✅ |
 
 ---
 
