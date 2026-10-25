@@ -128,7 +128,7 @@ void main() {
       await tester.tap(find.byKey(const Key('login-submit')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Área privada (EPIC-02)'), findsOneWidget);
+      expect(find.byType(PrivateAreaView), findsOneWidget);
       expect(store.token, 'tok-123');
     });
   });

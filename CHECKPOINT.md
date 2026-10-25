@@ -7,30 +7,30 @@
 ## Contexto
 
 DevTasks — Flutter (`solution/app`) + Dart/Shelf + PostgreSQL puro + OpenAPI 3.1.
-Ciclo corrente: **EPIC-05 (Comentários) CONCLUÍDO ✅**. **UC-05.02 concluído ✅**.
+Ciclo corrente: **Auditoria Bloco A — R1 (Shell & Navegação do App) CONCLUÍDO ✅ (UC-08.07)**.
 
 ## Estado verificado (2026-10-25)
 
-- **Claim**: liberando `UC-05.02` (Coder).
+- **Claim**: `UC-08.07` (Coder) — liberando após entrega de R1.
 - **UCs**: 39 no plano — **35 concluídos / 4 pendentes** (`docs/plan/README.md`).
-- **Backend (`solution/api`)**:
-  - Guardas de comentários: INV-02 (404 outro workspace), INV-06 (403 viewer), INV-05 (409 arquivado).
-  - Repositório `PostgresCommentRepository` e rotas Shelf com 23 operações OpenAPI 3.1.
-  - Suíte de integração PostgreSQL real no WSL com 25 testes verdes (`tools/test.ps1 -Database`).
 - **Frontend (`solution/app`)**:
-  - `CommentsSheet` com suporte a `isReadOnly` e `readOnlyReason` (composer desabilitado com banner amigável).
-  - Mapeamento de `InsufficientRoleFailure` e `ProjectArchivedFailure` no kernel e ViewModels.
-  - 14 testes unitários de comments e 6 testes de widget de `CommentsSheet` (todos verdes).
+  - Módulo `workspace` completo (`IWorkspaceClient`, `HttpWorkspaceClient`, `WorkspaceController`).
+  - `PrivateAreaView` conectado ao `workspaceController`: seletor de workspace no AppBar, onboarding, `ProjectsView` embutida, transição para `TasksView` e abertura de `CommentsSheet`.
+  - Teste de jornada ponta a ponta `navigation_flow_test.dart` (Login ➔ Workspace ➔ Projetos ➔ Tarefas ➔ Comentários) 100% verde.
+  - 36 testes de widget passando (100% verdes).
+- **Backend (`solution/api`)**:
+  - 23 operações OpenAPI 3.1 com paridade 1:1 verificada no scanner.
+  - Suíte de integração PostgreSQL real no WSL com 25 testes verdes (`tools/test.ps1 -Database`).
 - **Qualidade & Gates**:
   - `dart analyze solution/app solution/api` 100% limpo (0 issues).
   - `pwsh tools/contract-gate.ps1` 100% aprovado (23 rotas).
   - `pwsh tools/doc-gate.ps1` e DAG 100% aprovados.
-  - `pwsh tools/test.ps1 -Unit` 100% verde (336 testes unitários: 128 app, 208 api).
+  - `pwsh tools/test.ps1 -Unit` 100% verde (336 testes unitários).
   - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL (25 testes).
 
 ## Próximo passo
 
-- **Bloco A reconciliado da Auditoria** (R1 Shell & Navegação, R2 Midpoint/INV-04, R4/R5 Tipos e Datas, A-1 UUID, A-3 MembershipAuthorizer).
+- **Item 2 do Bloco A da Auditoria: R2 (Decisão INV-04, Midpoint e CHECK no Postgres)**.
 
 ## Travas vivas
 

@@ -5,6 +5,7 @@ import 'package:devtasks_app/global/kernel/result.dart';
 import 'package:devtasks_app/global/router/app_routes.dart';
 import 'package:devtasks_app/global/session/.session.dart';
 import 'package:devtasks_app/global/session/secure_session_store.dart';
+import 'package:devtasks_app/global/shell/private_area_view.dart';
 import 'package:devtasks_app/main.dart';
 import 'package:devtasks_app/modules/auth/domain/auth_client.dart';
 import 'package:devtasks_app/modules/auth/infrastructure/auth_client_provider.dart';
@@ -212,7 +213,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('login-submit')), findsOneWidget);
-      expect(find.text('Área privada (EPIC-02)'), findsNothing);
+      expect(find.byType(PrivateAreaView), findsNothing);
     });
 
     testWidgets('RouteGuard redireciona rota pública com sessão para área privada', (tester) async {
@@ -235,8 +236,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Área privada (EPIC-02)'), findsOneWidget);
-      expect(find.text('Sessão ativa'), findsOneWidget);
+      expect(find.byType(PrivateAreaView), findsOneWidget);
+      expect(find.byKey(const Key('private-logout')), findsOneWidget);
     });
 
     testWidgets('Logout limpa store e atualiza estado mesmo se a rede falhar', (tester) async {
@@ -264,7 +265,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Área privada (EPIC-02)'), findsOneWidget);
+      expect(find.byType(PrivateAreaView), findsOneWidget);
+      expect(find.byKey(const Key('private-logout')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('private-logout')));
       await tester.pumpAndSettle();

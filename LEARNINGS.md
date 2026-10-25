@@ -15,6 +15,14 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Shell e Navegação Ponta a Ponta do App (Auditoria R1 / UC-08.07)
+
+- **Sintoma**: O app Flutter possuía os módulos de autenticação, projetos, tarefas/Kanban e comentários desenvolvidos com MVVM isolado, mas o shell (`PrivateAreaView`) mantinha um placeholder estático, e não existia um módulo de cliente de workspace no frontend nem um teste de integração de jornada ponta a ponta conectando login -> seleção de workspace -> projetos -> tarefas/Kanban -> timeline de comentários (Item R1 do laudo de auditoria).
+- **Causa raiz**: O módulo `workspace` existia no backend Dart/Shelf, mas suas portas de consumo no app Flutter (`IWorkspaceClient`, `HttpWorkspaceClient`, `WorkspaceController`) ainda não haviam sido instanciadas nem integradas no shell principal do app; além disso, a tela `PrivateAreaView` herdada da fase inicial possuía texto mockado de EPIC-02 que não refletia a arquitetura real de navegação do usuário.
+- **Fix**: Criado o módulo `solution/app/lib/modules/workspace/` com `WorkspaceItem`, `IWorkspaceClient`, `HttpWorkspaceClient`, `WorkspaceController` (Riverpod) e barrels pontuados; `PrivateAreaView` totalmente reescrito com seleção de workspace ativo no AppBar (com menu drop-down e onboarding inicial caso o usuário não possua nenhum workspace), listagem de projetos via `ProjectsView` embutida, e navegação limpa via `MaterialPageRoute` para `TasksView` e abertura de `CommentsSheet`; criado teste de jornada completa `solution/app/test/widget/navigation_flow_test.dart` e fake `FakeWorkspaceClient`.
+- **Prevenção**: Suíte de testes atualizada: teste de integração de widget de jornada navegacional exercitando a jornada completa de usuário (`navigation_flow_test.dart`), 36 testes de widget passando (100% verdes) e todos os gates de integridade (`dart analyze`, `test.ps1 -Unit`, `test.ps1 -Database`, `contract-gate.ps1`, `doc-gate.ps1`) validados sem falhas.
+
+
 ## 2026-10-25 — Guardas de Comentário e Desabilitação em Estados Protegidos (UC-05.02)
 
 - **Sintoma**: Necessidade de garantir que comentários respeitem a cadeia estrita de composição (`INV-02`), o bloqueio contra mutação em projetos arquivados (`INV-05`) e a restrição de escrita para o papel visualizador (`INV-06`), refletindo tais proteções de forma preventiva na UI sem depender apenas do erro 403/409 retornado pelo servidor.
