@@ -15,6 +15,28 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-24 — Status de UC derivado de commit subconta (e a projeção para os remotes)
+
+- **Sintoma**: ao projetar os 39 UCs como issues (Gitea + GitHub), `UC-02.02` e `UC-02.03` foram
+  publicados como abertos embora estivessem concluídos no épico; depois `UC-03.01` apareceu fechado
+  enquanto a §1 do plano ainda dizia pendente.
+- **Causa raiz**: a regra inicial "concluído = existe commit com a tag `(UC-XX.YY)`" tem dois furos
+  **medidos**: (1) o padrão de tag não é único — `feat(workspace): UC-02.02 membership ...` cita a tag
+  **sem parênteses**, e um regex que exigia `(UC-XX.YY)` não casava (falso negativo); (2) existe UC
+  implementado e **não fechado** (`UC-03.01` ficou "aguardando Gate 3"), logo commit existir ≠ UC
+  concluído. Derivar estado de histórico é heurística, não contrato.
+- **Fix**: a fonte de status passou a ser o **status da feature no épico** (1 UC por feature hoje), com
+  os commits citados apenas como **evidência** no corpo da issue. Regra documentada no cabeçalho de
+  `tools/sync-remotes.ps1` e refletida na §7 de `docs/plan/README.md`.
+- **Prevenção**: `pwsh tools/sync-remotes.ps1 -Stage issues -DryRun` imprime `concluidas/pendentes`
+  derivados do disco; divergência entre plano e remoto aparece como `atualizadas=N` **antes** de
+  escrever. Foi assim que a troca de regra (26 → 29 concluídos) foi detectada sem publicar estado errado.
+- **Artefatos remotos deste repo**: 39 issues por remoto, milestones `v0.1.0` (concluídos) e `v0.2.0`
+  (roadmap 04–07), labels `uc`/`planejamento`/`epic-00..08`, wiki do Gitea com 18 páginas
+  (9 documentos + 9 épicos + `_Sidebar`), board no GitHub Projects v2 (Gitea 1.22 não tem REST de
+  projects). **O laudo `docs/plan/reviews/audit-api-2026-10-24.md` fica FORA da wiki por decisão do PO**:
+  os dois repositórios são públicos e o texto descreve bypass de rate limit e mass assignment em detalhe.
+
 ## 2026-10-24 — Arquivamento Idempotente e Regra de Somente-Leitura em Projetos (UC-03.02 / INV-05)
 
 - **Sintoma**: Risco de inconsistência de estado em projetos encerrados e possibilidade de mutações não autorizadas ou perda de histórico caso projetos fossem excluídos fisicamente em vez de arquivados.
