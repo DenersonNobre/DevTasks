@@ -51,6 +51,11 @@ void main() {
     late _MockSqlExecutor sql;
     late PostgresWorkspaceRepository repository;
 
+    const wsId = '22222222-2222-2222-2222-222222222222';
+    const ws2Id = '22222222-2222-2222-2222-222222222223';
+    const userId = '33333333-3333-3333-3333-333333333333';
+    const user2Id = '44444444-4444-4444-4444-444444444444';
+
     setUp(() {
       sql = _MockSqlExecutor();
       repository = PostgresWorkspaceRepository(sql);
@@ -60,25 +65,32 @@ void main() {
       final now = DateTime.utc(2026, 10, 24, 12, 0);
       sql.queryResult = [
         {
-          'id': 'ws-uuid-1',
+          'id': wsId,
           'name': 'Squad Atlas',
           'created_at': now,
         }
       ];
 
-      final workspace = await repository.findById('ws-uuid-1');
+      final workspace = await repository.findById(wsId);
 
       expect(workspace, isNotNull);
-      expect(workspace!.id, 'ws-uuid-1');
+      expect(workspace!.id, wsId);
       expect(workspace.name, 'Squad Atlas');
       expect(workspace.createdAt, now);
+    });
+
+    test('findById com UUID inválido retorna null sem consultar banco (A-1)', () async {
+      final workspace = await repository.findById('invalid-uuid');
+
+      expect(workspace, isNull);
+      expect(sql.lastSql, isNull);
     });
 
     test('createWithRole executa CTE atômica e retorna WorkspaceWithRole owner', () async {
       final now = DateTime.utc(2026, 10, 24, 12, 0);
       sql.queryResult = [
         {
-          'id': 'ws-uuid-1',
+          'id': wsId,
           'name': 'Squad Atlas',
           'created_at': now,
         }
@@ -86,10 +98,10 @@ void main() {
 
       final created = await repository.createWithRole(
         name: 'Squad Atlas',
-        ownerUserId: 'user-uuid-1',
+        ownerUserId: userId,
       );
 
-      expect(created.workspace.id, 'ws-uuid-1');
+      expect(created.workspace.id, wsId);
       expect(created.workspace.name, 'Squad Atlas');
       expect(created.role, WorkspaceMemberRole.owner);
       expect(sql.lastSql, contains('WITH new_ws AS'));
@@ -100,20 +112,20 @@ void main() {
       final now = DateTime.utc(2026, 10, 24, 12, 0);
       sql.queryResult = [
         {
-          'id': 'ws-uuid-1',
+          'id': wsId,
           'name': 'Squad Atlas',
           'created_at': now,
           'role': 'owner',
         },
         {
-          'id': 'ws-uuid-2',
+          'id': ws2Id,
           'name': 'Squad Boreal',
           'created_at': now,
           'role': 'viewer',
         },
       ];
 
-      final list = await repository.listByUserId('user-uuid-1');
+      final list = await repository.listByUserId(userId);
 
       expect(list, hasLength(2));
       expect(list[0].workspace.name, 'Squad Atlas');
@@ -122,15 +134,32 @@ void main() {
       expect(list[1].role, WorkspaceMemberRole.viewer);
     });
 
+    test('listByUserId com UUID inválido retorna lista vazia sem consultar banco (A-1)', () async {
+      final list = await repository.listByUserId('invalid-uuid');
+
+      expect(list, isEmpty);
+      expect(sql.lastSql, isNull);
+    });
+
     test('getMemberRole retorna papel do membro ou null se não for membro', () async {
       sql.queryResult = [{'role': 'developer'}];
 
       final role = await repository.getMemberRole(
-        workspaceId: 'ws-uuid-1',
-        userId: 'user-uuid-1',
+        workspaceId: wsId,
+        userId: userId,
       );
 
       expect(role, WorkspaceMemberRole.developer);
+    });
+
+    test('getMemberRole com UUID inválido retorna null sem consultar banco (A-1)', () async {
+      final role = await repository.getMemberRole(
+        workspaceId: 'invalid-ws',
+        userId: userId,
+      );
+
+      expect(role, isNull);
+      expect(sql.lastSql, isNull);
     });
 
     test('updateName atualiza o nome e retorna WorkspaceWithRole atualizado', () async {
@@ -138,7 +167,7 @@ void main() {
       sql.queryResultsQueue = [
         [
           {
-            'id': 'ws-uuid-1',
+            'id': wsId,
             'name': 'Squad Atlas Core',
             'created_at': now,
           }
@@ -149,9 +178,9 @@ void main() {
       ];
 
       final updated = await repository.updateName(
-        workspaceId: 'ws-uuid-1',
+        workspaceId: wsId,
         name: 'Squad Atlas Core',
-        userId: 'user-uuid-1',
+        userId: userId,
       );
 
       expect(updated, isNotNull);
@@ -163,12 +192,23 @@ void main() {
       sql.queryResult = [];
 
       final outcome = await repository.addMember(
-        workspaceId: 'ws-uuid-1',
-        userId: 'missing-user',
+        workspaceId: wsId,
+        userId: '55555555-5555-5555-5555-555555555555',
         role: WorkspaceMemberRole.developer,
       );
 
       expect(outcome, isA<MemberUserNotFound>());
+    });
+
+    test('addMember com UUID inválido retorna MemberUserNotFound sem consultar banco (A-1)', () async {
+      final outcome = await repository.addMember(
+        workspaceId: wsId,
+        userId: 'invalid-user',
+        role: WorkspaceMemberRole.developer,
+      );
+
+      expect(outcome, isA<MemberUserNotFound>());
+      expect(sql.lastSql, isNull);
     });
 
     test('addMember retorna MemberAlreadyExists em conflito de chave única (INV-09)', () async {
@@ -176,8 +216,8 @@ void main() {
       sql.throwOnExecute = _FakeUniqueViolationException();
 
       final outcome = await repository.addMember(
-        workspaceId: 'ws-uuid-1',
-        userId: 'user-uuid-2',
+        workspaceId: wsId,
+        userId: user2Id,
         role: WorkspaceMemberRole.developer,
       );
 
@@ -190,7 +230,7 @@ void main() {
         [{'exists': 1}],
         [
           {
-            'id': 'ws-uuid-1',
+            'id': wsId,
             'name': 'Squad Atlas',
             'created_at': now,
           }
@@ -198,14 +238,14 @@ void main() {
       ];
 
       final outcome = await repository.addMember(
-        workspaceId: 'ws-uuid-1',
-        userId: 'user-uuid-2',
+        workspaceId: wsId,
+        userId: user2Id,
         role: WorkspaceMemberRole.developer,
       );
 
       expect(outcome, isA<MemberAdded>());
       final added = (outcome as MemberAdded).workspaceWithRole;
-      expect(added.workspace.id, 'ws-uuid-1');
+      expect(added.workspace.id, wsId);
     });
 
     test('removeMember recusa remoção do último owner (INV-06 / SPEC §4.1)', () async {
@@ -215,8 +255,8 @@ void main() {
       ];
 
       final outcome = await repository.removeMember(
-        workspaceId: 'ws-uuid-1',
-        userId: 'user-uuid-1',
+        workspaceId: wsId,
+        userId: userId,
       );
 
       expect(outcome, isA<CannotRemoveLastOwner>());
@@ -228,8 +268,8 @@ void main() {
       ];
 
       final outcome = await repository.removeMember(
-        workspaceId: 'ws-uuid-1',
-        userId: 'user-uuid-2',
+        workspaceId: wsId,
+        userId: user2Id,
       );
 
       expect(outcome, isA<MemberRemoved>());

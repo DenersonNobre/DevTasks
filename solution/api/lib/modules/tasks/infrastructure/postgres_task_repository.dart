@@ -1,4 +1,5 @@
 import '../../../core/db/sql_executor.dart';
+import '../../../core/types/uuid_validator.dart';
 import '../domain/task_entity.dart';
 import '../domain/task_priority.dart';
 import '../domain/task_status.dart';
@@ -12,6 +13,8 @@ class PostgresTaskRepository implements ITaskRepository {
 
   @override
   Future<TaskEntity?> findById(String taskId) async {
+    if (!UuidValidator.isValid(taskId)) return null;
+
     final rows = await _sql.query(
       'SELECT id, project_id, title, description, status, priority, position, '
       'assigned_user_id, due_date, created_at, updated_at '
@@ -73,6 +76,8 @@ class PostgresTaskRepository implements ITaskRepository {
     String? assignedUserId,
     bool clearAssignedUser = false,
   }) async {
+    if (!UuidValidator.isValid(taskId)) return null;
+
     final current = await findById(taskId);
     if (current == null) return null;
 
@@ -115,6 +120,8 @@ class PostgresTaskRepository implements ITaskRepository {
     required String taskId,
     String? assignedUserId,
   }) async {
+    if (!UuidValidator.isValid(taskId)) return null;
+
     final rows = await _sql.query(
       'UPDATE devtasks_task SET '
       '  assigned_user_id = @assignedUserId::uuid, '
@@ -139,6 +146,8 @@ class PostgresTaskRepository implements ITaskRepository {
     required double targetPosition,
     required DateTime expectedUpdatedAt,
   }) async {
+    if (!UuidValidator.isValid(taskId)) return const TaskNotFound();
+
     final rows = await _sql.query(
       'UPDATE devtasks_task SET '
       '  status = @targetStatus, '
@@ -169,6 +178,8 @@ class PostgresTaskRepository implements ITaskRepository {
 
   @override
   Future<bool> delete(String taskId) async {
+    if (!UuidValidator.isValid(taskId)) return false;
+
     final rows = await _sql.query(
       'DELETE FROM devtasks_task WHERE id = @taskId::uuid RETURNING id',
       parameters: {'taskId': taskId},
@@ -178,6 +189,8 @@ class PostgresTaskRepository implements ITaskRepository {
 
   @override
   Future<List<TaskEntity>> listByProject(String projectId) async {
+    if (!UuidValidator.isValid(projectId)) return [];
+
     final rows = await _sql.query(
       'SELECT id, project_id, title, description, status, priority, position, '
       'assigned_user_id, due_date, created_at, updated_at '

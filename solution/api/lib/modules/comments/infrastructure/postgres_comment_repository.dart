@@ -2,6 +2,7 @@
 // Repositório PostgreSQL para comentários de tarefas (EPIC-05 · D-08 / RF-12).
 
 import '../../../core/db/sql_executor.dart';
+import '../../../core/types/uuid_validator.dart';
 import '../domain/comment_entity.dart';
 import '../ports.dart';
 
@@ -46,6 +47,8 @@ class PostgresCommentRepository implements ICommentRepository {
 
   @override
   Future<List<CommentEntity>> listByTask(String taskId) async {
+    if (!UuidValidator.isValid(taskId)) return [];
+
     final rows = await _sql.query(
       'SELECT c.id, c.task_id, c.user_id, u.name as author_name, c.content, c.created_at '
       'FROM devtasks_comment c '

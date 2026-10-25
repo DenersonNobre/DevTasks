@@ -1,4 +1,5 @@
 import '../../../core/db/sql_executor.dart';
+import '../../../core/types/uuid_validator.dart';
 import '../domain/project_entity.dart';
 import '../ports.dart';
 
@@ -15,6 +16,8 @@ class PostgresProjectRepository implements IProjectRepository {
 
   @override
   Future<ProjectEntity?> findById(String projectId) async {
+    if (!UuidValidator.isValid(projectId)) return null;
+
     final rows = await _sql.query(
       'SELECT id, workspace_id, name, created_at, archived_at '
       'FROM devtasks_project '
@@ -52,6 +55,8 @@ class PostgresProjectRepository implements IProjectRepository {
     required String projectId,
     required String name,
   }) async {
+    if (!UuidValidator.isValid(projectId)) return null;
+
     final rows = await _sql.query(
       'UPDATE devtasks_project '
       'SET name = @name '
@@ -74,6 +79,8 @@ class PostgresProjectRepository implements IProjectRepository {
     String workspaceId, {
     bool includeArchived = false,
   }) async {
+    if (!UuidValidator.isValid(workspaceId)) return [];
+
     final querySql = includeArchived
         ? 'SELECT id, workspace_id, name, created_at, archived_at '
             'FROM devtasks_project '
@@ -94,6 +101,8 @@ class PostgresProjectRepository implements IProjectRepository {
 
   @override
   Future<ProjectEntity?> archive(String projectId) async {
+    if (!UuidValidator.isValid(projectId)) return null;
+
     final existing = await findById(projectId);
     if (existing == null) {
       return null;

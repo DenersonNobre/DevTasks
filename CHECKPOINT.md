@@ -7,29 +7,29 @@
 ## Contexto
 
 DevTasks — Flutter (`solution/app`) + Dart/Shelf + PostgreSQL puro + OpenAPI 3.1.
-Ciclo corrente: **Auditoria Bloco A — R4/R5 (Helpers Tipados & DateOnly Estrito) CONCLUÍDO ✅ (UC-04.01)**.
+Ciclo corrente: **Auditoria Bloco A — Item 4: A-1 (Guard de UUID nos Path Params) CONCLUÍDO ✅ (UC-08.06)**.
 
 ## Estado verificado (2026-10-25)
 
-- **Claim**: `UC-04.01` (Coder) — liberando após entrega de R4/R5.
+- **Claim**: `UC-08.06` (Coder) — liberando após entrega de A-1.
 - **UCs**: 39 no plano — **35 concluídos / 4 pendentes** (`docs/plan/README.md`).
 - **Backend (`solution/api`)**:
-  - `JsonPayload`: extração segura tipada de campos JSON evitando TypeErrors em runtime e vazamentos de 500.
-  - `DateOnly`: parser estrito de datas no formato `YYYY-MM-DD` (OpenAPI `format: date`), rejeitando timestamps com hora e datas inexistentes com 400 `ERR_VALIDATION`.
-  - Rotas de tarefas (`task_routes.dart`) e comentários (`comment_routes.dart`) convertidas para extração tipada.
-  - 350 testes unitários verdes (220 api, 130 app) e 27 testes de banco Postgres real verdes.
+  - `UuidValidator`: validação canônica de formato RFC-4122.
+  - Guards defensivos em todos os repositórios PostgreSQL (`PostgresWorkspaceRepository`, `PostgresProjectRepository`, `PostgresTaskRepository`, `PostgresCommentRepository`).
+  - Identificadores malformados ou não-UUID retornam `null`/vazio sem executar query nem levantar `22P02`, respondendo 404 limpo de acordo com `INV-01`.
+  - Testes unitários de repositórios atualizados para UUIDs válidos e testes negativos de path param adicionados.
+  - 352 testes unitários verdes e 27 testes de banco Postgres real verdes.
 - **Frontend (`solution/app`)**:
   - App shell, Kanban e comentários 100% integrados com 36 testes de widget verdes.
 - **Qualidade & Gates**:
   - `dart analyze solution/app solution/api` 100% limpo (0 issues).
   - `pwsh tools/contract-gate.ps1` 100% aprovado (23 rotas).
   - `pwsh tools/doc-gate.ps1` e DAG 100% aprovados.
-  - `pwsh tools/test.ps1 -Unit` 100% verde (350 testes).
   - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL (27 testes).
 
 ## Próximo passo
 
-- **Item 4 do Bloco A da Auditoria: A-1 (Guard de UUID nos Path Params com 400/404 em vez de 500)**.
+- **Item 5 do Bloco A da Auditoria: A-2 (Alinhamento de Contrato OpenAPI e Paridade de Schemas)**.
 
 ## Travas vivas
 

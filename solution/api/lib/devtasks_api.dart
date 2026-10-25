@@ -14,6 +14,7 @@ export 'core/http/json_payload.dart';
 export 'core/http/json_response.dart';
 export 'core/http/router.dart';
 export 'core/types/date_only.dart';
+export 'core/types/uuid_validator.dart';
 export 'modules/auth/argon2_password_hasher.dart';
 export 'modules/auth/auth_routes.dart';
 export 'modules/auth/domain/email.dart';

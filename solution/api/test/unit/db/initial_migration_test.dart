@@ -10,7 +10,10 @@ void main() {
   late String sql;
 
   setUpAll(() {
-    final file = File('migrations/0001_initial.sql');
+    var file = File('migrations/0001_initial.sql');
+    if (!file.existsSync()) {
+      file = File('solution/api/migrations/0001_initial.sql');
+    }
     expect(file.existsSync(), isTrue, reason: 'migration inicial ausente');
     sql = file.readAsStringSync();
   });

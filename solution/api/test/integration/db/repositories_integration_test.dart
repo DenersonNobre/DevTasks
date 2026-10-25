@@ -619,17 +619,17 @@ void main() {
       });
     });
 
-    group('Caracterização de fronteira (achado A-1 do laudo)', () {
-      test('id não-UUID falha no cast do banco, não na fronteira', () async {
-        final repo = PostgresWorkspaceRepository(sql);
+    group('Fechamento do achado A-1 do laudo (Guard de UUID)', () {
+      test('id não-UUID retorna null/vazio pacificamente no repositório sem estourar 22P02', () async {
+        final wsRepo = PostgresWorkspaceRepository(sql);
+        final projRepo = PostgresProjectRepository(sql);
+        final taskRepo = PostgresTaskRepository(sql);
+        final commentRepo = PostgresCommentRepository(sql);
 
-        // Documenta o comportamento atual: o path param cru chega ao `::uuid` e
-        // produz PgException (22P02), que a borda traduz em 500. Quando a
-        // validação de UUID entrar na fronteira, este teste deve mudar.
-        expect(
-          () => repo.findById('nao-e-uuid'),
-          throwsA(isA<PgException>()),
-        );
+        expect(await wsRepo.findById('nao-e-uuid'), isNull);
+        expect(await projRepo.findById('nao-e-uuid'), isNull);
+        expect(await taskRepo.findById('nao-e-uuid'), isNull);
+        expect(await commentRepo.listByTask('nao-e-uuid'), isEmpty);
       });
     });
   }, skip: skipReason);

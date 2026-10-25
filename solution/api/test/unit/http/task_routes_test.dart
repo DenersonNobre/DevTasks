@@ -724,6 +724,31 @@ void main() {
         expect(json['errorCode'], 'ERR_VALIDATION');
         expect(json['field'], 'dueDate');
       });
+
+      test('GET /projects/{id}/tasks com ID inexistente ou não-UUID retorna 404 (A-1)', () async {
+        final req = makeRequest(
+          'GET',
+          '/projects/nao-e-uuid/tasks',
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 404);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_NOT_FOUND');
+      });
+
+      test('PATCH /tasks/{id} com ID inexistente ou não-UUID retorna 404 (A-1)', () async {
+        final req = makeRequest(
+          'PATCH',
+          '/tasks/nao-e-uuid',
+          body: {'title': 'Novo Titulo'},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 404);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_NOT_FOUND');
+      });
     });
   });
 }

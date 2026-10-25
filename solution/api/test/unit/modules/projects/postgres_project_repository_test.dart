@@ -29,6 +29,10 @@ void main() {
     late _MockSqlExecutor sql;
     late PostgresProjectRepository repository;
 
+    const projId = '11111111-1111-1111-1111-111111111111';
+    const proj2Id = '11111111-1111-1111-1111-111111111112';
+    const wsId = '22222222-2222-2222-2222-222222222222';
+
     setUp(() {
       sql = _MockSqlExecutor();
       repository = PostgresProjectRepository(sql);
@@ -38,53 +42,67 @@ void main() {
       final now = DateTime.utc(2026, 10, 24, 12, 0);
       sql.queryResult = [
         {
-          'id': 'proj-uuid-1',
-          'workspace_id': 'ws-uuid-1',
+          'id': projId,
+          'workspace_id': wsId,
           'name': 'Onboarding',
           'created_at': now,
         }
       ];
 
-      final project = await repository.findById('proj-uuid-1');
+      final project = await repository.findById(projId);
 
       expect(project, isNotNull);
-      expect(project!.id, 'proj-uuid-1');
-      expect(project.workspaceId, 'ws-uuid-1');
+      expect(project!.id, projId);
+      expect(project.workspaceId, wsId);
       expect(project.name, 'Onboarding');
       expect(project.createdAt, now);
-      expect(sql.lastParameters, {'projectId': 'proj-uuid-1'});
+      expect(sql.lastParameters, {'projectId': projId});
     });
 
     test('findById retorna null quando projeto não existe', () async {
       sql.queryResult = [];
 
-      final project = await repository.findById('missing-proj');
+      final project = await repository.findById('33333333-3333-3333-3333-333333333333');
 
       expect(project, isNull);
+    });
+
+    test('findById com UUID inválido retorna null sem consultar banco (A-1)', () async {
+      final project = await repository.findById('invalid-uuid');
+
+      expect(project, isNull);
+      expect(sql.lastSql, isNull);
+    });
+
+    test('listByWorkspace com UUID inválido retorna lista vazia sem consultar banco (A-1)', () async {
+      final list = await repository.listByWorkspace('invalid-uuid');
+
+      expect(list, isEmpty);
+      expect(sql.lastSql, isNull);
     });
 
     test('create insere projeto e retorna ProjectEntity', () async {
       final now = DateTime.utc(2026, 10, 24, 12, 0);
       sql.queryResult = [
         {
-          'id': 'proj-uuid-1',
-          'workspace_id': 'ws-uuid-1',
+          'id': projId,
+          'workspace_id': wsId,
           'name': 'Sprint 1',
           'created_at': now,
         }
       ];
 
       final created = await repository.create(
-        workspaceId: 'ws-uuid-1',
+        workspaceId: wsId,
         name: 'Sprint 1',
       );
 
-      expect(created.id, 'proj-uuid-1');
-      expect(created.workspaceId, 'ws-uuid-1');
+      expect(created.id, projId);
+      expect(created.workspaceId, wsId);
       expect(created.name, 'Sprint 1');
       expect(sql.lastSql, contains('INSERT INTO devtasks_project'));
       expect(sql.lastParameters, {
-        'workspaceId': 'ws-uuid-1',
+        'workspaceId': wsId,
         'name': 'Sprint 1',
       });
     });
@@ -93,15 +111,15 @@ void main() {
       final now = DateTime.utc(2026, 10, 24, 12, 0);
       sql.queryResult = [
         {
-          'id': 'proj-uuid-1',
-          'workspace_id': 'ws-uuid-1',
+          'id': projId,
+          'workspace_id': wsId,
           'name': 'Sprint 1 Renomeada',
           'created_at': now,
         }
       ];
 
       final updated = await repository.updateName(
-        projectId: 'proj-uuid-1',
+        projectId: projId,
         name: 'Sprint 1 Renomeada',
       );
 
@@ -109,7 +127,7 @@ void main() {
       expect(updated!.name, 'Sprint 1 Renomeada');
       expect(sql.lastSql, contains('UPDATE devtasks_project'));
       expect(sql.lastParameters, {
-        'projectId': 'proj-uuid-1',
+        'projectId': projId,
         'name': 'Sprint 1 Renomeada',
       });
     });
@@ -118,30 +136,30 @@ void main() {
       final now = DateTime.utc(2026, 10, 24, 12, 0);
       sql.queryResult = [
         {
-          'id': 'proj-1',
-          'workspace_id': 'ws-1',
+          'id': projId,
+          'workspace_id': wsId,
           'name': 'Proj A',
           'created_at': now,
         },
         {
-          'id': 'proj-2',
-          'workspace_id': 'ws-1',
+          'id': proj2Id,
+          'workspace_id': wsId,
           'name': 'Proj B',
           'created_at': now,
         },
       ];
 
-      final list = await repository.listByWorkspace('ws-1');
+      final list = await repository.listByWorkspace(wsId);
 
       expect(list, hasLength(2));
       expect(list[0].name, 'Proj A');
       expect(list[1].name, 'Proj B');
-      expect(sql.lastParameters, {'workspaceId': 'ws-1'});
+      expect(sql.lastParameters, {'workspaceId': wsId});
       expect(sql.lastSql, contains('archived_at IS NULL'));
     });
 
     test('listByWorkspace com includeArchived traz todos os projetos', () async {
-      await repository.listByWorkspace('ws-1', includeArchived: true);
+      await repository.listByWorkspace(wsId, includeArchived: true);
       expect(sql.lastSql, isNot(contains('archived_at IS NULL')));
     });
 
@@ -150,8 +168,8 @@ void main() {
       // 1. findById check
       sql.queryResult = [
         {
-          'id': 'proj-1',
-          'workspace_id': 'ws-1',
+          'id': projId,
+          'workspace_id': wsId,
           'name': 'Proj A',
           'created_at': now,
           'archived_at': null,
@@ -159,9 +177,9 @@ void main() {
       ];
 
       // Chamada do archive
-      await repository.archive('proj-1');
+      await repository.archive(projId);
       expect(sql.lastSql, contains('UPDATE devtasks_project SET archived_at = now()'));
-      expect(sql.lastParameters, {'projectId': 'proj-1'});
+      expect(sql.lastParameters, {'projectId': projId});
     });
   });
 }

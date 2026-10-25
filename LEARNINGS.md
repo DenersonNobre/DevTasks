@@ -15,6 +15,20 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Harness de provas apontava para `solution/server` após o fim do Serverpod (CI vermelha)
+
+- **Sintoma**: `tools/test.ps1 -Governance` e o job "Lint, Test & DAG Gate" da CI falhavam com `Could not find a part of the path ... solution/server/test/zz_fail_probe_test.dart`.
+- **Causa raiz**: `b282d3e` (decommission do Serverpod) renomeou o alvo `server`→`api` no runner (`ValidateSet`, `$serverPct`→`$apiPct`), mas `tools/tests/test_test_runner.ps1` não foi atualizado: gravava o probe em `solution/server/test/`, chamava `-Target server` e mutava `\$serverPct`. Consequência silenciosa: o `-replace` da prova negativa 5.2 casava **zero** ocorrências — a "prova" era uma tautologia que só passava porque o alvo inválido também saía com exit ≠ 0.
+- **Fix**: probe em `solution/api/test/`, `-Target api`, `\$apiPct` e guarda que **falha se o `-replace` não casar** nas 3 provas negativas (5.1, 5.2 e teto NFR-03); resíduo `solution/server` removido de `tools/clean.ps1`.
+- **Prevenção**: `tools/tests/test_test_runner.ps1` verde local + CI (Gitea e GitHub); a guarda de "replace sem match" impede que prova negativa vire tautologia quando o runner mudar de forma.
+
+## 2026-10-25 — `.dockerignore` duplicado: o de `docker/` era inerte (context = raiz)
+
+- **Sintoma**: o repo tinha dois `.dockerignore` (raiz e `docker/`), quase idênticos — o da raiz com 2 linhas a mais (`.gitea`, `tools/`).
+- **Causa raiz**: o build context é a **raiz** (`docker-compose.yml` `context: ..`; CI `docker build -f docker/Dockerfile .`), e o Docker só lê `<context>/.dockerignore` — nunca ao lado do `Dockerfile`. `docker/.dockerignore` nasceu em `b020392` junto com um compose que já usava `context: ..`, ou seja, morto ao nascer; o da raiz entrou depois em `80ad212` (fix de qa-review) e é o único que vale.
+- **Fix**: removido `docker/.dockerignore` (`git rm`), cabeçalho no da raiz declarando-o canônico, gate `docker/tests/test_docker_manifests.ps1` apontando para a raiz com **prova negativa** (falha se `docker/.dockerignore` reaparecer) e checagem de que compose/CI continuam usando a raiz como context.
+- **Prevenção**: regra transversal registrada em `~/.agents/rules/topics/devops-docker.md`. Qualquer `COPY` de path fora do diretório do Dockerfile prova que o context não pode ser aquele diretório.
+
 ## 2026-10-25 — Extração Tipada de JSON e DateOnly Estrito no Shelf (Auditoria R4/R5 / UC-04.01)
 
 - **Sintoma**: Requisições HTTP com tipos primitivos trocados no JSON (ex.: `{"description": 123}` ou `{"content": 42}`) disparavam `TypeError` em tempo de execução por conta de casts diretos `as String?`, vazando código 500 (`ERR_INFRA_FAILURE`) para o cliente; adicionalmente, `dueDate` aceitava timestamps completos (`2026-10-25T10:00:00Z`) via `DateTime.tryParse` e descartava a hora silenciosamente no repositório, em desacordo com o `format: date` do OpenAPI 3.1 (Itens R4 e R5 do laudo de auditoria).
@@ -376,4 +390,12 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 - **Causa raiz**: a inicialização do monólito de teste do Serverpod (`health_endpoint_test`, `smoke_test`, `client_contract_test`, `workspace_endpoint_test`), somada aos testes assíncronos do app Flutter (66 testes), eleva o tempo de processamento cumulativo à medida que novos épicos e módulos são acoplados à suíte completa.
 - **Fix**: teto do modo integrado (`-Integration` / default) calibrado de 120s para 180s (240s com cobertura), preservando o teto unitário estrito de 60s do NFR-03 no modo `-Unit`.
 - **Prevenção**: manter a distinção rígida entre suíte unitária de domínio (NFR-03 puro ≤ 60s) e testes de integração / end-to-end de infraestrutura, revisando a separação das suítes no runner antes do crescimento exponencial de testes de integração.
+
+## 2026-10-25 — Defesa de Fronteira contra 22P02 do PostgreSQL (Achado A-1)
+
+- **Sintoma**: requisições HTTP com identificadores não-UUID em rotas com parâmetros de path (ex.: `/tasks/nao-e-uuid`, `/projects/abc/tasks`) produziam erro 500 (`ERR_INFRA_FAILURE`) em vez de 404 (`ERR_NOT_FOUND`).
+- **Causa raiz**: parâmetros de rota chegavam crus aos adaptadores PostgreSQL, onde o cast `@id::uuid` disparava o erro `22P02 (invalid_text_representation)`. Como não havia captura tipada de `ServerException` para sintaxe inválida nem pré-validação, a exceção subia até o `errorMiddleware` genérico, transformando erro de cliente em falso alarme de infraestrutura.
+- **Fix**: criação do `UuidValidator.isValid` e introdução de guards defensivos no nível de repositório (`PostgresWorkspaceRepository`, `PostgresProjectRepository`, `PostgresTaskRepository`, `PostgresCommentRepository`), retornando `null` ou `[]` pacificamente para IDs inválidos, integrando-se organicamente com a regra de isolamento `INV-01` que responde `404` para recursos ausentes sem tocar o banco.
+- **Prevenção**: nunca permitir que tipos estritos de banco (como `uuid` nativo) recebam strings arbitrárias da camada de transporte sem validação de formato na borda ou guarda no adaptador.
+
 

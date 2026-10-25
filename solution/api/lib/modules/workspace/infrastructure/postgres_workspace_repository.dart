@@ -1,6 +1,7 @@
 import 'package:postgres/postgres.dart';
 
 import '../../../core/db/sql_executor.dart';
+import '../../../core/types/uuid_validator.dart';
 import '../domain/workspace_entity.dart';
 import '../domain/workspace_member_role.dart';
 import '../ports.dart';
@@ -22,6 +23,8 @@ class PostgresWorkspaceRepository implements IWorkspaceRepository {
 
   @override
   Future<WorkspaceEntity?> findById(String id) async {
+    if (!UuidValidator.isValid(id)) return null;
+
     final rows = await _sql.query(
       'SELECT id, name, created_at FROM devtasks_workspace WHERE id = @id::uuid LIMIT 1',
       parameters: {'id': id},
@@ -67,6 +70,10 @@ class PostgresWorkspaceRepository implements IWorkspaceRepository {
 
   @override
   Future<List<WorkspaceWithRole>> listByUserId(String userId) async {
+    if (!UuidValidator.isValid(userId)) {
+      return const [];
+    }
+
     final rows = await _sql.query(
       '''
       SELECT w.id, w.name, w.created_at, m.role
@@ -90,6 +97,10 @@ class PostgresWorkspaceRepository implements IWorkspaceRepository {
     required String workspaceId,
     required String userId,
   }) async {
+    if (!UuidValidator.isValid(workspaceId) || !UuidValidator.isValid(userId)) {
+      return null;
+    }
+
     final rows = await _sql.query(
       'SELECT role FROM devtasks_workspace_member '
       'WHERE workspace_id = @workspaceId::uuid AND user_id = @userId::uuid '
@@ -112,6 +123,10 @@ class PostgresWorkspaceRepository implements IWorkspaceRepository {
     required String name,
     required String userId,
   }) async {
+    if (!UuidValidator.isValid(workspaceId) || !UuidValidator.isValid(userId)) {
+      return null;
+    }
+
     final rows = await _sql.query(
       'UPDATE devtasks_workspace '
       'SET name = @name '
@@ -141,6 +156,10 @@ class PostgresWorkspaceRepository implements IWorkspaceRepository {
     required String userId,
     required WorkspaceMemberRole role,
   }) async {
+    if (!UuidValidator.isValid(workspaceId) || !UuidValidator.isValid(userId)) {
+      return const MemberUserNotFound();
+    }
+
     final userRows = await _sql.query(
       'SELECT 1 FROM devtasks_user WHERE id = @userId::uuid LIMIT 1',
       parameters: {'userId': userId},
@@ -181,6 +200,10 @@ class PostgresWorkspaceRepository implements IWorkspaceRepository {
     required String workspaceId,
     required String userId,
   }) async {
+    if (!UuidValidator.isValid(workspaceId) || !UuidValidator.isValid(userId)) {
+      return const MemberNotFound();
+    }
+
     final rows = await _sql.query(
       'SELECT role FROM devtasks_workspace_member '
       'WHERE workspace_id = @workspaceId::uuid AND user_id = @userId::uuid '
