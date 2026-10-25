@@ -1,3 +1,8 @@
+# CANÔNICO — build context = raiz do repositório (compose `context: ..`, CI `docker build .`).
+# O Docker lê o .dockerignore na RAIZ DO CONTEXT, nunca ao lado do Dockerfile; por isso este
+# arquivo é o único que vale e `docker/.dockerignore` (removido) era inerte.
+# (Se um dia precisar de ignore por Dockerfile: `docker/Dockerfile.dockerignore` — este sim
+#  fica ao lado e tem precedência sobre o da raiz.)
 .git
 .github
 .gitea
@@ -16,4 +21,3 @@ passwords.yaml
 solution/app/
 docs/
 tools/
-

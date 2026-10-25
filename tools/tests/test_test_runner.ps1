@@ -29,7 +29,7 @@ $budgetNote = if ($env:DEVTASKS_NESTED_RUN -eq "1") { "(run aninhado: teto medid
 Write-Host "Pass: Test runner completed successfully in $elapsed s $budgetNote"
 
 Write-Host "=== TEST 3: Falha propagada por teste GENUINAMENTE falho (nunca verde falso) ==="
-$probeTest = Join-Path $RepoRoot "solution/server/test/zz_fail_probe_test.dart"
+$probeTest = Join-Path $RepoRoot "solution/api/test/zz_fail_probe_test.dart"
 try {
     @'
 import 'package:test/test.dart';
@@ -41,7 +41,7 @@ void main() {
 }
 '@ | Set-Content -Path $probeTest -Encoding utf8
 
-    & $psExe -ExecutionPolicy Bypass -NoProfile -File $TestScript -Target server
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $TestScript -Target api
     if ($LASTEXITCODE -eq 0) {
         throw "FAIL: teste falho real nao propagou (verde falso!)"
     }
@@ -61,22 +61,28 @@ Write-Host "=== TEST 5: Gate de cobertura MORDE quando o minimo nao e atingido (
 $probeRunner = Join-Path $RepoRoot "tools/_probe_runner.ps1"
 try {
     # 5.1 Prova negativa: gate de cobertura do app reprova threshold impossível
-    (Get-Content $TestScript -Raw) -replace '\$globalPct -lt 70', '$globalPct -lt 99.9' |
-        Set-Content -Path $probeRunner -Encoding utf8
+    $patchedApp = (Get-Content $TestScript -Raw) -replace '\$globalPct -lt 70', '$globalPct -lt 99.9'
+    if ($patchedApp -eq (Get-Content $TestScript -Raw)) {
+        throw "FAIL: -replace nao casou \$globalPct -lt 70 (gate de cobertura do app mudou; prova negativa seria falsa)."
+    }
+    $patchedApp | Set-Content -Path $probeRunner -Encoding utf8
     & $psExe -ExecutionPolicy Bypass -NoProfile -File $probeRunner -Coverage -Target app
     if ($LASTEXITCODE -eq 0) {
         throw "FAIL: gate de cobertura do app nao falhou com minimo impossivel (99.9%)"
     }
     Write-Host "Pass: gate de cobertura do app reprovou cobertura insuficiente (exit $LASTEXITCODE)"
 
-    # 5.2 Prova negativa (R-03): gate de cobertura do server reprova threshold impossível
-    (Get-Content $TestScript -Raw) -replace '\$serverPct -lt 70', '$serverPct -lt 99.9' |
-        Set-Content -Path $probeRunner -Encoding utf8
-    & $psExe -ExecutionPolicy Bypass -NoProfile -File $probeRunner -Coverage -Target server
-    if ($LASTEXITCODE -eq 0) {
-        throw "FAIL: gate de cobertura do server nao falhou com minimo impossivel (99.9%)"
+    # 5.2 Prova negativa (R-03): gate de cobertura da api reprova threshold impossível
+    $patched = (Get-Content $TestScript -Raw) -replace '\$apiPct -lt 70', '$apiPct -lt 99.9'
+    if ($patched -eq (Get-Content $TestScript -Raw)) {
+        throw "FAIL: -replace nao casou \$apiPct -lt 70 (gate de cobertura da api mudou de forma; prova negativa seria falsa)."
     }
-    Write-Host "Pass: gate de cobertura do server reprovou cobertura insuficiente (exit $LASTEXITCODE)"
+    $patched | Set-Content -Path $probeRunner -Encoding utf8
+    & $psExe -ExecutionPolicy Bypass -NoProfile -File $probeRunner -Coverage -Target api
+    if ($LASTEXITCODE -eq 0) {
+        throw "FAIL: gate de cobertura da api nao falhou com minimo impossivel (99.9%)"
+    }
+    Write-Host "Pass: gate de cobertura da api reprovou cobertura insuficiente (exit $LASTEXITCODE)"
 } finally {
     if (Test-Path $probeRunner) { Remove-Item $probeRunner -Force }
 }
@@ -85,6 +91,9 @@ Write-Host "=== TEST 6: Orcamento NFR-03 MORDE quando excedido ==="
 try {
     (Get-Content $TestScript -Raw) -replace '\$coreElapsed -gt \$coreBudget', '$coreElapsed -gt 0.001' |
         Set-Content -Path $probeRunner -Encoding utf8
+    if ((Get-Content $probeRunner -Raw) -notmatch [regex]::Escape('$coreElapsed -gt 0.001')) {
+        throw "FAIL: -replace nao casou o teto NFR-03 (orcamento mudou de forma; prova negativa seria falsa)."
+    }
     # A prova negativa precisa medir o teto: roda como run EXTERNO (sem a marca aninhada).
     $savedNested = $env:DEVTASKS_NESTED_RUN
     $env:DEVTASKS_NESTED_RUN = $null

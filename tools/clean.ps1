@@ -13,8 +13,8 @@ Write-Host "==> [DevTasks] Executando limpeza idempotente..."
 $directoriesToClean = @(
     "solution/app/build",
     "solution/app/.dart_tool",
-    "solution/server/build",
-    "solution/server/.dart_tool",
+    "solution/api/build",
+    "solution/api/.dart_tool",
     "solution/builds",
     ".dart_tool"
 )

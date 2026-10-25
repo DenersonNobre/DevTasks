@@ -8,7 +8,10 @@ Set-Location $RepoRoot
 
 $Dockerfile = Join-Path $RepoRoot "docker/Dockerfile"
 $ComposeFile = Join-Path $RepoRoot "docker/docker-compose.yml"
-$Dockerignore = Join-Path $RepoRoot "docker/.dockerignore"
+# O Docker procura .dockerignore na RAIZ DO BUILD CONTEXT (compose `context: ..` /
+# CI `docker build ... .`), nunca ao lado do Dockerfile — ver NC-07 do qa-review-v0.1.0.
+$Dockerignore = Join-Path $RepoRoot ".dockerignore"
+$StaleDockerignore = Join-Path $RepoRoot "docker/.dockerignore"
 
 Write-Host "=== TEST 1: Verificar existência dos manifestos Docker ==="
 if (-not (Test-Path $Dockerfile)) {
@@ -18,7 +21,10 @@ if (-not (Test-Path $ComposeFile)) {
     throw "RED EXPECTED: docker/docker-compose.yml does not exist yet."
 }
 if (-not (Test-Path $Dockerignore)) {
-    throw "RED EXPECTED: docker/.dockerignore does not exist yet."
+    throw "RED EXPECTED: .dockerignore (raiz do build context) does not exist yet."
+}
+if (Test-Path $StaleDockerignore) {
+    throw "FAIL: docker/.dockerignore e inerte (context = raiz); manter apenas o .dockerignore da raiz."
 }
 
 Write-Host "=== TEST 2: Validação de Anti-Colisão (devops-docker.md) no Compose ==="
@@ -75,7 +81,18 @@ foreach ($req in $requiredIgnores) {
         throw "FAIL: .dockerignore deve excluir '$req' para evitar sobrecarga de contexto."
     }
 }
-Write-Host "Pass: .dockerignore cobre artefatos obrigatórios."
+# 5.1 O filtro só vale para o contexto da raiz — se o contexto mudar, o arquivo acima fica inerte.
+if ($composeContent -notmatch "(?m)^[ \t]*context:[ \t]*\.\.[ \t]*\r?$") {
+    throw "FAIL: build.context do compose deve ser '..' (raiz do repo) — é a raiz que o Docker filtra."
+}
+foreach ($wf in @(".gitea/workflows/ci.yml", ".github/workflows/ci.yml")) {
+    $wfPath = Join-Path $RepoRoot $wf
+    if (-not (Test-Path $wfPath)) { continue }
+    if ((Get-Content $wfPath -Raw) -notmatch "(?m)^.*docker build[^\r\n]*[ \t]\.\r?$") {
+        throw "FAIL: $wf deve usar a raiz como build context ('docker build ... .')."
+    }
+}
+Write-Host "Pass: .dockerignore cobre artefatos obrigatórios e vive na raiz do contexto."
 
 Write-Host "`n>>> ALL UC-00.05 ACCEPTANCE TESTS PASSED SUCCESSFULLY! <<<"
 exit 0

@@ -221,7 +221,7 @@ evidência dos gates e garante que a demo da EPIC-07 nasça de um pipeline limpo
   1. `TASK-01`: Dockerfile multi-stage (builder ➔ runtime slim) ➔ Commit: `chore(docker): add multi-stage server image`
   2. `TASK-02`: compose com nome, volumes, rede e portas `0.0.0.0` ➔ Commit: `chore(docker): add compose with anti-collision naming`
 * **Impacto & Arquivos Alvo**:
-  - `docker/Dockerfile`, `docker/docker-compose.yml`, `docker/.dockerignore` [NEW]
+  - `docker/Dockerfile`, `docker/docker-compose.yml`, `.dockerignore` (raiz do contexto) [NEW]
 
 ---
 
