@@ -651,5 +651,79 @@ void main() {
         expect(json['task']['assignedUserId'], 'user-dev');
       });
     });
+
+    group('Validação Tipada e DateOnly Estrito (R4 / R5)', () {
+      test('POST /projects/{id}/tasks com tipo trocado em description retorna 400 em vez de 500 (R4)', () async {
+        final req = makeRequest(
+          'POST',
+          '/projects/$projId/tasks',
+          body: {'title': 'Task Tipada', 'description': 12345},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 400);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_VALIDATION');
+        expect(json['field'], 'description');
+      });
+
+      test('POST /projects/{id}/tasks com dueDate como timestamp ISO com hora é rejeitado com 400 (R5)', () async {
+        final req = makeRequest(
+          'POST',
+          '/projects/$projId/tasks',
+          body: {'title': 'Task Data', 'dueDate': '2026-10-25T14:30:00Z'},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 400);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_VALIDATION');
+        expect(json['field'], 'dueDate');
+      });
+
+      test('POST /projects/{id}/tasks com dueDate inexistente (2026-02-30) retorna 400 (R5)', () async {
+        final req = makeRequest(
+          'POST',
+          '/projects/$projId/tasks',
+          body: {'title': 'Task Fevereiro', 'dueDate': '2026-02-30'},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 400);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_VALIDATION');
+        expect(json['field'], 'dueDate');
+      });
+
+      test('PATCH /tasks/{id} com description numérica retorna 400 em vez de 500 (R4)', () async {
+        final t = await taskRepo.create(projectId: projId, title: 'Patch Test');
+        final req = makeRequest(
+          'PATCH',
+          '/tasks/${t.id}',
+          body: {'description': 999},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 400);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_VALIDATION');
+        expect(json['field'], 'description');
+      });
+
+      test('PATCH /tasks/{id} com dueDate com horário retorna 400 em vez de truncar (R5)', () async {
+        final t = await taskRepo.create(projectId: projId, title: 'Patch Data');
+        final req = makeRequest(
+          'PATCH',
+          '/tasks/${t.id}',
+          body: {'dueDate': '2026-11-01T00:00:00'},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 400);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_VALIDATION');
+        expect(json['field'], 'dueDate');
+      });
+    });
   });
 }

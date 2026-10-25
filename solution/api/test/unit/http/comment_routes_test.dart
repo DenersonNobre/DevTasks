@@ -307,6 +307,20 @@ void main() {
         expect(json['field'], 'content');
       });
 
+      test('400 com ERR_VALIDATION quando content for número ou tipo primitivo trocado (R4)', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/comments',
+          body: {'content': 42},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 400);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_VALIDATION');
+        expect(json['field'], 'content');
+      });
+
       test('201 cria comentário com sucesso com autor e data (RF-12 / F5.1)', () async {
         final req = makeRequest(
           'POST',

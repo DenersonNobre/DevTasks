@@ -7,32 +7,29 @@
 ## Contexto
 
 DevTasks — Flutter (`solution/app`) + Dart/Shelf + PostgreSQL puro + OpenAPI 3.1.
-Ciclo corrente: **Auditoria Bloco A — R2 (INV-04 / Midpoint / CHECK) CONCLUÍDO ✅ (UC-04.02)**.
+Ciclo corrente: **Auditoria Bloco A — R4/R5 (Helpers Tipados & DateOnly Estrito) CONCLUÍDO ✅ (UC-04.01)**.
 
 ## Estado verificado (2026-10-25)
 
-- **Claim**: `UC-04.02` (Coder) — liberando após entrega de R2.
+- **Claim**: `UC-04.01` (Coder) — liberando após entrega de R4/R5.
 - **UCs**: 39 no plano — **35 concluídos / 4 pendentes** (`docs/plan/README.md`).
-- **Arquitetura & Backend (`solution/api`)**:
-  - D-09 e INV-04: tupla de ordenação total lexicográfica `(position ASC, created_at ASC, id ASC)`.
-  - Migration `0005_task_position_guard.sql` com `CHECK (position >= 0 AND position < 'Infinity'::float8)`.
-  - Repositório `PostgresTaskRepository.listByProject` atualizado com a tupla de desempate determinístico estável.
-  - 27 testes contra PostgreSQL 18.6 real WSL 100% verdes (`tools/test.ps1 -Database`).
+- **Backend (`solution/api`)**:
+  - `JsonPayload`: extração segura tipada de campos JSON evitando TypeErrors em runtime e vazamentos de 500.
+  - `DateOnly`: parser estrito de datas no formato `YYYY-MM-DD` (OpenAPI `format: date`), rejeitando timestamps com hora e datas inexistentes com 400 `ERR_VALIDATION`.
+  - Rotas de tarefas (`task_routes.dart`) e comentários (`comment_routes.dart`) convertidas para extração tipada.
+  - 350 testes unitários verdes (220 api, 130 app) e 27 testes de banco Postgres real verdes.
 - **Frontend (`solution/app`)**:
-  - `TasksViewModel.calculateMidpoint`: interpolação ordinal de ponto médio entre cartões vizinhos.
-  - `TasksViewModel.moveBetween`: movimentação precisa no Kanban entre vizinhos.
-  - Ordenação estável no ViewModel desempatando float idêntico por `(created_at, id)`.
-  - 36 testes de widget passando (100% verdes).
+  - App shell, Kanban e comentários 100% integrados com 36 testes de widget verdes.
 - **Qualidade & Gates**:
   - `dart analyze solution/app solution/api` 100% limpo (0 issues).
   - `pwsh tools/contract-gate.ps1` 100% aprovado (23 rotas).
   - `pwsh tools/doc-gate.ps1` e DAG 100% aprovados.
-  - `pwsh tools/test.ps1 -Unit` 100% verde (338 testes unitários: 130 app, 208 api).
+  - `pwsh tools/test.ps1 -Unit` 100% verde (350 testes).
   - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL (27 testes).
 
 ## Próximo passo
 
-- **Item 3 do Bloco A da Auditoria: R4/R5 (Helpers Tipados no Shelf e DateOnly Estrito)**.
+- **Item 4 do Bloco A da Auditoria: A-1 (Guard de UUID nos Path Params com 400/404 em vez de 500)**.
 
 ## Travas vivas
 

@@ -4,6 +4,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../../core/http/bearer_middleware.dart';
+import '../../core/http/json_payload.dart';
 import '../../core/http/json_response.dart';
 import '../auth/ports.dart';
 import '../projects/ports.dart';
@@ -91,17 +92,13 @@ class TaskRoutes {
       return _validation('Corpo da requisição deve ser um objeto JSON válido.');
     }
 
-    final rawTitle = payload['title'];
-    if (rawTitle is! String) {
-      return _validation('O campo title é obrigatório.', field: 'title');
-    }
-
+    final rawTitle = JsonPayload.requireString(payload, 'title');
     final titleParsed = TaskTitle.parse(rawTitle);
     if (titleParsed.error != null) {
       return _validation(titleParsed.error!, field: 'title');
     }
 
-    final rawPriority = payload['priority'] as String?;
+    final rawPriority = JsonPayload.optionalString(payload, 'priority');
     final priority = rawPriority != null
         ? TaskPriority.fromString(rawPriority)
         : TaskPriority.medium;
@@ -109,19 +106,13 @@ class TaskRoutes {
       return _validation('Prioridade inválida.', field: 'priority');
     }
 
-    DateTime? dueDate;
-    final rawDueDate = payload['dueDate'] as String?;
-    if (rawDueDate != null) {
-      dueDate = DateTime.tryParse(rawDueDate);
-      if (dueDate == null) {
-        return _validation('Data de vencimento inválida (formato YYYY-MM-DD).', field: 'dueDate');
-      }
-    }
+    final dateOnly = JsonPayload.optionalDate(payload, 'dueDate');
+    final dueDate = dateOnly?.toUtcDateTime();
 
     final task = await taskRepository.create(
       projectId: projectId,
       title: titleParsed.title!.value,
-      description: payload['description'] as String?,
+      description: JsonPayload.optionalString(payload, 'description'),
       priority: priority ?? TaskPriority.medium,
       dueDate: dueDate,
     );
@@ -171,10 +162,7 @@ class TaskRoutes {
 
     String? newTitle;
     if (payload.containsKey('title')) {
-      final rawTitle = payload['title'];
-      if (rawTitle is! String) {
-        return _validation('O campo title deve ser uma string.', field: 'title');
-      }
+      final rawTitle = JsonPayload.requireString(payload, 'title');
       final parsed = TaskTitle.parse(rawTitle);
       if (parsed.error != null) {
         return _validation(parsed.error!, field: 'title');
@@ -184,7 +172,7 @@ class TaskRoutes {
 
     TaskPriority? newPriority;
     if (payload.containsKey('priority')) {
-      final raw = payload['priority'] as String?;
+      final raw = JsonPayload.optionalString(payload, 'priority');
       newPriority = raw != null ? TaskPriority.fromString(raw) : null;
       if (raw != null && newPriority == null) {
         return _validation('Prioridade inválida.', field: 'priority');
@@ -194,26 +182,32 @@ class TaskRoutes {
     DateTime? newDueDate;
     bool clearDueDate = false;
     if (payload.containsKey('dueDate')) {
-      final raw = payload['dueDate'];
-      if (raw == null) {
+      if (payload['dueDate'] == null) {
         clearDueDate = true;
-      } else if (raw is String) {
-        newDueDate = DateTime.tryParse(raw);
-        if (newDueDate == null) {
-          return _validation('Data de vencimento inválida.', field: 'dueDate');
-        }
+      } else {
+        final parsedDate = JsonPayload.optionalDate(payload, 'dueDate');
+        newDueDate = parsedDate?.toUtcDateTime();
+      }
+    }
+
+    String? newDescription;
+    bool clearDescription = false;
+    if (payload.containsKey('description')) {
+      if (payload['description'] == null) {
+        clearDescription = true;
+      } else {
+        newDescription = JsonPayload.optionalString(payload, 'description');
       }
     }
 
     String? newAssignedUserId;
     bool clearAssignedUser = false;
     if (payload.containsKey('assignedUserId')) {
-      final raw = payload['assignedUserId'];
-      if (raw == null) {
+      if (payload['assignedUserId'] == null) {
         clearAssignedUser = true;
-      } else if (raw is String) {
-        final targetUserId = raw.trim();
-        if (targetUserId.isEmpty) {
+      } else {
+        final targetUserId = JsonPayload.optionalString(payload, 'assignedUserId');
+        if (targetUserId == null || targetUserId.isEmpty) {
           return _validation('assignedUserId inválido.', field: 'assignedUserId');
         }
         final assigneeRole = await workspaceRepository.getMemberRole(
@@ -224,16 +218,14 @@ class TaskRoutes {
           return _invalidAssignee();
         }
         newAssignedUserId = targetUserId;
-      } else {
-        return _validation('assignedUserId deve ser uma string UUID ou null.', field: 'assignedUserId');
       }
     }
 
     final updated = await taskRepository.update(
       taskId: taskId,
       title: newTitle,
-      description: payload['description'] as String?,
-      clearDescription: payload.containsKey('description') && payload['description'] == null,
+      description: newDescription,
+      clearDescription: clearDescription,
       priority: newPriority,
       dueDate: newDueDate,
       clearDueDate: clearDueDate,
@@ -288,7 +280,7 @@ class TaskRoutes {
     final payload = await _readJson(request);
     if (payload == null) return _validation('Corpo da requisição inválido.');
 
-    final targetStatusRaw = payload['targetStatus'] as String?;
+    final targetStatusRaw = JsonPayload.requireString(payload, 'targetStatus');
     final targetStatus = TaskStatus.fromString(targetStatusRaw);
     if (targetStatus == null) {
       return _validation('Status de tarefa inválido.', field: 'targetStatus');
@@ -300,10 +292,7 @@ class TaskRoutes {
     }
     final targetPosition = targetPosRaw.toDouble();
 
-    final expectedUpdatedAtRaw = payload['expectedUpdatedAt'] as String?;
-    if (expectedUpdatedAtRaw == null) {
-      return _validation('Timestamp de lock otimista obrigatório.', field: 'expectedUpdatedAt');
-    }
+    final expectedUpdatedAtRaw = JsonPayload.requireString(payload, 'expectedUpdatedAt');
     final expectedUpdatedAt = DateTime.tryParse(expectedUpdatedAtRaw);
     if (expectedUpdatedAt == null) {
       return _validation('Formato de timestamp inválido.', field: 'expectedUpdatedAt');

@@ -11,6 +11,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../../core/http/bearer_middleware.dart';
+import '../../core/http/json_payload.dart';
 import '../../core/http/json_response.dart';
 import '../auth/ports.dart';
 import '../projects/ports.dart';
@@ -79,7 +80,7 @@ class CommentRoutes {
       return _validation('Corpo da requisição deve ser um objeto JSON válido.');
     }
 
-    final rawContent = payload['content'] as String?;
+    final rawContent = JsonPayload.requireString(payload, 'content');
     final (content, error) = CommentContent.parse(rawContent);
     if (error != null) {
       return _validation(error, field: 'content');

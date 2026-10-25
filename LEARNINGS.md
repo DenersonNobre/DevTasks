@@ -15,6 +15,13 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Extração Tipada de JSON e DateOnly Estrito no Shelf (Auditoria R4/R5 / UC-04.01)
+
+- **Sintoma**: Requisições HTTP com tipos primitivos trocados no JSON (ex.: `{"description": 123}` ou `{"content": 42}`) disparavam `TypeError` em tempo de execução por conta de casts diretos `as String?`, vazando código 500 (`ERR_INFRA_FAILURE`) para o cliente; adicionalmente, `dueDate` aceitava timestamps completos (`2026-10-25T10:00:00Z`) via `DateTime.tryParse` e descartava a hora silenciosamente no repositório, em desacordo com o `format: date` do OpenAPI 3.1 (Itens R4 e R5 do laudo de auditoria).
+- **Causa raiz**: Casts estáticos de Maps dinâmicos sem prévia inspeção do tipo `is String` delegam a checagem para o mecanismo de exceptions da VM Dart, sendo interceptados pelo middleware genérico como falha inesperada de infraestrutura; e o tipo nativo `DateTime` aceita strings com horário, não impondo o formato estrito de calendário civil.
+- **Fix**: Criado o Value Object `DateOnly` (`solution/api/lib/core/types/date_only.dart`) que valida estritamente o padrão `^\d{4}-\d{2}-\d{2}$` e o calendário gregoriano (dias válidos por mês e anos bissextos); criado o helper `JsonPayload` (`solution/api/lib/core/http/json_payload.dart`) com `requireString`, `optionalString`, `optionalDouble` e `optionalDate`, lançando `ApiException.badRequest` (400 `ERR_VALIDATION` com identificação do campo) quando o tipo fornecido for incompatível; adaptadas todas as rotas de tarefas e comentários para consumo de `JsonPayload`.
+- **Prevenção**: Suíte de testes unitários e de integração HTTP: 6 testes de unidade para `DateOnly`, 5 testes em `task_routes_test.dart` comprovando o retorno de 400 para tipos trocados e timestamps, e 1 teste em `comment_routes_test.dart` (350 testes unitários e 27 testes de banco verdes).
+
 ## 2026-10-25 — Ordem Determinística do Kanban, Midpoint e CHECK Constraint (Auditoria R2 / UC-04.02)
 
 - **Sintoma**: A invariante `INV-04` exigia ordem total sem empates em tarefas de um mesmo projeto e status, mas no PostgreSQL a coluna `position` (float8) não possuía constraint contra valores aberrantes (`NaN`, `±Infinity` ou negativos), a query `listByProject` ordenava apenas por `position ASC` sem desempate estável em caso de float idêntico, e o frontend não possuía cálculo canônico de interpolação por ponto médio (Item R2 do laudo de auditoria).
