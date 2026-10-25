@@ -200,5 +200,66 @@ void main() {
       final failure = (result as Failure<TaskItem, IFailure>).failure;
       expect(failure, isA<InsufficientRoleFailure>());
     });
+
+    test('move envia POST /tasks/{id}/move com payload e headers', () async {
+      late http.Request captured;
+      final expectedTime = DateTime.utc(2026, 10, 25, 12, 0);
+      final client = _clientReturning(
+        200,
+        {
+          'task': {
+            'id': _taskId,
+            'projectId': _projectId,
+            'title': 'Card Movido',
+            'status': 'in_progress',
+            'priority': 'medium',
+            'position': 1500.0,
+            'createdAt': '2026-10-25T12:00:00.000Z',
+            'updatedAt': '2026-10-25T12:05:00.000Z',
+          },
+        },
+        onRequest: (r) => captured = r,
+      );
+
+      final result = await client.move(
+        taskId: _taskId,
+        targetStatus: TaskStatus.inProgress,
+        targetPosition: 1500.0,
+        expectedUpdatedAt: expectedTime,
+        token: _token,
+      );
+
+      expect(result, isA<Success<TaskItem, IFailure>>());
+      final task = (result as Success<TaskItem, IFailure>).value;
+      expect(task.status, TaskStatus.inProgress);
+      expect(task.position, 1500.0);
+
+      expect(captured.method, 'POST');
+      expect(captured.url.path, '/tasks/$_taskId/move');
+      final body = jsonDecode(captured.body) as Map<String, dynamic>;
+      expect(body['targetStatus'], 'in_progress');
+      expect(body['targetPosition'], 1500.0);
+      expect(body['expectedUpdatedAt'], expectedTime.toIso8601String());
+    });
+
+    test('move 409 com ERR_CONCURRENT_MODIFICATION mapeia para ConcurrentModificationFailure (NFR-02)', () async {
+      final client = _clientReturning(409, {
+        'errorCode': 'ERR_CONCURRENT_MODIFICATION',
+        'message': 'Conflito de versão por modificação concorrente.',
+      });
+
+      final result = await client.move(
+        taskId: _taskId,
+        targetStatus: TaskStatus.inProgress,
+        targetPosition: 1500.0,
+        expectedUpdatedAt: DateTime.utc(2026, 10, 25, 12, 0),
+        token: _token,
+      );
+
+      expect(result, isA<Failure<TaskItem, IFailure>>());
+      final failure = (result as Failure<TaskItem, IFailure>).failure;
+      expect(failure, isA<ConcurrentModificationFailure>());
+      expect(failure.code, 'ERR_CONCURRENT_MODIFICATION');
+    });
   });
 }

@@ -780,6 +780,68 @@ paths:
         '500':
           $ref: '#/components/responses/ErrInfraFailure'
 
+  /tasks/{id}/move:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identificador UUID da tarefa.
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Tasks]
+      operationId: moveTask
+      summary: Move a tarefa alterando coluna e/ou posição ordinal
+      description: |
+        Altera status e posição ordinal da tarefa (INV-04).
+        Suporta lock otimista por timestamp esperado (`NFR-02`).
+        Se `expectedUpdatedAt` diferir do timestamp atual, retorna `409 ERR_CONCURRENT_MODIFICATION`.
+        Solicitante deve ser `owner` ou `developer` (`INV-06`).
+        Viewer recebe `403 ERR_INSUFFICIENT_ROLE`.
+        Não-membro recebe `404 ERR_NOT_FOUND` (`INV-01`).
+        Se o projeto estiver arquivado, retorna `409 ERR_PROJECT_ARCHIVED` (`INV-05`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveTaskRequest'
+      responses:
+        '200':
+          description: Tarefa movida com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '409':
+          description: Conflito de concorrência ou projeto arquivado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                concorrencia:
+                  summary: Modificação concorrente
+                  value:
+                    errorCode: ERR_CONCURRENT_MODIFICATION
+                    message: Tarefa foi modificada concorrentemente por outro usuário.
+                arquivado:
+                  summary: Projeto arquivado
+                  value:
+                    errorCode: ERR_PROJECT_ARCHIVED
+                    message: Projeto arquivado não aceita alterações.
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -951,6 +1013,18 @@ components:
               value:
                 errorCode: ERR_PROJECT_ARCHIVED
                 message: Projeto arquivado não aceita alterações.
+    ErrConcurrentModification:
+      description: Conflito de versão por modificação concorrente (`409`, `NFR-02`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            concorrencia:
+              summary: Modificação concorrente
+              value:
+                errorCode: ERR_CONCURRENT_MODIFICATION
+                message: Conflito de versão por modificação concorrente.
     ErrRateLimited:
       description: |
         Limite de tentativas excedido (`429`; `NFR-05` / `INV-SEC-02`: 10 requisições por
@@ -1393,3 +1467,19 @@ components:
           description: Tarefas do projeto ordenadas.
           items:
             $ref: '#/components/schemas/Task'
+
+    MoveTaskRequest:
+      type: object
+      required: [targetStatus, targetPosition, expectedUpdatedAt]
+      additionalProperties: false
+      properties:
+        targetStatus:
+          $ref: '#/components/schemas/TaskStatus'
+        targetPosition:
+          type: number
+          format: double
+          description: Posição ordinal na coluna de destino (INV-04).
+        expectedUpdatedAt:
+          type: string
+          format: date-time
+          description: Timestamp ISO-8601 da última versão conhecida da tarefa para lock otimista (NFR-02).

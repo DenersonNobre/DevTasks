@@ -15,6 +15,14 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Quadro Kanban & Movimentação com Ordem Total e Lock Otimista (UC-04.02)
+
+- **Sintoma**: Necessidade de movimentar tarefas entre colunas com suporte a ordenação ordinal arbitrária e prevenção determinística de modificações concorrentes (INV-04 / NFR-02 / D-01).
+- **Causa raiz**: Ao serializar `DateTime` em formato ISO-8601 UTC no Dart e enviar para o PostgreSQL via JSON, perdem-se frações de nanossegundos/microssegundos, o que faria uma comparação direta de igualdade estrita (`updated_at = @expectedUpdatedAt`) falhar falso-positivamente no banco; além disso, a especificação exige retorno de HTTP 409 `ERR_CONCURRENT_MODIFICATION` quando a entidade foi modificada por outro ator.
+- **Fix**: No PostgreSQL (`solution/api`), a cláusula de lock otimista atômico foi implementada usando `abs(extract(epoch from (updated_at - @expectedUpdatedAt::timestamptz))) < 0.001`, garantindo tolerância submilissegundo entre a serialização Dart e o relógio do banco; registrado endpoint `POST /tasks/{id}/move` no Shelf e adicionado ao OpenAPI 3.1 (20 rotas em total paridade); no Flutter (`solution/app`), criado quadro Kanban de 3 colunas fechadas (`Backlog`, `Em Progresso`, `Concluído`) com drag-and-drop (`Draggable`/`DragTarget`), diálogo de movimentação explícito e cálculo automático de ordinal no ViewModel.
+- **Prevenção**: Teste unitário e de integração real contra PostgreSQL no WSL cobrindo movimentação bem-sucedida e cenário de concorrência gerando 409 `ERR_CONCURRENT_MODIFICATION` (`solution/api/test/integration/db/repositories_integration_test.dart` e `solution/app/test/widget/tasks_view_test.dart`); contract gate assegurando 20 rotas 1:1.
+
+
 ## 2026-10-25 — CRUD de Tarefas e Contrato OpenAPI 3.1 com Isolamento Multi-Tenant e RBAC (UC-04.01)
 
 - **Sintoma**: Necessidade de gerenciar o ciclo de vida de tarefas (criação, listagem, edição e exclusão) dentro de projetos com suporte a status fechados (INV-04), prioridades com badges de alto contraste (WCAG AA) e proteção contra mutações indevidas (INV-01, INV-05, INV-06).

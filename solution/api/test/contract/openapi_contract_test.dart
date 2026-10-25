@@ -57,6 +57,7 @@ void main() {
         '/projects/{id}/archive',
         '/projects/{id}/tasks',
         '/tasks/{id}',
+        '/tasks/{id}/move',
       };
       expect(paths.keys.toSet(), expected);
     });
@@ -73,7 +74,7 @@ void main() {
           ids.add(operation['operationId'] as String);
         }
       }
-      expect(ids.length, 19, reason: 'esperadas 19 operações (18 de negócio + /health)');
+      expect(ids.length, 20, reason: 'esperadas 20 operações (19 de negócio + /health)');
       expect(ids.toSet().length, ids.length, reason: 'operationId duplicado');
     });
 

@@ -123,6 +123,30 @@ class HttpTaskClient implements ITaskClient {
   }
 
   @override
+  Future<IResult<TaskItem, IFailure>> move({
+    required String taskId,
+    required TaskStatus targetStatus,
+    required double targetPosition,
+    required DateTime expectedUpdatedAt,
+    required String token,
+  }) async {
+    return _guard(() async {
+      final payload = <String, Object?>{
+        'targetStatus': targetStatus.value,
+        'targetPosition': targetPosition,
+        'expectedUpdatedAt': expectedUpdatedAt.toUtc().toIso8601String(),
+      };
+
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/tasks/$taskId/move'),
+        headers: _headers(token),
+        body: jsonEncode(payload),
+      );
+      return _single(response, 'Resposta de movimentação de tarefa inválida.');
+    });
+  }
+
+  @override
   Future<IResult<void, IFailure>> delete({
     required String taskId,
     required String token,

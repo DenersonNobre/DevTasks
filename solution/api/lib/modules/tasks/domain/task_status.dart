@@ -8,7 +8,8 @@ enum TaskStatus {
 
   final String value;
 
-  static TaskStatus? fromString(String raw) {
+  static TaskStatus? fromString(String? raw) {
+    if (raw == null) return null;
     for (final s in values) {
       if (s.value == raw) return s;
     }

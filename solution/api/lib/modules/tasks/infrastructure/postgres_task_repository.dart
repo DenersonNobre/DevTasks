@@ -105,6 +105,41 @@ class PostgresTaskRepository implements ITaskRepository {
   }
 
   @override
+  Future<MoveTaskResult> move({
+    required String taskId,
+    required TaskStatus targetStatus,
+    required double targetPosition,
+    required DateTime expectedUpdatedAt,
+  }) async {
+    final rows = await _sql.query(
+      'UPDATE devtasks_task SET '
+      '  status = @targetStatus, '
+      '  position = @targetPosition, '
+      '  updated_at = now() '
+      'WHERE id = @taskId::uuid '
+      '  AND abs(extract(epoch from (updated_at - @expectedUpdatedAt::timestamptz))) < 0.001 '
+      'RETURNING id, project_id, title, description, status, priority, position, '
+      'assigned_user_id, due_date, created_at, updated_at',
+      parameters: {
+        'taskId': taskId,
+        'targetStatus': targetStatus.value,
+        'targetPosition': targetPosition,
+        'expectedUpdatedAt': expectedUpdatedAt.toIso8601String(),
+      },
+    );
+
+    if (rows.isNotEmpty) {
+      return TaskMoved(_toEntity(rows.first));
+    }
+
+    final current = await findById(taskId);
+    if (current == null) {
+      return const TaskNotFound();
+    }
+    return const TaskConcurrentModification();
+  }
+
+  @override
   Future<bool> delete(String taskId) async {
     final rows = await _sql.query(
       'DELETE FROM devtasks_task WHERE id = @taskId::uuid RETURNING id',

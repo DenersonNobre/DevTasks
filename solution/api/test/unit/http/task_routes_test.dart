@@ -75,6 +75,38 @@ class _FakeTaskRepository implements ITaskRepository {
   }
 
   @override
+  Future<MoveTaskResult> move({
+    required String taskId,
+    required TaskStatus targetStatus,
+    required double targetPosition,
+    required DateTime expectedUpdatedAt,
+  }) async {
+    final current = tasks[taskId];
+    if (current == null) return const TaskNotFound();
+
+    final diff = current.updatedAt.difference(expectedUpdatedAt).abs();
+    if (diff.inMilliseconds > 1) {
+      return const TaskConcurrentModification();
+    }
+
+    final updated = TaskEntity(
+      id: current.id,
+      projectId: current.projectId,
+      title: current.title,
+      description: current.description,
+      status: targetStatus,
+      priority: current.priority,
+      position: targetPosition,
+      assignedUserId: current.assignedUserId,
+      dueDate: current.dueDate,
+      createdAt: current.createdAt,
+      updatedAt: DateTime.utc(2026, 10, 25, 13, 0),
+    );
+    tasks[taskId] = updated;
+    return TaskMoved(updated);
+  }
+
+  @override
   Future<bool> delete(String taskId) async {
     return tasks.remove(taskId) != null;
   }
@@ -386,6 +418,107 @@ void main() {
         final res = await appHandler(req);
         expect(res.statusCode, 200);
         expect(taskRepo.tasks.containsKey(taskId), isFalse);
+      });
+    });
+
+    group('POST /tasks/{id}/move (Movimentação no Kanban / Lock Otimista - UC-04.02 / INV-04 / NFR-02)', () {
+      late String taskId;
+      late DateTime updatedAt;
+
+      setUp(() async {
+        final t = await taskRepo.create(projectId: projId, title: 'Tarefa Para Mover');
+        taskId = t.id;
+        updatedAt = t.updatedAt;
+      });
+
+      test('401 quando não autenticado', () async {
+        final req = makeRequest('POST', '/tasks/$taskId/move', body: {
+          'targetStatus': 'in_progress',
+          'targetPosition': 1500.0,
+          'expectedUpdatedAt': updatedAt.toIso8601String(),
+        });
+        final res = await appHandler(req);
+        expect(res.statusCode, 401);
+      });
+
+      test('403 para membro viewer (INV-06)', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/move',
+          body: {
+            'targetStatus': 'in_progress',
+            'targetPosition': 1500.0,
+            'expectedUpdatedAt': updatedAt.toIso8601String(),
+          },
+          token: 'token-viewer',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 403);
+      });
+
+      test('404 para tarefa inexistente', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/task-inexistente/move',
+          body: {
+            'targetStatus': 'in_progress',
+            'targetPosition': 1500.0,
+            'expectedUpdatedAt': updatedAt.toIso8601String(),
+          },
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 404);
+      });
+
+      test('400 para status inválido', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/move',
+          body: {
+            'targetStatus': 'status_invalido',
+            'targetPosition': 1500.0,
+            'expectedUpdatedAt': updatedAt.toIso8601String(),
+          },
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 400);
+      });
+
+      test('409 ERR_CONCURRENT_MODIFICATION quando timestamp esperado diverge (NFR-02)', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/move',
+          body: {
+            'targetStatus': 'in_progress',
+            'targetPosition': 1500.0,
+            'expectedUpdatedAt': DateTime.utc(2025, 1, 1).toIso8601String(),
+          },
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 409);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_CONCURRENT_MODIFICATION');
+      });
+
+      test('200 move com sucesso para in_progress e atualiza posição (INV-04)', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/move',
+          body: {
+            'targetStatus': 'in_progress',
+            'targetPosition': 1500.0,
+            'expectedUpdatedAt': updatedAt.toIso8601String(),
+          },
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 200);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['task']['status'], 'in_progress');
+        expect(json['task']['position'], 1500.0);
       });
     });
   });

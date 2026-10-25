@@ -1,5 +1,5 @@
 // solution/app/lib/modules/tasks/presentation/tasks_view.dart
-// Tela e controle de CRUD de Tarefas (UC-04.01 / RF-09).
+// Tela e controle de CRUD de Tarefas e Quadro Kanban (UC-04.01 / UC-04.02 / RF-09 / RF-10 / INV-04).
 // MVVM puro com Riverpod (D-07).
 
 import 'package:flutter/material.dart';
@@ -7,22 +7,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/task_item.dart';
 import '../domain/task_priority.dart';
+import '../domain/task_status.dart';
 import 'tasks_state.dart';
 import 'tasks_view_model.dart';
 import 'widgets/priority_badge.dart';
 
-/// Tela de tarefas do projeto com suporte a criação, listagem, edição e exclusão.
+/// Modo de visualização de tarefas.
+enum TasksViewMode {
+  list,
+  kanban,
+}
+
+/// Tela de tarefas do projeto com suporte a lista e quadro Kanban de 3 colunas (D-01).
 class TasksView extends ConsumerStatefulWidget {
   const TasksView({
     super.key,
     required this.projectId,
     this.projectName,
     required this.token,
+    this.initialMode = TasksViewMode.list,
   });
 
   final String projectId;
   final String? projectName;
   final String token;
+  final TasksViewMode initialMode;
 
   @override
   ConsumerState<TasksView> createState() => _TasksViewState();
@@ -31,10 +40,12 @@ class TasksView extends ConsumerStatefulWidget {
 class _TasksViewState extends ConsumerState<TasksView> {
   final _titleController = TextEditingController();
   var _selectedPriority = TaskPriority.medium;
+  late TasksViewMode _mode;
 
   @override
   void initState() {
     super.initState();
+    _mode = widget.initialMode;
     Future.microtask(_load);
   }
 
@@ -110,6 +121,32 @@ class _TasksViewState extends ConsumerState<TasksView> {
     );
   }
 
+  Future<void> _move(TaskItem task) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => _MoveTaskDialog(
+        task: task,
+        onMove: (targetStatus) =>
+            ref.read(tasksViewModelProvider.notifier).move(
+                  taskId: task.id,
+                  targetStatus: targetStatus,
+                  expectedUpdatedAt: task.updatedAt ?? DateTime.now().toUtc(),
+                  token: widget.token,
+                ),
+      ),
+    );
+  }
+
+  void _onDrop(TaskItem task, TaskStatus targetStatus) {
+    if (task.status == targetStatus) return;
+    ref.read(tasksViewModelProvider.notifier).move(
+          taskId: task.id,
+          targetStatus: targetStatus,
+          expectedUpdatedAt: task.updatedAt ?? DateTime.now().toUtc(),
+          token: widget.token,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(tasksViewModelProvider);
@@ -117,14 +154,43 @@ class _TasksViewState extends ConsumerState<TasksView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.projectName != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Text(
-              widget.projectName!,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Row(
+            children: [
+              if (widget.projectName != null)
+                Expanded(
+                  child: Text(
+                    widget.projectName!,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                )
+              else
+                const Spacer(),
+              SegmentedButton<TasksViewMode>(
+                key: const Key('tasks-mode-toggle'),
+                segments: const [
+                  ButtonSegment(
+                    value: TasksViewMode.list,
+                    icon: Icon(Icons.list),
+                    label: Text('Lista'),
+                  ),
+                  ButtonSegment(
+                    value: TasksViewMode.kanban,
+                    icon: Icon(Icons.view_column),
+                    label: Text('Kanban'),
+                  ),
+                ],
+                selected: {_mode},
+                onSelectionChanged: (modes) {
+                  if (modes.isNotEmpty) {
+                    setState(() => _mode = modes.first);
+                  }
+                },
+              ),
+            ],
           ),
+        ),
         _CreateTaskForm(
           controller: _titleController,
           selectedPriority: _selectedPriority,
@@ -134,12 +200,21 @@ class _TasksViewState extends ConsumerState<TasksView> {
         ),
         const Divider(height: 16),
         Expanded(
-          child: _TaskList(
-            state: state,
-            onRetry: _load,
-            onEdit: _edit,
-            onDelete: _delete,
-          ),
+          child: _mode == TasksViewMode.kanban
+              ? _KanbanBoard(
+                  state: state,
+                  onRetry: _load,
+                  onMove: _move,
+                  onEdit: _edit,
+                  onDelete: _delete,
+                  onDrop: _onDrop,
+                )
+              : _TaskList(
+                  state: state,
+                  onRetry: _load,
+                  onEdit: _edit,
+                  onDelete: _delete,
+                ),
         ),
       ],
     );
@@ -298,6 +373,304 @@ class _TaskList extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _KanbanBoard extends StatelessWidget {
+  const _KanbanBoard({
+    required this.state,
+    required this.onRetry,
+    required this.onMove,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onDrop,
+  });
+
+  final TasksState state;
+  final Future<void> Function() onRetry;
+  final void Function(TaskItem task) onMove;
+  final void Function(TaskItem task) onEdit;
+  final void Function(TaskItem task) onDelete;
+  final void Function(TaskItem task, TaskStatus targetStatus) onDrop;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(key: Key('tasks-loading')),
+      );
+    }
+
+    if (state.status == TasksStatus.error) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(state.message ?? 'Falha ao carregar tarefas.'),
+            const SizedBox(height: 8),
+            TextButton(
+              key: const Key('tasks-retry-button'),
+              onPressed: onRetry,
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 3 colunas fechadas do Kanban (D-01 / INV-04).
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final status in TaskStatus.values)
+          Expanded(
+            child: _KanbanColumn(
+              status: status,
+              tasks: state.tasks.where((t) => t.status == status).toList(),
+              onMove: onMove,
+              onEdit: onEdit,
+              onDelete: onDelete,
+              onDrop: onDrop,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _KanbanColumn extends StatelessWidget {
+  const _KanbanColumn({
+    required this.status,
+    required this.tasks,
+    required this.onMove,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onDrop,
+  });
+
+  final TaskStatus status;
+  final List<TaskItem> tasks;
+  final void Function(TaskItem task) onMove;
+  final void Function(TaskItem task) onEdit;
+  final void Function(TaskItem task) onDelete;
+  final void Function(TaskItem task, TaskStatus targetStatus) onDrop;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DragTarget<TaskItem>(
+      onAcceptWithDetails: (details) => onDrop(details.data, status),
+      builder: (context, candidateData, rejectedData) {
+        final isHovered = candidateData.isNotEmpty;
+
+        return Container(
+          key: Key('kanban-column-${status.value}'),
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          decoration: BoxDecoration(
+            color: isHovered
+                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
+                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isHovered
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                ),
+                child: Text(
+                  '${status.label} (${tasks.length})',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: tasks.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Sem tarefas',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(8),
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
+                          final task = tasks[index];
+                          return _KanbanCard(
+                            task: task,
+                            onMove: onMove,
+                            onEdit: onEdit,
+                            onDelete: onDelete,
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _KanbanCard extends StatelessWidget {
+  const _KanbanCard({
+    required this.task,
+    required this.onMove,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final TaskItem task;
+  final void Function(TaskItem task) onMove;
+  final void Function(TaskItem task) onEdit;
+  final void Function(TaskItem task) onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final cardContent = Card(
+      key: Key('kanban-card-${task.id}'),
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                PriorityBadge(priority: task.priority),
+                const Spacer(),
+                IconButton(
+                  key: Key('task-move-button-${task.id}'),
+                  icon: const Icon(Icons.swap_horiz, size: 20),
+                  tooltip: 'Mover tarefa',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => onMove(task),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  key: Key('task-edit-button-${task.id}'),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  tooltip: 'Editar',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => onEdit(task),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  key: Key('task-delete-button-${task.id}'),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  tooltip: 'Excluir',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => onDelete(task),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              task.title,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (task.description != null && task.description!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                task.description!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    return Draggable<TaskItem>(
+      data: task,
+      feedback: Material(
+        elevation: 6,
+        borderRadius: BorderRadius.circular(8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 240),
+          child: cardContent,
+        ),
+      ),
+      childWhenDragging: Opacity(
+        opacity: 0.3,
+        child: cardContent,
+      ),
+      child: cardContent,
+    );
+  }
+}
+
+class _MoveTaskDialog extends StatelessWidget {
+  const _MoveTaskDialog({
+    required this.task,
+    required this.onMove,
+  });
+
+  final TaskItem task;
+  final void Function(TaskStatus targetStatus) onMove;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      key: const Key('task-move-dialog'),
+      title: const Text('Mover tarefa'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Mover "${task.title}" para qual coluna?'),
+          const SizedBox(height: 16),
+          for (final status in TaskStatus.values)
+            if (status != task.status)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: OutlinedButton(
+                  key: Key('task-move-to-${status.value}'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    onMove(status);
+                  },
+                  child: Text('Mover para ${status.label}'),
+                ),
+              ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+      ],
     );
   }
 }

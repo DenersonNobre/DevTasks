@@ -385,6 +385,69 @@ void main() {
         expect(remaining.length, 1);
         expect(remaining.first.id, task2.id);
       });
+
+      test('move altera status/posição e respeita lock otimista (UC-04.02 / INV-04 / NFR-02)', () async {
+        final userRepo = PostgresUserRepository(sql);
+        final wsRepo = PostgresWorkspaceRepository(sql);
+        final projRepo = PostgresProjectRepository(sql);
+        final taskRepo = PostgresTaskRepository(sql);
+
+        final uRes = await userRepo.create(
+          name: 'Move Tester',
+          email: 'movetester@example.com',
+          passwordHash: 'hash',
+        );
+        final userId = (uRes as UserCreated).user.id;
+        final ws = await wsRepo.createWithRole(
+          name: 'Kanban WS',
+          ownerUserId: userId,
+        );
+        final proj = await projRepo.create(
+          workspaceId: ws.workspace.id,
+          name: 'Kanban Sprint',
+        );
+
+        final task = await taskRepo.create(
+          projectId: proj.id,
+          title: 'Card para mover',
+        );
+
+        // 1. Move com expectedUpdatedAt válido -> sucesso
+        final moveRes = await taskRepo.move(
+          taskId: task.id,
+          targetStatus: TaskStatus.inProgress,
+          targetPosition: 1500.0,
+          expectedUpdatedAt: task.updatedAt,
+        );
+
+        expect(moveRes, isA<TaskMoved>());
+        final moved = (moveRes as TaskMoved).task;
+        expect(moved.status, TaskStatus.inProgress);
+        expect(moved.position, 1500.0);
+
+        // 2. Conflito de concorrência: tentar mover usando o timestamp antigo
+        final conflictRes = await taskRepo.move(
+          taskId: task.id,
+          targetStatus: TaskStatus.done,
+          targetPosition: 2000.0,
+          expectedUpdatedAt: task.updatedAt, // Timestamp defasado!
+        );
+        expect(conflictRes, isA<TaskConcurrentModification>());
+
+        // Confirma que no banco o status continua inProgress
+        final fromDb = await taskRepo.findById(task.id);
+        expect(fromDb?.status, TaskStatus.inProgress);
+        expect(fromDb?.position, 1500.0);
+
+        // 3. Tarefa inexistente
+        final notFoundRes = await taskRepo.move(
+          taskId: '00000000-0000-4000-8000-000000000099',
+          targetStatus: TaskStatus.done,
+          targetPosition: 1000.0,
+          expectedUpdatedAt: DateTime.now().toUtc(),
+        );
+        expect(notFoundRes, isA<TaskNotFound>());
+      });
     });
 
     group('Caracterização de fronteira (achado A-1 do laudo)', () {

@@ -157,6 +157,57 @@ final class TasksViewModel extends Notifier<TasksState> {
     }
   }
 
+  /// Intent: mover tarefa entre colunas do Kanban com lock otimista (INV-04 / NFR-02).
+  Future<void> move({
+    required String taskId,
+    required TaskStatus targetStatus,
+    double? targetPosition,
+    required DateTime expectedUpdatedAt,
+    required String token,
+  }) async {
+    state = state.copyWith(isSubmitting: true, clearMessage: true);
+
+    final position = targetPosition ?? _nextPositionFor(targetStatus);
+
+    final result = await _client.move(
+      taskId: taskId,
+      targetStatus: targetStatus,
+      targetPosition: position,
+      expectedUpdatedAt: expectedUpdatedAt,
+      token: token,
+    );
+
+    switch (result) {
+      case Failure(:final failure):
+        state = state.copyWith(
+          isSubmitting: false,
+          message: failure.message,
+        );
+      case Success(:final value):
+        final updatedList = state.tasks.map((task) {
+          return task.id == value.id ? value : task;
+        }).toList();
+
+        updatedList.sort((a, b) {
+          final s = a.status.value.compareTo(b.status.value);
+          if (s != 0) return s;
+          return a.position.compareTo(b.position);
+        });
+
+        state = state.copyWith(
+          isSubmitting: false,
+          tasks: updatedList,
+          clearMessage: true,
+        );
+    }
+  }
+
+  double _nextPositionFor(TaskStatus status) {
+    final inColumn = state.tasks.where((t) => t.status == status).toList();
+    if (inColumn.isEmpty) return 1000.0;
+    return inColumn.map((t) => t.position).reduce((a, b) => a > b ? a : b) + 1000.0;
+  }
+
   /// Intent: filtrar exibição por status.
   void filterBy(TaskStatus? status) {
     state = state.copyWith(

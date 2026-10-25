@@ -194,4 +194,67 @@ void main() {
       expect(readState().message, 'Permissão insuficiente.');
     });
   });
+
+  group('TasksViewModel — movimentação no Kanban (UC-04.02 / INV-04 / NFR-02)', () {
+    test('move tarefa com sucesso para inProgress atualizando estado', () async {
+      final initial = TaskItem(
+        id: uuid(50),
+        projectId: _projectId,
+        title: 'Mover me',
+        status: TaskStatus.backlog,
+        position: 1000.0,
+        updatedAt: DateTime.utc(2026, 10, 25, 12, 0),
+      );
+      client.listResult = Success([initial]);
+      await viewModel().load(projectId: _projectId, token: _token);
+
+      final moved = initial.copyWith(
+        status: TaskStatus.inProgress,
+        position: 1500.0,
+      );
+      client.moveResult = Success(moved);
+
+      await viewModel().move(
+        taskId: initial.id,
+        targetStatus: TaskStatus.inProgress,
+        targetPosition: 1500.0,
+        expectedUpdatedAt: initial.updatedAt!,
+        token: _token,
+      );
+
+      expect(readState().tasks.first.status, TaskStatus.inProgress);
+      expect(readState().tasks.first.position, 1500.0);
+      expect(client.moveCalls, 1);
+      expect(client.lastTargetStatus, TaskStatus.inProgress);
+      expect(client.lastTargetPosition, 1500.0);
+    });
+
+    test('conflito de concorrência expõe erro amigável ao usuário (NFR-02)', () async {
+      final initial = TaskItem(
+        id: uuid(50),
+        projectId: _projectId,
+        title: 'Mover concorrente',
+        status: TaskStatus.backlog,
+        position: 1000.0,
+        updatedAt: DateTime.utc(2026, 10, 25, 12, 0),
+      );
+      client.listResult = Success([initial]);
+      await viewModel().load(projectId: _projectId, token: _token);
+
+      client.moveResult = const Failure(
+        ConcurrentModificationFailure('Conflito de versão por modificação concorrente.'),
+      );
+
+      await viewModel().move(
+        taskId: initial.id,
+        targetStatus: TaskStatus.done,
+        targetPosition: 2000.0,
+        expectedUpdatedAt: initial.updatedAt!,
+        token: _token,
+      );
+
+      expect(readState().message, 'Conflito de versão por modificação concorrente.');
+      expect(client.moveCalls, 1);
+    });
+  });
 }

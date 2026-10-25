@@ -8,6 +8,7 @@ import 'package:devtasks_app/global/kernel/result.dart';
 
 import 'task_item.dart';
 import 'task_priority.dart';
+import 'task_status.dart';
 
 /// Contrato de tarefas do app: falha esperada é valor tipado, não exceção.
 abstract interface class ITaskClient {
@@ -33,6 +34,14 @@ abstract interface class ITaskClient {
     TaskPriority? priority,
     DateTime? dueDate,
     bool clearDueDate = false,
+    required String token,
+  });
+
+  Future<IResult<TaskItem, IFailure>> move({
+    required String taskId,
+    required TaskStatus targetStatus,
+    required double targetPosition,
+    required DateTime expectedUpdatedAt,
     required String token,
   });
 

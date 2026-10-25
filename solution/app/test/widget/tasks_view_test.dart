@@ -13,7 +13,11 @@ import '../support/fake_task_client.dart';
 const _token = 'tok-tasks-widget';
 final _projectId = uuid(1);
 
-Widget _harness(FakeTaskClient client) => ProviderScope(
+Widget _harness(
+  FakeTaskClient client, {
+  TasksViewMode initialMode = TasksViewMode.list,
+}) =>
+    ProviderScope(
       overrides: [taskClientProvider.overrideWithValue(client)],
       child: MaterialApp(
         home: Scaffold(
@@ -21,6 +25,7 @@ Widget _harness(FakeTaskClient client) => ProviderScope(
             projectId: _projectId,
             projectName: 'Projeto Alfa',
             token: _token,
+            initialMode: initialMode,
           ),
         ),
       ),
@@ -164,5 +169,64 @@ void main() {
     expect(client.lastTaskId, taskId);
     expect(find.text('Tarefa a Excluir'), findsNothing);
     expect(find.byKey(const Key('tasks-empty-state')), findsOneWidget);
+  });
+
+  testWidgets('modo kanban exibe as 3 colunas fechadas (D-01 / INV-04)', (tester) async {
+    client.listResult = Success([
+      TaskItem(
+        id: uuid(10),
+        projectId: _projectId,
+        title: 'Wireframes',
+        status: TaskStatus.backlog,
+      ),
+      TaskItem(
+        id: uuid(11),
+        projectId: _projectId,
+        title: 'API Auth',
+        status: TaskStatus.inProgress,
+      ),
+    ]);
+
+    await tester.pumpWidget(_harness(client, initialMode: TasksViewMode.kanban));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('kanban-column-backlog')), findsOneWidget);
+    expect(find.text('Backlog (1)'), findsOneWidget);
+    expect(find.byKey(const Key('kanban-column-in_progress')), findsOneWidget);
+    expect(find.text('Em Progresso (1)'), findsOneWidget);
+    expect(find.byKey(const Key('kanban-column-done')), findsOneWidget);
+    expect(find.text('Concluído (0)'), findsOneWidget);
+  });
+
+  testWidgets('mover card no kanban via ação chama client.move com targetStatus (UC-04.02)', (tester) async {
+    final taskId = uuid(10);
+    final initialDate = DateTime.utc(2026, 10, 25, 12, 0);
+    client.listResult = Success([
+      TaskItem(
+        id: taskId,
+        projectId: _projectId,
+        title: 'Mover pro Progresso',
+        status: TaskStatus.backlog,
+        position: 1000.0,
+        updatedAt: initialDate,
+      ),
+    ]);
+
+    await tester.pumpWidget(_harness(client, initialMode: TasksViewMode.kanban));
+    await tester.pumpAndSettle();
+
+    // Toca no botão de mover da tarefa
+    await tester.tap(find.byKey(Key('task-move-button-$taskId')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('task-move-dialog')), findsOneWidget);
+
+    // Seleciona mover para "Em Progresso"
+    await tester.tap(find.byKey(const Key('task-move-to-in_progress')));
+    await tester.pumpAndSettle();
+
+    expect(client.moveCalls, 1);
+    expect(client.lastTaskId, taskId);
+    expect(client.lastTargetStatus, TaskStatus.inProgress);
   });
 }

@@ -15,11 +15,13 @@ final class FakeTaskClient implements ITaskClient {
   IResult<List<TaskItem>, IFailure>? listResult;
   IResult<TaskItem, IFailure>? createResult;
   IResult<TaskItem, IFailure>? updateResult;
+  IResult<TaskItem, IFailure>? moveResult;
   IResult<void, IFailure>? deleteResult;
 
   int listCalls = 0;
   int createCalls = 0;
   int updateCalls = 0;
+  int moveCalls = 0;
   int deleteCalls = 0;
 
   String? lastToken;
@@ -28,6 +30,9 @@ final class FakeTaskClient implements ITaskClient {
   String? lastTitle;
   String? lastDescription;
   TaskPriority? lastPriority;
+  TaskStatus? lastTargetStatus;
+  double? lastTargetPosition;
+  DateTime? lastExpectedUpdatedAt;
   DateTime? lastDueDate;
 
   @override
@@ -102,6 +107,35 @@ final class FakeTaskClient implements ITaskClient {
               priority: priority ?? TaskPriority.medium,
               status: TaskStatus.backlog,
               dueDate: clearDueDate ? null : dueDate,
+            ),
+          ),
+    );
+  }
+
+  @override
+  Future<IResult<TaskItem, IFailure>> move({
+    required String taskId,
+    required TaskStatus targetStatus,
+    required double targetPosition,
+    required DateTime expectedUpdatedAt,
+    required String token,
+  }) {
+    moveCalls++;
+    lastTaskId = taskId;
+    lastTargetStatus = targetStatus;
+    lastTargetPosition = targetPosition;
+    lastExpectedUpdatedAt = expectedUpdatedAt;
+    lastToken = token;
+    return Future.value(
+      moveResult ??
+          Success(
+            TaskItem(
+              id: taskId,
+              projectId: uuid(1),
+              title: 'Moved Task',
+              status: targetStatus,
+              position: targetPosition,
+              updatedAt: DateTime.now().toUtc(),
             ),
           ),
     );

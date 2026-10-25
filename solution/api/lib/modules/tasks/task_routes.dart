@@ -10,6 +10,7 @@ import '../projects/ports.dart';
 import '../workspace/domain/workspace_member_role.dart';
 import '../workspace/ports.dart';
 import 'domain/task_priority.dart';
+import 'domain/task_status.dart';
 import 'domain/task_title.dart';
 import 'ports.dart';
 
@@ -19,7 +20,8 @@ import 'ports.dart';
 /// - `POST /projects/<id>/tasks` (UC-04.01 / RF-09 / INV-01 / INV-04 / INV-05 / INV-06);
 /// - `GET /projects/<id>/tasks` (UC-04.01 / RF-09 / INV-01 / INV-04);
 /// - `PATCH /tasks/<id>` (UC-04.01 / RF-09 / INV-01 / INV-05 / INV-06);
-/// - `DELETE /tasks/<id>` (UC-04.01 / RF-09 / INV-01 / INV-05 / INV-06).
+/// - `DELETE /tasks/<id>` (UC-04.01 / RF-09 / INV-01 / INV-05 / INV-06);
+/// - `POST /tasks/<id>/move` (UC-04.02 / RF-10 / INV-04 / NFR-02).
 class TaskRoutes {
   const TaskRoutes({
     required this.taskRepository,
@@ -51,6 +53,10 @@ class TaskRoutes {
     router.delete(
       '/tasks/<id>',
       pipeline.addHandler(_handleDeleteTask),
+    );
+    router.post(
+      '/tasks/<id>/move',
+      pipeline.addHandler(_handleMoveTask),
     );
   }
 
@@ -229,6 +235,66 @@ class TaskRoutes {
 
     await taskRepository.delete(taskId);
     return JsonResponse.ok({});
+  }
+
+  Future<Response> _handleMoveTask(Request request) async {
+    final taskId = request.params['id'] ?? '';
+    final user = getAuthenticatedUser(request);
+
+    final task = await taskRepository.findById(taskId);
+    if (task == null) return _notFound();
+
+    final project = await projectRepository.findById(task.projectId);
+    if (project == null) return _notFound();
+
+    final role = await workspaceRepository.getMemberRole(
+      workspaceId: project.workspaceId,
+      userId: user.id,
+    );
+    if (role == null) return _notFound();
+    if (role == WorkspaceMemberRole.viewer) return _insufficientRole();
+    if (project.isArchived) return _projectArchived();
+
+    final payload = await _readJson(request);
+    if (payload == null) return _validation('Corpo da requisição inválido.');
+
+    final targetStatusRaw = payload['targetStatus'] as String?;
+    final targetStatus = TaskStatus.fromString(targetStatusRaw);
+    if (targetStatus == null) {
+      return _validation('Status de tarefa inválido.', field: 'targetStatus');
+    }
+
+    final targetPosRaw = payload['targetPosition'];
+    if (targetPosRaw is! num) {
+      return _validation('Posição ordinal inválida.', field: 'targetPosition');
+    }
+    final targetPosition = targetPosRaw.toDouble();
+
+    final expectedUpdatedAtRaw = payload['expectedUpdatedAt'] as String?;
+    if (expectedUpdatedAtRaw == null) {
+      return _validation('Timestamp de lock otimista obrigatório.', field: 'expectedUpdatedAt');
+    }
+    final expectedUpdatedAt = DateTime.tryParse(expectedUpdatedAtRaw);
+    if (expectedUpdatedAt == null) {
+      return _validation('Formato de timestamp inválido.', field: 'expectedUpdatedAt');
+    }
+
+    final result = await taskRepository.move(
+      taskId: taskId,
+      targetStatus: targetStatus,
+      targetPosition: targetPosition,
+      expectedUpdatedAt: expectedUpdatedAt.toUtc(),
+    );
+
+    return switch (result) {
+      TaskMoved(:final task) => JsonResponse.ok({'task': task.toJson()}),
+      TaskNotFound() => _notFound(),
+      TaskConcurrentModification() => JsonResponse.error(
+          409,
+          errorCode: 'ERR_CONCURRENT_MODIFICATION',
+          message: 'Conflito de versão por modificação concorrente.',
+        ),
+    };
   }
 
   Response _notFound([String message = 'Recurso não encontrado.']) =>
