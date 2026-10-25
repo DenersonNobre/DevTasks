@@ -1,4 +1,4 @@
-# tools/test.ps1
+﻿# tools/test.ps1
 # Runner de testes headless e não-bloqueante em 1 comando (F0.3 / UC-00.03 / NC-08)
 [CmdletBinding()]
 param(
@@ -7,6 +7,7 @@ param(
     [string]$Target = "all",
     [switch]$Unit,
     [switch]$Integration,
+    [switch]$Database,
     [switch]$Governance,
     [switch]$FailFast,
     [switch]$SimulateFailure,
@@ -17,6 +18,30 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..")
 Set-Location $RepoRoot
+
+# Gate de integração de banco (B-2): sem DSN os testes de persistência são
+# pulados, então "verde" não significa "SQL executado". -Database inverte o padrão:
+# ausência da variável é FALHA, nunca silêncio.
+if ($Database) {
+    if ($PSCmdlet.MyInvocation.BoundParameters['Unit'] -or $PSCmdlet.MyInvocation.BoundParameters['Integration']) {
+        Write-Error "[DB-GATE-FAIL] -Database é incompatível com -Unit/-Integration (modos distintos de suíte)."
+        exit 1
+    }
+    $dsn = [Environment]::GetEnvironmentVariable('DEVTASKS_TEST_DATABASE_URL')
+    if ([string]::IsNullOrWhiteSpace($dsn)) {
+        Write-Error @"
+[DB-GATE-FAIL] O modo -Database exige DEVTASKS_TEST_DATABASE_URL.
+Sem a variável, test/integration é PULADO e a persistência nunca é exercitada
+(causa raiz do achado B-2 do laudo de auditoria).
+
+Defina o DSN antes de invocar, por exemplo:
+  `$env:DEVTASKS_TEST_DATABASE_URL = 'postgres://postgres:postgres@localhost:5432/devtasks_test'
+"@
+        exit 1
+    }
+    $Target = "api"
+}
+
 
 # Suprime telemetria e avisos de rede durante execuções automáticas
 $env:FLUTTER_SUPPRESS_ANALYTICS = "true"
@@ -65,7 +90,11 @@ foreach ($t in $targets) {
     try {
         if ($t.Name -eq "api") {
             $apiArgs = @("test")
-            if ($Unit) {
+            if ($Database) {
+                # -j 1: os arquivos de integração recriam o schema `public`;
+                # executá-los em paralelo produziria corrida entre eles.
+                $apiArgs += @("test/integration", "-j", "1")
+            } elseif ($Unit) {
                 $apiArgs += "test/unit"
             } elseif ($Integration) {
                 $apiArgs += @(
@@ -197,6 +226,7 @@ if ($Governance -or $Target -eq "governance") {
         "tools/tests/test_dip_gate.ps1",
         "tools/tests/test_contract_gate.ps1",
         "tools/tests/test_pin_gate.ps1",
+        "tools/tests/test_db_gate.ps1",
         "tools/tests/test_ci_pipeline.ps1",
         "tools/tests/test_doc_governance.ps1",
         "docker/tests/test_docker_manifests.ps1",

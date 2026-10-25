@@ -15,6 +15,31 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-24 — Gate de banco que media a declaração, não a capacidade (B-2 da auditoria da API)
+
+- **Sintoma**: os 4 testes de integração de persistência rodavam `skipped` em toda execução; a suíte ficava
+  verde com **zero SQL executado**. `tools/test.ps1` não tinha modo que os selecionasse (nem `-Integration`,
+  que roda `test/contract` + `test/unit/http`), e `.gitea/workflows/ci.yml` nunca definia
+  `DEVTASKS_TEST_DATABASE_URL`. Cobertura do adaptador real: `sql_executor.dart` e `migration_store.dart` em 0%.
+- **Causa raiz**: o gate verificava a *existência do teste* (declaração), não a *execução contra o banco*
+  (capacidade). A ausência do DSN era o caminho silencioso e feliz — o skip é verde por definição. Como
+  consequência, o runner de migrations (que enviava um script multi-statement pelo protocolo estendido do
+  driver `postgres`) nunca foi exercitado, e o defeito sobreviveu a todas as entregas verdes.
+- **Fix**: modo `tools/test.ps1 -Database` que **exige** `DEVTASKS_TEST_DATABASE_URL` (ausente ⇒
+  `[DB-GATE-FAIL]` + exit 1) e roda `test/integration` com `-j 1` (os arquivos recriam o schema `public`;
+  em paralelo há corrida). Job `test-integration-db` no CI sobe PostgreSQL em container (porta 55432, para
+  não colidir no runner), espera `pg_isready` e derruba em `always()`. 16 casos novos em
+  `test/integration/db/repositories_integration_test.dart` cobrindo `23505`, FK, `timestamptz`,
+  CTE de `createWithRole`, `last owner` e a caracterização do achado A-1.
+- **Prevenção**: `tools/tests/test_db_gate.ps1` (na suíte de governança) faz a **prova negativa**: sem DSN,
+  `-Database` tem de falhar com mensagem acionável; também verifica que `-Unit` não regrediu e, quando há
+  banco, executa a prova positiva. O selo é o exit code, não a presença do arquivo de teste.
+- **Nota de plataforma**: `-Db` **não** pode ser nome de parâmetro em PowerShell — colide com o alias
+  embutido de `-Debug` (`The parameter 'Db' cannot be specified because it conflicts with the parameter
+  alias of the same name for parameter 'Debug'`). O nome usado é `-Database`.
+- **Evidência**: `pwsh tools/test.ps1 -Database` contra PostgreSQL 18.6 → `20 testes, All tests passed`
+  (inclui as 5 tabelas criadas e a segunda execução idempotente, o que fecha o B-3).
+
 ## 2026-10-24 — Ciclo de Vida de TextEditingController em Diálogos Assíncronos no Flutter (UC-03.01)
 
 - **Sintoma**: `A TextEditingController was used after being disposed. Once you have called dispose() on a TextEditingController, it can no longer be used.` capturado pelo framework de testes durante a transição de fechamento de um `AlertDialog` (`Navigator.pop`).
