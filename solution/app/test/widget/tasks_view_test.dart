@@ -229,4 +229,88 @@ void main() {
     expect(client.lastTaskId, taskId);
     expect(client.lastTargetStatus, TaskStatus.inProgress);
   });
+
+  testWidgets('card com assignedUserId exibe avatar do responsável (UC-04.03 / RF-11)', (tester) async {
+    final taskId = uuid(10);
+    final assigneeId = uuid(99);
+    client.listResult = Success([
+      TaskItem(
+        id: taskId,
+        projectId: _projectId,
+        title: 'Tarefa com Responsável',
+        status: TaskStatus.backlog,
+        assignedUserId: assigneeId,
+      ),
+    ]);
+
+    await tester.pumpWidget(_harness(client, initialMode: TasksViewMode.kanban));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(Key('task-assignee-avatar-$taskId')), findsOneWidget);
+    expect(find.byKey(Key('task-assignee-label-$taskId')), findsOneWidget);
+    expect(find.text('Resp: $assigneeId'), findsOneWidget);
+  });
+
+  testWidgets('atribuir responsável via diálogo invoca client.assign com id (UC-04.03)', (tester) async {
+    final taskId = uuid(10);
+    final assigneeId = uuid(99);
+    client.listResult = Success([
+      TaskItem(
+        id: taskId,
+        projectId: _projectId,
+        title: 'Sem Responsável',
+        status: TaskStatus.backlog,
+      ),
+    ]);
+
+    await tester.pumpWidget(_harness(client, initialMode: TasksViewMode.kanban));
+    await tester.pumpAndSettle();
+
+    // Toca no botão de atribuir responsável
+    await tester.tap(find.byKey(Key('task-assign-button-$taskId')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('task-assign-dialog')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('task-assign-user-field')),
+      assigneeId,
+    );
+    await tester.tap(find.byKey(const Key('task-assign-save-button')));
+    await tester.pumpAndSettle();
+
+    expect(client.assignCalls, 1);
+    expect(client.lastTaskId, taskId);
+    expect(client.lastAssignedUserId, assigneeId);
+  });
+
+  testWidgets('desatribuir responsável via diálogo envia null ao client (UC-04.03)', (tester) async {
+    final taskId = uuid(10);
+    final assigneeId = uuid(99);
+    client.listResult = Success([
+      TaskItem(
+        id: taskId,
+        projectId: _projectId,
+        title: 'Com Responsável',
+        status: TaskStatus.backlog,
+        assignedUserId: assigneeId,
+      ),
+    ]);
+
+    await tester.pumpWidget(_harness(client, initialMode: TasksViewMode.kanban));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(Key('task-assign-button-$taskId')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('task-assign-dialog')), findsOneWidget);
+    expect(find.byKey(const Key('task-unassign-button')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('task-unassign-button')));
+    await tester.pumpAndSettle();
+
+    expect(client.assignCalls, 1);
+    expect(client.lastTaskId, taskId);
+    expect(client.lastAssignedUserId, isNull);
+  });
 }

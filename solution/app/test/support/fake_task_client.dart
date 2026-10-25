@@ -15,12 +15,14 @@ final class FakeTaskClient implements ITaskClient {
   IResult<List<TaskItem>, IFailure>? listResult;
   IResult<TaskItem, IFailure>? createResult;
   IResult<TaskItem, IFailure>? updateResult;
+  IResult<TaskItem, IFailure>? assignResult;
   IResult<TaskItem, IFailure>? moveResult;
   IResult<void, IFailure>? deleteResult;
 
   int listCalls = 0;
   int createCalls = 0;
   int updateCalls = 0;
+  int assignCalls = 0;
   int moveCalls = 0;
   int deleteCalls = 0;
 
@@ -29,6 +31,7 @@ final class FakeTaskClient implements ITaskClient {
   String? lastTaskId;
   String? lastTitle;
   String? lastDescription;
+  String? lastAssignedUserId;
   TaskPriority? lastPriority;
   TaskStatus? lastTargetStatus;
   double? lastTargetPosition;
@@ -87,6 +90,8 @@ final class FakeTaskClient implements ITaskClient {
     TaskPriority? priority,
     DateTime? dueDate,
     bool clearDueDate = false,
+    String? assignedUserId,
+    bool clearAssignedUser = false,
     required String token,
   }) {
     updateCalls++;
@@ -95,6 +100,7 @@ final class FakeTaskClient implements ITaskClient {
     lastDescription = description;
     lastPriority = priority;
     lastDueDate = dueDate;
+    lastAssignedUserId = assignedUserId;
     lastToken = token;
     return Future.value(
       updateResult ??
@@ -107,6 +113,31 @@ final class FakeTaskClient implements ITaskClient {
               priority: priority ?? TaskPriority.medium,
               status: TaskStatus.backlog,
               dueDate: clearDueDate ? null : dueDate,
+              assignedUserId: clearAssignedUser ? null : assignedUserId,
+            ),
+          ),
+    );
+  }
+
+  @override
+  Future<IResult<TaskItem, IFailure>> assign({
+    required String taskId,
+    String? assignedUserId,
+    required String token,
+  }) {
+    assignCalls++;
+    lastTaskId = taskId;
+    lastAssignedUserId = assignedUserId;
+    lastToken = token;
+    return Future.value(
+      assignResult ??
+          Success(
+            TaskItem(
+              id: taskId,
+              projectId: uuid(1),
+              title: 'Assigned Task',
+              status: TaskStatus.backlog,
+              assignedUserId: assignedUserId,
             ),
           ),
     );

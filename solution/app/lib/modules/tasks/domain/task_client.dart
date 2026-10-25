@@ -34,6 +34,14 @@ abstract interface class ITaskClient {
     TaskPriority? priority,
     DateTime? dueDate,
     bool clearDueDate = false,
+    String? assignedUserId,
+    bool clearAssignedUser = false,
+    required String token,
+  });
+
+  Future<IResult<TaskItem, IFailure>> assign({
+    required String taskId,
+    String? assignedUserId,
     required String token,
   });
 

@@ -16,7 +16,7 @@
 | **01 — Autenticação** | [epic-01-autenticacao.md](epics/epic-01-autenticacao.md) | EPIC-00 | Crítica | ✅ Concluída |
 | **02 — Workspace & Membresias** | [epic-02-workspace.md](epics/epic-02-workspace.md) | EPIC-00, EPIC-01 | Alta | ✅ Concluída |
 | **03 — Projetos** | [epic-03-projetos.md](epics/epic-03-projetos.md) | EPIC-02 | Alta | ✅ Concluída |
-| **04 — Tarefas & Kanban** | [epic-04-tarefas-kanban.md](epics/epic-04-tarefas-kanban.md) | EPIC-03 | Crítica | ⏳ Pendente |
+| **04 — Tarefas & Kanban** | [epic-04-tarefas-kanban.md](epics/epic-04-tarefas-kanban.md) | EPIC-03 | Crítica | ✅ Concluída |
 | **05 — Comentários** | [epic-05-comentarios.md](epics/epic-05-comentarios.md) | EPIC-04 | Média | ⏳ Pendente |
 | **06 — Dashboard** | [epic-06-dashboard.md](epics/epic-06-dashboard.md) | EPIC-04 | Alta | ⏳ Pendente |
 | **07 — Deploy & Medição** | [epic-07-deploy.md](epics/epic-07-deploy.md) | EPIC-00, EPIC-06 | Alta | ⏳ Pendente |
@@ -129,12 +129,12 @@ flowchart TD
 | 01 — Autenticação | 9 | 9/9 | ✅ |
 | 02 — Workspace & Membresias | 3 | 3/3 | ✅ |
 | 03 — Projetos | 2 | 2/2 | ✅ |
-| 04 — Tarefas & Kanban | 3 | 2/3 | 🔄 |
+| 04 — Tarefas & Kanban | 3 | 3/3 | ✅ |
 | 05 — Comentários | 2 | 0/2 | ⏳ |
 | 06 — Dashboard | 1 | 0/1 | ⏳ |
 | 07 — Deploy & Medição | 3 | 0/3 | ⏳ |
 | 08 — Migração Serverpod → shelf | 8 | 8/8 | ✅ |
-| **Total** | **39** | **32/39** | 🔄 |
+| **Total** | **39** | **33/39** | 🔄 |
 
 > **Derivação**: o status de cada UC é o status da feature que o contém na `Matriz de Features`
 > do próprio épico (1 UC por feature hoje); a linha do épico acima é o agregado. Projeção

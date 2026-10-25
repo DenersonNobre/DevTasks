@@ -70,6 +70,8 @@ class PostgresTaskRepository implements ITaskRepository {
     TaskPriority? priority,
     DateTime? dueDate,
     bool clearDueDate = false,
+    String? assignedUserId,
+    bool clearAssignedUser = false,
   }) async {
     final current = await findById(taskId);
     if (current == null) return null;
@@ -80,6 +82,8 @@ class PostgresTaskRepository implements ITaskRepository {
     final newPriority = priority ?? current.priority;
     final newDueDate =
         clearDueDate ? null : (dueDate ?? current.dueDate);
+    final newAssignedUserId =
+        clearAssignedUser ? null : (assignedUserId ?? current.assignedUserId);
 
     final rows = await _sql.query(
       'UPDATE devtasks_task SET '
@@ -87,6 +91,7 @@ class PostgresTaskRepository implements ITaskRepository {
       '  description = @description, '
       '  priority = @priority, '
       '  due_date = @dueDate, '
+      '  assigned_user_id = @assignedUserId::uuid, '
       '  updated_at = now() '
       'WHERE id = @taskId::uuid '
       'RETURNING id, project_id, title, description, status, priority, position, '
@@ -97,6 +102,29 @@ class PostgresTaskRepository implements ITaskRepository {
         'description': newDescription,
         'priority': newPriority.value,
         'dueDate': newDueDate?.toIso8601String().split('T').first,
+        'assignedUserId': newAssignedUserId,
+      },
+    );
+
+    if (rows.isEmpty) return null;
+    return _toEntity(rows.first);
+  }
+
+  @override
+  Future<TaskEntity?> assign({
+    required String taskId,
+    String? assignedUserId,
+  }) async {
+    final rows = await _sql.query(
+      'UPDATE devtasks_task SET '
+      '  assigned_user_id = @assignedUserId::uuid, '
+      '  updated_at = now() '
+      'WHERE id = @taskId::uuid '
+      'RETURNING id, project_id, title, description, status, priority, position, '
+      'assigned_user_id, due_date, created_at, updated_at',
+      parameters: {
+        'taskId': taskId,
+        'assignedUserId': assignedUserId,
       },
     );
 

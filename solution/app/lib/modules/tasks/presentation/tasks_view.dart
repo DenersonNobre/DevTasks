@@ -1,5 +1,6 @@
 // solution/app/lib/modules/tasks/presentation/tasks_view.dart
-// Tela e controle de CRUD de Tarefas e Quadro Kanban (UC-04.01 / UC-04.02 / RF-09 / RF-10 / INV-04).
+// Tela e controle de CRUD de Tarefas, Quadro Kanban e Atribuição de Responsável
+// (UC-04.01 / UC-04.02 / UC-04.03 / RF-09 / RF-10 / RF-11 / INV-03 / INV-04).
 // MVVM puro com Riverpod (D-07).
 
 import 'package:flutter/material.dart';
@@ -18,7 +19,8 @@ enum TasksViewMode {
   kanban,
 }
 
-/// Tela de tarefas do projeto com suporte a lista e quadro Kanban de 3 colunas (D-01).
+/// Tela de tarefas do projeto com suporte a lista, quadro Kanban de 3 colunas (D-01)
+/// e atribuição de responsável (INV-03 / RF-11).
 class TasksView extends ConsumerStatefulWidget {
   const TasksView({
     super.key,
@@ -137,6 +139,21 @@ class _TasksViewState extends ConsumerState<TasksView> {
     );
   }
 
+  Future<void> _assign(TaskItem task) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => _AssignTaskDialog(
+        task: task,
+        onSave: (userId) =>
+            ref.read(tasksViewModelProvider.notifier).assign(
+                  taskId: task.id,
+                  assignedUserId: userId,
+                  token: widget.token,
+                ),
+      ),
+    );
+  }
+
   void _onDrop(TaskItem task, TaskStatus targetStatus) {
     if (task.status == targetStatus) return;
     ref.read(tasksViewModelProvider.notifier).move(
@@ -205,6 +222,7 @@ class _TasksViewState extends ConsumerState<TasksView> {
                   state: state,
                   onRetry: _load,
                   onMove: _move,
+                  onAssign: _assign,
                   onEdit: _edit,
                   onDelete: _delete,
                   onDrop: _onDrop,
@@ -212,6 +230,7 @@ class _TasksViewState extends ConsumerState<TasksView> {
               : _TaskList(
                   state: state,
                   onRetry: _load,
+                  onAssign: _assign,
                   onEdit: _edit,
                   onDelete: _delete,
                 ),
@@ -301,12 +320,14 @@ class _TaskList extends StatelessWidget {
   const _TaskList({
     required this.state,
     required this.onRetry,
+    required this.onAssign,
     required this.onEdit,
     required this.onDelete,
   });
 
   final TasksState state;
   final Future<void> Function() onRetry;
+  final void Function(TaskItem task) onAssign;
   final void Function(TaskItem task) onEdit;
   final void Function(TaskItem task) onDelete;
 
@@ -353,10 +374,40 @@ class _TaskList extends StatelessWidget {
           key: Key('task-item-${task.id}'),
           leading: PriorityBadge(priority: task.priority),
           title: Text(task.title),
-          subtitle: task.description != null ? Text(task.description!) : null,
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (task.description != null) Text(task.description!),
+              if (task.assignedUserId != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        key: Key('task-assignee-avatar-${task.id}'),
+                        radius: 8,
+                        child: const Icon(Icons.person, size: 10),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Resp: ${task.assignedUserId}',
+                        key: Key('task-assignee-label-${task.id}'),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              IconButton(
+                key: Key('task-assign-button-${task.id}'),
+                icon: const Icon(Icons.person_add_alt_1_outlined),
+                tooltip: 'Atribuir',
+                onPressed: () => onAssign(task),
+              ),
               IconButton(
                 key: Key('task-edit-button-${task.id}'),
                 icon: const Icon(Icons.edit_outlined),
@@ -382,6 +433,7 @@ class _KanbanBoard extends StatelessWidget {
     required this.state,
     required this.onRetry,
     required this.onMove,
+    required this.onAssign,
     required this.onEdit,
     required this.onDelete,
     required this.onDrop,
@@ -390,6 +442,7 @@ class _KanbanBoard extends StatelessWidget {
   final TasksState state;
   final Future<void> Function() onRetry;
   final void Function(TaskItem task) onMove;
+  final void Function(TaskItem task) onAssign;
   final void Function(TaskItem task) onEdit;
   final void Function(TaskItem task) onDelete;
   final void Function(TaskItem task, TaskStatus targetStatus) onDrop;
@@ -429,6 +482,7 @@ class _KanbanBoard extends StatelessWidget {
               status: status,
               tasks: state.tasks.where((t) => t.status == status).toList(),
               onMove: onMove,
+              onAssign: onAssign,
               onEdit: onEdit,
               onDelete: onDelete,
               onDrop: onDrop,
@@ -444,6 +498,7 @@ class _KanbanColumn extends StatelessWidget {
     required this.status,
     required this.tasks,
     required this.onMove,
+    required this.onAssign,
     required this.onEdit,
     required this.onDelete,
     required this.onDrop,
@@ -452,6 +507,7 @@ class _KanbanColumn extends StatelessWidget {
   final TaskStatus status;
   final List<TaskItem> tasks;
   final void Function(TaskItem task) onMove;
+  final void Function(TaskItem task) onAssign;
   final void Function(TaskItem task) onEdit;
   final void Function(TaskItem task) onDelete;
   final void Function(TaskItem task, TaskStatus targetStatus) onDrop;
@@ -513,6 +569,7 @@ class _KanbanColumn extends StatelessWidget {
                           return _KanbanCard(
                             task: task,
                             onMove: onMove,
+                            onAssign: onAssign,
                             onEdit: onEdit,
                             onDelete: onDelete,
                           );
@@ -531,12 +588,14 @@ class _KanbanCard extends StatelessWidget {
   const _KanbanCard({
     required this.task,
     required this.onMove,
+    required this.onAssign,
     required this.onEdit,
     required this.onDelete,
   });
 
   final TaskItem task;
   final void Function(TaskItem task) onMove;
+  final void Function(TaskItem task) onAssign;
   final void Function(TaskItem task) onEdit;
   final void Function(TaskItem task) onDelete;
 
@@ -554,37 +613,54 @@ class _KanbanCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 PriorityBadge(priority: task.priority),
-                const Spacer(),
-                IconButton(
-                  key: Key('task-move-button-${task.id}'),
-                  icon: const Icon(Icons.swap_horiz, size: 20),
-                  tooltip: 'Mover tarefa',
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => onMove(task),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  key: Key('task-edit-button-${task.id}'),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  tooltip: 'Editar',
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => onEdit(task),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  key: Key('task-delete-button-${task.id}'),
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  tooltip: 'Excluir',
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => onDelete(task),
+                Flexible(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          key: Key('task-assign-button-${task.id}'),
+                          icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+                          tooltip: 'Atribuir responsável',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () => onAssign(task),
+                        ),
+                        IconButton(
+                          key: Key('task-move-button-${task.id}'),
+                          icon: const Icon(Icons.swap_horiz, size: 18),
+                          tooltip: 'Mover tarefa',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () => onMove(task),
+                        ),
+                        IconButton(
+                          key: Key('task-edit-button-${task.id}'),
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          tooltip: 'Editar',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () => onEdit(task),
+                        ),
+                        IconButton(
+                          key: Key('task-delete-button-${task.id}'),
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          tooltip: 'Excluir',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () => onDelete(task),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -604,6 +680,34 @@ class _KanbanCard extends StatelessWidget {
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            if (task.assignedUserId != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  CircleAvatar(
+                    key: Key('task-assignee-avatar-${task.id}'),
+                    radius: 10,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.person,
+                      size: 12,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Resp: ${task.assignedUserId}',
+                      key: Key('task-assignee-label-${task.id}'),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ],
           ],
@@ -626,6 +730,93 @@ class _KanbanCard extends StatelessWidget {
         child: cardContent,
       ),
       child: cardContent,
+    );
+  }
+}
+
+class _AssignTaskDialog extends StatefulWidget {
+  const _AssignTaskDialog({
+    required this.task,
+    required this.onSave,
+  });
+
+  final TaskItem task;
+  final Future<void> Function(String? assignedUserId) onSave;
+
+  @override
+  State<_AssignTaskDialog> createState() => _AssignTaskDialogState();
+}
+
+class _AssignTaskDialogState extends State<_AssignTaskDialog> {
+  late final TextEditingController _controller;
+  var _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.task.assignedUserId ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit(String? userId) async {
+    setState(() => _isSubmitting = true);
+    await widget.onSave(userId);
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAssignee = widget.task.assignedUserId != null;
+
+    return AlertDialog(
+      key: const Key('task-assign-dialog'),
+      title: const Text('Atribuir responsável'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Informe o identificador do membro do workspace (INV-03):'),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('task-assign-user-field'),
+            controller: _controller,
+            decoration: const InputDecoration(
+              labelText: 'ID do usuário',
+              border: OutlineInputBorder(),
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (v) => _submit(v.trim().isEmpty ? null : v.trim()),
+          ),
+        ],
+      ),
+      actions: [
+        if (hasAssignee)
+          TextButton(
+            key: const Key('task-unassign-button'),
+            onPressed: _isSubmitting ? null : () => _submit(null),
+            child: const Text('Desatribuir'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          key: const Key('task-assign-save-button'),
+          onPressed: _isSubmitting
+              ? null
+              : () {
+                  final text = _controller.text.trim();
+                  _submit(text.isEmpty ? null : text);
+                },
+          child: Text(_isSubmitting ? 'Salvando...' : 'Salvar'),
+        ),
+      ],
     );
   }
 }

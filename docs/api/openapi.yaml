@@ -842,6 +842,55 @@ paths:
         '500':
           $ref: '#/components/responses/ErrInfraFailure'
 
+  /tasks/{id}/assign:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identificador UUID da tarefa.
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Tasks]
+      operationId: assignTask
+      summary: Atribui ou desatribui um responsável à tarefa (INV-03 / RF-11)
+      description: |
+        Atribui a tarefa a um membro ativo do mesmo workspace do projeto (`INV-03`).
+        Passar `assignedUserId: null` remove o responsável da tarefa.
+        Atribuição a usuário de outro workspace ou não-membro responde `422 ERR_INVALID_ASSIGNEE`.
+        O solicitante deve ser `owner` ou `developer` (`INV-06`).
+        Viewer recebe `403 ERR_INSUFFICIENT_ROLE`.
+        Não-membro recebe `404 ERR_NOT_FOUND` (`INV-01`).
+        Se o projeto pai estiver arquivado, a operação é bloqueada com `409 ERR_PROJECT_ARCHIVED` (`INV-05`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTaskRequest'
+      responses:
+        '200':
+          description: Tarefa atribuída com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          $ref: '#/components/responses/ErrValidation'
+        '401':
+          $ref: '#/components/responses/ErrNotAuthenticated'
+        '403':
+          $ref: '#/components/responses/ErrInsufficientRole'
+        '404':
+          $ref: '#/components/responses/ErrNotFound'
+        '409':
+          $ref: '#/components/responses/ErrProjectArchived'
+        '422':
+          $ref: '#/components/responses/ErrInvalidAssignee'
+        '500':
+          $ref: '#/components/responses/ErrInfraFailure'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1025,6 +1074,19 @@ components:
               value:
                 errorCode: ERR_CONCURRENT_MODIFICATION
                 message: Conflito de versão por modificação concorrente.
+    ErrInvalidAssignee:
+      description: Responsável não é membro ativo do workspace do projeto (`422`, `INV-03`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalido:
+              summary: Responsável fora do workspace
+              value:
+                errorCode: ERR_INVALID_ASSIGNEE
+                message: O responsável deve ser um membro ativo do workspace do projeto.
+                field: assignedUserId
     ErrRateLimited:
       description: |
         Limite de tentativas excedido (`429`; `NFR-05` / `INV-SEC-02`: 10 requisições por
@@ -1080,6 +1142,9 @@ components:
         - ERR_MEMBER_ALREADY_EXISTS
         - ERR_RATE_LIMITED
         - ERR_INFRA_FAILURE
+        - ERR_PROJECT_ARCHIVED
+        - ERR_CONCURRENT_MODIFICATION
+        - ERR_INVALID_ASSIGNEE
 
     Error:
       type: object
@@ -1408,6 +1473,10 @@ components:
           type: string
           format: date
           nullable: true
+        assignedUserId:
+          type: string
+          format: uuid
+          nullable: true
 
     Task:
       type: object
@@ -1483,3 +1552,14 @@ components:
           type: string
           format: date-time
           description: Timestamp ISO-8601 da última versão conhecida da tarefa para lock otimista (NFR-02).
+
+    AssignTaskRequest:
+      type: object
+      required: [assignedUserId]
+      additionalProperties: false
+      properties:
+        assignedUserId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Identificador UUID do usuário responsável (membro do mesmo workspace, INV-03) ou null para desatribuir.

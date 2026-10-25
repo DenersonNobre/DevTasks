@@ -101,6 +101,8 @@ class HttpTaskClient implements ITaskClient {
     TaskPriority? priority,
     DateTime? dueDate,
     bool clearDueDate = false,
+    String? assignedUserId,
+    bool clearAssignedUser = false,
     required String token,
   }) async {
     return _guard(() async {
@@ -111,6 +113,8 @@ class HttpTaskClient implements ITaskClient {
         if (priority != null) 'priority': priority.value,
         if (dueDate != null) 'dueDate': _formatDate(dueDate),
         if (clearDueDate) 'dueDate': null,
+        'assignedUserId': ?assignedUserId,
+        if (clearAssignedUser) 'assignedUserId': null,
       };
 
       final response = await _client.patch(
@@ -119,6 +123,26 @@ class HttpTaskClient implements ITaskClient {
         body: jsonEncode(payload),
       );
       return _single(response, 'Resposta de atualização de tarefa inválida.');
+    });
+  }
+
+  @override
+  Future<IResult<TaskItem, IFailure>> assign({
+    required String taskId,
+    String? assignedUserId,
+    required String token,
+  }) async {
+    return _guard(() async {
+      final payload = <String, Object?>{
+        'assignedUserId': assignedUserId,
+      };
+
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/tasks/$taskId/assign'),
+        headers: _headers(token),
+        body: jsonEncode(payload),
+      );
+      return _single(response, 'Resposta de atribuição de tarefa inválida.');
     });
   }
 

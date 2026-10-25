@@ -257,4 +257,79 @@ void main() {
       expect(client.moveCalls, 1);
     });
   });
+
+  group('TasksViewModel — atribuição de responsável (UC-04.03 / RF-11 / INV-03)', () {
+    test('atribui responsável com sucesso e reflete no estado', () async {
+      final initial = TaskItem(
+        id: uuid(60),
+        projectId: _projectId,
+        title: 'Tarefa para atribuir',
+        status: TaskStatus.backlog,
+      );
+      client.listResult = Success([initial]);
+      await viewModel().load(projectId: _projectId, token: _token);
+
+      final assigned = initial.copyWith(assignedUserId: uuid(70));
+      client.assignResult = Success(assigned);
+
+      await viewModel().assign(
+        taskId: initial.id,
+        assignedUserId: uuid(70),
+        token: _token,
+      );
+
+      expect(readState().tasks.first.assignedUserId, uuid(70));
+      expect(client.assignCalls, 1);
+      expect(client.lastAssignedUserId, uuid(70));
+    });
+
+    test('rejeição de atribuição (INV-03) expõe mensagem amigável', () async {
+      final initial = TaskItem(
+        id: uuid(60),
+        projectId: _projectId,
+        title: 'Tarefa para atribuir',
+        status: TaskStatus.backlog,
+      );
+      client.listResult = Success([initial]);
+      await viewModel().load(projectId: _projectId, token: _token);
+
+      client.assignResult = const Failure(
+        InvalidAssigneeFailure('O responsável deve ser um membro ativo do workspace do projeto.'),
+      );
+
+      await viewModel().assign(
+        taskId: initial.id,
+        assignedUserId: 'outro-user',
+        token: _token,
+      );
+
+      expect(readState().message, 'O responsável deve ser um membro ativo do workspace do projeto.');
+      expect(readState().tasks.first.assignedUserId, isNull);
+      expect(client.assignCalls, 1);
+    });
+
+    test('desatribuição reflete no estado com null', () async {
+      final initial = TaskItem(
+        id: uuid(60),
+        projectId: _projectId,
+        title: 'Tarefa atribuída',
+        status: TaskStatus.backlog,
+        assignedUserId: uuid(70),
+      );
+      client.listResult = Success([initial]);
+      await viewModel().load(projectId: _projectId, token: _token);
+
+      final unassigned = initial.copyWith(clearAssignedUser: true);
+      client.assignResult = Success(unassigned);
+
+      await viewModel().assign(
+        taskId: initial.id,
+        assignedUserId: null,
+        token: _token,
+      );
+
+      expect(readState().tasks.first.assignedUserId, isNull);
+      expect(client.assignCalls, 1);
+    });
+  });
 }

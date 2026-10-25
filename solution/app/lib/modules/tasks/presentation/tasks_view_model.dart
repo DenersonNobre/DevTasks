@@ -98,6 +98,8 @@ final class TasksViewModel extends Notifier<TasksState> {
     TaskPriority? priority,
     DateTime? dueDate,
     bool clearDueDate = false,
+    String? assignedUserId,
+    bool clearAssignedUser = false,
     required String token,
   }) async {
     state = state.copyWith(isSubmitting: true, clearMessage: true);
@@ -110,6 +112,8 @@ final class TasksViewModel extends Notifier<TasksState> {
       priority: priority,
       dueDate: dueDate,
       clearDueDate: clearDueDate,
+      assignedUserId: assignedUserId?.trim(),
+      clearAssignedUser: clearAssignedUser,
       token: token,
     );
 
@@ -152,6 +156,39 @@ final class TasksViewModel extends Notifier<TasksState> {
         state = state.copyWith(
           isSubmitting: false,
           tasks: filtered,
+          clearMessage: true,
+        );
+    }
+  }
+
+  /// Intent: atribuir ou desatribuir responsável da tarefa (INV-03 / RF-11).
+  Future<void> assign({
+    required String taskId,
+    String? assignedUserId,
+    required String token,
+  }) async {
+    state = state.copyWith(isSubmitting: true, clearMessage: true);
+
+    final result = await _client.assign(
+      taskId: taskId,
+      assignedUserId: assignedUserId?.trim().isEmpty ?? true ? null : assignedUserId!.trim(),
+      token: token,
+    );
+
+    switch (result) {
+      case Failure(:final failure):
+        state = state.copyWith(
+          isSubmitting: false,
+          message: failure.message,
+        );
+      case Success(:final value):
+        final updatedList = state.tasks.map((task) {
+          return task.id == value.id ? value : task;
+        }).toList();
+
+        state = state.copyWith(
+          isSubmitting: false,
+          tasks: updatedList,
           clearMessage: true,
         );
     }

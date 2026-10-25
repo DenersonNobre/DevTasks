@@ -1,6 +1,6 @@
 # Epic 04 — Tarefas & Kanban (tarefas-kanban)
 
-> Status: 🔄 Em andamento | Prioridade: Crítica | Dependências: EPIC-03
+> Status: ✅ Concluído | Prioridade: Crítica | Dependências: EPIC-03
 
 ## 1. Objetivo e Valor de Negócio
 
@@ -21,7 +21,7 @@ total) e NFR-02 (lock otimista, sem perda silenciosa de posição).
 |:---|:---|:---:|:---|:---:|
 | F4.1 | CRUD de tarefas (título, descrição, prioridade, prazo) | 1 | Alto: INV-06 (viewer não muta) | ✅ |
 | F4.2 | Quadro Kanban & movimentação com ordem | 1 | **Máximo**: INV-04, NFR-02 | ✅ |
-| F4.3 | Atribuição de responsável | 1 | INV-03, ERR_INVALID_ASSIGNEE | ⏳ |
+| F4.3 | Atribuição de responsável | 1 | INV-03, ERR_INVALID_ASSIGNEE | ✅ |
 
 ---
 

@@ -53,6 +53,8 @@ class _FakeTaskRepository implements ITaskRepository {
     TaskPriority? priority,
     DateTime? dueDate,
     bool clearDueDate = false,
+    String? assignedUserId,
+    bool clearAssignedUser = false,
   }) async {
     final current = tasks[taskId];
     if (current == null) return null;
@@ -65,10 +67,35 @@ class _FakeTaskRepository implements ITaskRepository {
       status: current.status,
       priority: priority ?? current.priority,
       position: current.position,
-      assignedUserId: current.assignedUserId,
+      assignedUserId: clearAssignedUser ? null : (assignedUserId ?? current.assignedUserId),
       dueDate: clearDueDate ? null : (dueDate ?? current.dueDate),
       createdAt: current.createdAt,
       updatedAt: DateTime.utc(2026, 10, 25, 12, 30),
+    );
+    tasks[taskId] = updated;
+    return updated;
+  }
+
+  @override
+  Future<TaskEntity?> assign({
+    required String taskId,
+    String? assignedUserId,
+  }) async {
+    final current = tasks[taskId];
+    if (current == null) return null;
+
+    final updated = TaskEntity(
+      id: current.id,
+      projectId: current.projectId,
+      title: current.title,
+      description: current.description,
+      status: current.status,
+      priority: current.priority,
+      position: current.position,
+      assignedUserId: assignedUserId,
+      dueDate: current.dueDate,
+      createdAt: current.createdAt,
+      updatedAt: DateTime.utc(2026, 10, 25, 13, 30),
     );
     tasks[taskId] = updated;
     return updated;
@@ -519,6 +546,109 @@ void main() {
         final json = jsonDecode(await res.readAsString()) as Map;
         expect(json['task']['status'], 'in_progress');
         expect(json['task']['position'], 1500.0);
+      });
+    });
+
+    group('POST /tasks/{id}/assign (Atribuição de Responsável - UC-04.03 / RF-11 / INV-03)', () {
+      late String taskId;
+
+      setUp(() async {
+        final t = await taskRepo.create(projectId: projId, title: 'Tarefa Para Atribuir');
+        taskId = t.id;
+      });
+
+      test('401 quando não autenticado', () async {
+        final req = makeRequest('POST', '/tasks/$taskId/assign', body: {
+          'assignedUserId': 'user-dev',
+        });
+        final res = await appHandler(req);
+        expect(res.statusCode, 401);
+      });
+
+      test('403 para membro viewer (INV-06)', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/assign',
+          body: {'assignedUserId': 'user-dev'},
+          token: 'token-viewer',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 403);
+      });
+
+      test('404 para tarefa inexistente', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/task-inexistente/assign',
+          body: {'assignedUserId': 'user-dev'},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 404);
+      });
+
+      test('422 ERR_INVALID_ASSIGNEE quando usuário não pertence ao workspace (INV-03)', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/assign',
+          body: {'assignedUserId': 'user-estranho'},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 422);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_INVALID_ASSIGNEE');
+      });
+
+      test('200 atribui com sucesso a membro do workspace', () async {
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/assign',
+          body: {'assignedUserId': 'user-owner'},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 200);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['task']['assignedUserId'], 'user-owner');
+      });
+
+      test('200 desatribui passando assignedUserId como null', () async {
+        // Primeiro atribui
+        await taskRepo.assign(taskId: taskId, assignedUserId: 'user-owner');
+
+        final req = makeRequest(
+          'POST',
+          '/tasks/$taskId/assign',
+          body: {'assignedUserId': null},
+          token: 'token-dev',
+        );
+        final res = await appHandler(req);
+        expect(res.statusCode, 200);
+        final json = jsonDecode(await res.readAsString()) as Map;
+        expect(json['task']['assignedUserId'], isNull);
+      });
+
+      test('PATCH /tasks/{id} com assignedUserId valida INV-03', () async {
+        final reqInvalido = makeRequest(
+          'PATCH',
+          '/tasks/$taskId',
+          body: {'assignedUserId': 'user-nao-membro'},
+          token: 'token-dev',
+        );
+        final resInvalido = await appHandler(reqInvalido);
+        expect(resInvalido.statusCode, 422);
+
+        final reqValido = makeRequest(
+          'PATCH',
+          '/tasks/$taskId',
+          body: {'assignedUserId': 'user-dev'},
+          token: 'token-dev',
+        );
+        final resValido = await appHandler(reqValido);
+        expect(resValido.statusCode, 200);
+        final json = jsonDecode(await resValido.readAsString()) as Map;
+        expect(json['task']['assignedUserId'], 'user-dev');
       });
     });
   });

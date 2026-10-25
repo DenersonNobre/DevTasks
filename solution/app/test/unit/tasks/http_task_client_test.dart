@@ -261,5 +261,61 @@ void main() {
       expect(failure, isA<ConcurrentModificationFailure>());
       expect(failure.code, 'ERR_CONCURRENT_MODIFICATION');
     });
+
+    test('assign envia POST /tasks/{id}/assign com assignedUserId e devolve TaskItem (UC-04.03)', () async {
+      late http.Request captured;
+      const assigneeId = '00000000-0000-4000-8000-000000000099';
+      final client = _clientReturning(
+        200,
+        {
+          'task': {
+            'id': _taskId,
+            'projectId': _projectId,
+            'title': 'Tarefa Atribuída',
+            'status': 'backlog',
+            'priority': 'medium',
+            'position': 1000.0,
+            'assignedUserId': assigneeId,
+            'createdAt': '2026-10-25T12:00:00.000Z',
+            'updatedAt': '2026-10-25T12:05:00.000Z',
+          },
+        },
+        onRequest: (r) => captured = r,
+      );
+
+      final result = await client.assign(
+        taskId: _taskId,
+        assignedUserId: assigneeId,
+        token: _token,
+      );
+
+      expect(result, isA<Success<TaskItem, IFailure>>());
+      final task = (result as Success<TaskItem, IFailure>).value;
+      expect(task.assignedUserId, assigneeId);
+
+      expect(captured.method, 'POST');
+      expect(captured.url.path, '/tasks/$_taskId/assign');
+      final body = jsonDecode(captured.body) as Map<String, dynamic>;
+      expect(body['assignedUserId'], assigneeId);
+    });
+
+    test('assign 422 com ERR_INVALID_ASSIGNEE mapeia para InvalidAssigneeFailure (INV-03)', () async {
+      final client = _clientReturning(422, {
+        'errorCode': 'ERR_INVALID_ASSIGNEE',
+        'message': 'O responsável deve ser um membro ativo do workspace do projeto.',
+        'field': 'assignedUserId',
+      });
+
+      final result = await client.assign(
+        taskId: _taskId,
+        assignedUserId: 'outro-user',
+        token: _token,
+      );
+
+      expect(result, isA<Failure<TaskItem, IFailure>>());
+      final failure = (result as Failure<TaskItem, IFailure>).failure;
+      expect(failure, isA<InvalidAssigneeFailure>());
+      expect(failure.code, 'ERR_INVALID_ASSIGNEE');
+    });
   });
 }

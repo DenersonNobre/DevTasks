@@ -15,6 +15,14 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — Atribuição de Responsável com Validação de Membresia no Workspace (UC-04.03)
+
+- **Sintoma**: Necessidade de atribuir e desatribuir responsáveis às tarefas com garantia estrita de integridade referencial ao workspace do projeto (`INV-03`), rejeitando usuários externos com `ERR_INVALID_ASSIGNEE` (422).
+- **Causa raiz**: No modelo relacional, a tabela `devtasks_task` possui FK para `devtasks_user` (permitindo `ON DELETE SET NULL`), mas não possui FK composta redundante com `workspace_id`. Portanto, a invariante de negócio `INV-03` exige validação na camada de aplicação via `workspaceRepository.getMemberRole(workspaceId: project.workspaceId, userId: targetUserId)` antes de persistir a mutação. Na interface Flutter, a adição de múltiplos botões de ação em cartões estreitos do Kanban causava overflow de RenderFlex se dispostos em `Row` rígida.
+- **Fix**: Adicionado endpoint canônico `POST /tasks/{id}/assign` e suporte em `PATCH /tasks/{id}` com validação de membresia ativa; no kernel do app, mapeado `ERR_INVALID_ASSIGNEE` para `InvalidAssigneeFailure` em `httpFailureFrom`; na View, implementado `SingleChildScrollView` horizontal encapsulado em `Flexible` nas ações do card, exibição de avatar/label do responsável e diálogo de atribuição/desatribuição.
+- **Prevenção**: Testes unitários de rota cobrindo 422 para não-membro, 403 para viewer e 200 para atribuição/desatribuição; teste de integração com Postgres real no WSL persistindo e limpando `assigned_user_id`; testes de widget validando presença do avatar e interação de diálogo.
+
+
 ## 2026-10-25 — Quadro Kanban & Movimentação com Ordem Total e Lock Otimista (UC-04.02)
 
 - **Sintoma**: Necessidade de movimentar tarefas entre colunas com suporte a ordenação ordinal arbitrária e prevenção determinística de modificações concorrentes (INV-04 / NFR-02 / D-01).

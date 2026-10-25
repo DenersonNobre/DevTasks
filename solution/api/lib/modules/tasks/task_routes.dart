@@ -58,6 +58,10 @@ class TaskRoutes {
       '/tasks/<id>/move',
       pipeline.addHandler(_handleMoveTask),
     );
+    router.post(
+      '/tasks/<id>/assign',
+      pipeline.addHandler(_handleAssignTask),
+    );
   }
 
   Future<Response> _handleCreateTask(Request request) async {
@@ -201,6 +205,30 @@ class TaskRoutes {
       }
     }
 
+    String? newAssignedUserId;
+    bool clearAssignedUser = false;
+    if (payload.containsKey('assignedUserId')) {
+      final raw = payload['assignedUserId'];
+      if (raw == null) {
+        clearAssignedUser = true;
+      } else if (raw is String) {
+        final targetUserId = raw.trim();
+        if (targetUserId.isEmpty) {
+          return _validation('assignedUserId inválido.', field: 'assignedUserId');
+        }
+        final assigneeRole = await workspaceRepository.getMemberRole(
+          workspaceId: project.workspaceId,
+          userId: targetUserId,
+        );
+        if (assigneeRole == null) {
+          return _invalidAssignee();
+        }
+        newAssignedUserId = targetUserId;
+      } else {
+        return _validation('assignedUserId deve ser uma string UUID ou null.', field: 'assignedUserId');
+      }
+    }
+
     final updated = await taskRepository.update(
       taskId: taskId,
       title: newTitle,
@@ -209,6 +237,8 @@ class TaskRoutes {
       priority: newPriority,
       dueDate: newDueDate,
       clearDueDate: clearDueDate,
+      assignedUserId: newAssignedUserId,
+      clearAssignedUser: clearAssignedUser,
     );
 
     if (updated == null) return _notFound();
@@ -296,6 +326,63 @@ class TaskRoutes {
         ),
     };
   }
+
+  Future<Response> _handleAssignTask(Request request) async {
+    final taskId = request.params['id'] ?? '';
+    final user = getAuthenticatedUser(request);
+
+    final task = await taskRepository.findById(taskId);
+    if (task == null) return _notFound();
+
+    final project = await projectRepository.findById(task.projectId);
+    if (project == null) return _notFound();
+
+    final role = await workspaceRepository.getMemberRole(
+      workspaceId: project.workspaceId,
+      userId: user.id,
+    );
+    if (role == null) return _notFound();
+    if (role == WorkspaceMemberRole.viewer) return _insufficientRole();
+    if (project.isArchived) return _projectArchived();
+
+    final payload = await _readJson(request);
+    if (payload == null || !payload.containsKey('assignedUserId')) {
+      return _validation('O campo assignedUserId é obrigatório.', field: 'assignedUserId');
+    }
+
+    final raw = payload['assignedUserId'];
+    String? targetUserId;
+    if (raw != null) {
+      if (raw is! String || raw.trim().isEmpty) {
+        return _validation('O campo assignedUserId deve ser uma string UUID ou null.', field: 'assignedUserId');
+      }
+      targetUserId = raw.trim();
+      final assigneeRole = await workspaceRepository.getMemberRole(
+        workspaceId: project.workspaceId,
+        userId: targetUserId,
+      );
+      if (assigneeRole == null) {
+        return _invalidAssignee();
+      }
+    }
+
+    final updated = await taskRepository.assign(
+      taskId: taskId,
+      assignedUserId: targetUserId,
+    );
+    if (updated == null) return _notFound();
+    return JsonResponse.ok({'task': updated.toJson()});
+  }
+
+  Response _invalidAssignee([
+    String message = 'O responsável deve ser um membro ativo do workspace do projeto.',
+  ]) =>
+      JsonResponse.error(
+        422,
+        errorCode: 'ERR_INVALID_ASSIGNEE',
+        message: message,
+        field: 'assignedUserId',
+      );
 
   Response _notFound([String message = 'Recurso não encontrado.']) =>
       JsonResponse.error(404, errorCode: 'ERR_NOT_FOUND', message: message);

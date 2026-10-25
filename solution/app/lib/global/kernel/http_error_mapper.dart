@@ -41,6 +41,12 @@ IFailure httpFailureFrom(
     'ERR_CONCURRENT_MODIFICATION' => ConcurrentModificationFailure(
         message ?? 'Conflito de versão por modificação concorrente.',
       ),
+    'ERR_INVALID_ASSIGNEE' => InvalidAssigneeFailure(
+        message ?? 'Usuário atribuído não pertence ao workspace.',
+      ),
+    'ERR_MEMBER_ALREADY_EXISTS' => MemberAlreadyExistsFailure(
+        message ?? 'Usuário já é membro deste workspace.',
+      ),
     'ERR_INFRA_FAILURE' => InfraFailure(
         message ?? 'Falha no servidor.',
       ),

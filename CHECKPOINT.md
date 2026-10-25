@@ -7,31 +7,31 @@
 ## Contexto
 
 DevTasks — Flutter (`solution/app`) + Dart/Shelf + PostgreSQL puro + OpenAPI 3.1.
-Ciclo corrente: **EPIC-04 (Tarefas & Kanban)** em andamento. **UC-04.02 concluído**.
+Ciclo corrente: **EPIC-04 (Tarefas & Kanban) CONCLUÍDO ✅**. **UC-04.03 concluído**.
 
 ## Estado verificado (2026-10-25)
 
-- **Claim**: liberando `UC-04.02` (Coder).
-- **UCs**: 39 no plano — **32 concluídos / 7 pendentes** (`docs/plan/README.md`).
+- **Claim**: liberando `UC-04.03` (Coder).
+- **UCs**: 39 no plano — **33 concluídos / 6 pendentes** (`docs/plan/README.md`).
 - **Backend (`solution/api`)**:
-  - Endpoint `POST /tasks/{id}/move` com RBAC (INV-06), multi-tenant (INV-01) e proteção de projeto arquivado (INV-05).
-  - Repositório `PostgresTaskRepository.move` com lock otimista atômico por timestamp submilissegundo (`NFR-02` / 409).
-  - Testes unitários (17 testes) e integração real no PostgreSQL WSL (22 testes) 100% verdes.
-  - OpenAPI 3.1 com 20/20 rotas em paridade 1:1 verificada via `tools/contract-gate.ps1`.
+  - Endpoint `POST /tasks/{id}/assign` com validação de membresia no workspace do projeto (`INV-03` / 422 `ERR_INVALID_ASSIGNEE`), RBAC (`INV-06`) e projeto arquivado (`INV-05`).
+  - Repositório `PostgresTaskRepository.assign` e `update` persistindo `assigned_user_id` e suporte a desatribuição com `null`.
+  - Suíte de integração PostgreSQL real no WSL com 23 testes verdes (`tools/test.ps1 -Database`).
+  - OpenAPI 3.1 com 21/21 rotas em paridade 1:1 verificada via `tools/contract-gate.ps1`.
 - **Frontend (`solution/app`)**:
-  - `ITaskClient.move` e `HttpTaskClient.move` com 8 testes unitários.
-  - `TasksViewModel.move` com reordenação ordinal e tratamento de 409 (10 testes unitários).
-  - `TasksView` com modo Kanban de 3 colunas (`Backlog | Em Progresso | Concluído` - D-01 / INV-04), diálogo de mover e drag-and-drop (9 testes de widget verdes).
+  - `ITaskClient.assign` e `HttpTaskClient.assign` com 10 testes unitários verdes.
+  - `TasksViewModel.assign` com atualização reativa do agregado (13 testes unitários).
+  - `TasksView` com renderização de avatar/indicador de responsável, diálogo de atribuição e desatribuição (12 testes de widget verdes).
 - **Qualidade & Gates**:
   - `dart analyze solution/app solution/api` 100% limpo (0 issues).
-  - `pwsh tools/contract-gate.ps1` 100% aprovado (20 rotas).
+  - `pwsh tools/contract-gate.ps1` 100% aprovado (21 rotas).
   - `pwsh tools/doc-gate.ps1` e DAG 100% aprovados.
-  - `pwsh tools/test.ps1 -Unit` 100% verde (app=28.77s, api=13.06s).
+  - `pwsh tools/test.ps1 -Unit` 100% verde (app=29.17s, api=23.18s).
   - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL.
 
 ## Próximo passo
 
-- **UC-04.03** — Atribuição de Responsável (F4.3 / RF-11 / INV-03).
+- **UC-05.01** — Criação e Listagem de Comentários em Tarefas (EPIC-05 / F5.1 / RF-12).
 
 ## Travas vivas
 

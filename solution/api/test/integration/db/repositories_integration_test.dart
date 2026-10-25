@@ -448,6 +448,68 @@ void main() {
         );
         expect(notFoundRes, isA<TaskNotFound>());
       });
+
+      test('assign persiste assigned_user_id e desatribui com null no Postgres (UC-04.03 / INV-03)', () async {
+        final userRepo = PostgresUserRepository(sql);
+        final wsRepo = PostgresWorkspaceRepository(sql);
+        final projRepo = PostgresProjectRepository(sql);
+        final taskRepo = PostgresTaskRepository(sql);
+
+        final uRes = await userRepo.create(
+          name: 'Assignee User',
+          email: 'assignee@example.com',
+          passwordHash: 'hash',
+        );
+        final userId = (uRes as UserCreated).user.id;
+        final ws = await wsRepo.createWithRole(
+          name: 'Assign WS',
+          ownerUserId: userId,
+        );
+        final proj = await projRepo.create(
+          workspaceId: ws.workspace.id,
+          name: 'Assign Proj',
+        );
+
+        final task = await taskRepo.create(
+          projectId: proj.id,
+          title: 'Tarefa para atribuir',
+        );
+        expect(task.assignedUserId, isNull);
+
+        // 1. Atribui via assign
+        final assigned = await taskRepo.assign(
+          taskId: task.id,
+          assignedUserId: userId,
+        );
+        expect(assigned?.assignedUserId, userId);
+
+        final fromDb1 = await taskRepo.findById(task.id);
+        expect(fromDb1?.assignedUserId, userId);
+
+        // 2. Desatribui via assign (null)
+        final unassigned = await taskRepo.assign(
+          taskId: task.id,
+          assignedUserId: null,
+        );
+        expect(unassigned?.assignedUserId, isNull);
+
+        final fromDb2 = await taskRepo.findById(task.id);
+        expect(fromDb2?.assignedUserId, isNull);
+
+        // 3. Atribui via update
+        final updated = await taskRepo.update(
+          taskId: task.id,
+          assignedUserId: userId,
+        );
+        expect(updated?.assignedUserId, userId);
+
+        // 4. Desatribui via update (clearAssignedUser: true)
+        final cleared = await taskRepo.update(
+          taskId: task.id,
+          clearAssignedUser: true,
+        );
+        expect(cleared?.assignedUserId, isNull);
+      });
     });
 
     group('Caracterização de fronteira (achado A-1 do laudo)', () {

@@ -40,6 +40,13 @@ abstract interface class ITaskRepository {
     TaskPriority? priority,
     DateTime? dueDate,
     bool clearDueDate = false,
+    String? assignedUserId,
+    bool clearAssignedUser = false,
+  });
+
+  Future<TaskEntity?> assign({
+    required String taskId,
+    String? assignedUserId,
   });
 
   Future<MoveTaskResult> move({
