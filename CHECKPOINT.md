@@ -11,7 +11,10 @@ Ciclo corrente: **Auditoria Bloco A — Item 4: A-1 (Guard de UUID nos Path Para
 
 ## Estado verificado (2026-10-25)
 
-- **Claim**: `UC-08.06` (Coder) — liberando após entrega de A-1.
+- **Claims**: nenhum ativo (`UC-08.06`, `UC-00.06`, `UC-00.07` liberados).
+- **CI**: **verde em toda push** — run 40249901400 (`79b778b`) com 3/3 jobs success
+  (harness, integração Postgres real, Docker). Últimos blockers remediados: DIP gate
+  (`8398cf5`, `package:meta` no domínio) e `sslmode=disable` no DSN de teste (`79b778b`).
 - **UCs**: 39 no plano — **35 concluídos / 4 pendentes** (`docs/plan/README.md`).
 - **Backend (`solution/api`)**:
   - `UuidValidator`: validação canônica de formato RFC-4122.

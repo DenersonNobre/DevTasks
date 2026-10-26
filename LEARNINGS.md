@@ -15,6 +15,20 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 
 ## Entradas
 
+## 2026-10-25 — DIP gate reprovava domínio por `@immutable` vindo de `package:flutter/foundation`
+
+- **Sintoma**: `tools/dip-gate.ps1` saía com exit 1 apontando `comments/domain/comment_item.dart`, `tasks/domain/task_item.dart` e `workspace/domain/comment_item`/`workspace_item.dart` — os 3 domínios importavam `package:flutter/foundation.dart`.
+- **Causa raiz**: a anotação `@immutable` foi copiada do template com o import do framework; `foundation.dart` re-exporta `package:meta`, então compila e o `flutter analyze` fica verde o tempo todo — só o gate estático denuncia. A `epic-00-fundacao.md:274` afirmava `[x] zero imports de infra no domínio` enquanto o disco a contradizia.
+- **Fix** (UC-00.07): `import 'package:meta/meta.dart'` nos 3 domínios + `meta: ^1.19.0` declarado no `solution/app/pubspec.yaml` (dependência usada não pode viver só como transitiva). `pub get` sem churn de lock — `meta` 1.19.0 já resolvia transitivo.
+- **Prevenção**: `dip-gate` + `test_dip_gate` (provas negativas) verdes e regra transversal em `~/.agents/rules/topics/flutter.md`. A régua é a **camada**: states/presentation continuam podendo usar `foundation`.
+
+## 2026-10-25 — Job de integração Postgres vermelho: o DSN pedia SSL que o container de teste não oferece
+
+- **Sintoma**: run 40248564855 falhava só no step "Run DB integration gate (B-2)" — 6 testes de integração morriam com `Server does not support SSL, but it was required (default configuration)`.
+- **Causa raiz**: o default do `package:postgres` 3.x é `SslMode.require` (`resolved_settings.dart:95`), mesmo para `localhost`; o `postgres:16` efêmero do runner (service do GitHub / `docker run` do Gitea) não expõe TLS.
+- **Fix** (UC-00.06): `?sslmode=disable` no `DEVTASKS_TEST_DATABASE_URL` dos dois workflows (`.github/` e `.gitea/`) com comentário do porquê; DSN restrito ao loopback do runner.
+- **Prevenção**: mesmo DSN validado localmente (`tools/test.ps1 -Database` → exit 0, 27 testes contra o Postgres WSL) e a run seguinte (40249901400, `79b778b`) saiu **3/3 jobs success**. Regra transversal em `~/.agents/rules/topics/flutter.md`. A troca de erro (SSL → `28P01`) foi a prova barata de que o fix age, mesmo antes de acertar as credenciais.
+
 ## 2026-10-25 — Harness de provas apontava para `solution/server` após o fim do Serverpod (CI vermelha)
 
 - **Sintoma**: `tools/test.ps1 -Governance` e o job "Lint, Test & DAG Gate" da CI falhavam com `Could not find a part of the path ... solution/server/test/zz_fail_probe_test.dart`.
