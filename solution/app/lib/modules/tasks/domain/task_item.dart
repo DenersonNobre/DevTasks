@@ -3,7 +3,7 @@
 // SRP: representar uma tarefa exibível e editável.
 // IDs são UUID (String) — contrato OpenAPI (D-08).
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 import 'task_priority.dart';
 import 'task_status.dart';

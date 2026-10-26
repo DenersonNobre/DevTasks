@@ -2,7 +2,7 @@
 // Value Object imutável de comentário de tarefa no app (D-07 / RF-12 / F5.1).
 // IDs são UUID (String) — contrato OpenAPI (D-08).
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 @immutable
 final class CommentItem {

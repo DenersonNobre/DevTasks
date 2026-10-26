@@ -1,7 +1,7 @@
 // solution/app/lib/modules/workspace/domain/workspace_item.dart
 // Value Object imutável de workspace no app (D-07 / RF-04 / RF-05 / D-02).
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 @immutable
 final class WorkspaceItem {
