@@ -76,9 +76,12 @@ jobs:
 
       # O gate FALHA se DEVTASKS_TEST_DATABASE_URL faltar: sem isso os testes de
       # integracao seriam pulados e o job ficaria verde sem executar SQL algum.
+      # sslmode=disable: o postgres:16 efimero do runner nao expoe SSL e o
+      # package:postgres exige SslMode.require por default (erro "Server does not
+      # support SSL"). DSN restrito ao loopback do runner, sem surface de rede.
       - name: Run DB integration gate (B-2)
         env:
-          DEVTASKS_TEST_DATABASE_URL: postgres://devtasks:devtasks_pass@localhost:55432/devtasks_test
+          DEVTASKS_TEST_DATABASE_URL: postgres://devtasks:devtasks_pass@localhost:55432/devtasks_test?sslmode=disable
         run: pwsh tools/test.ps1 -Database -NoPub
 
   docker-build:
