@@ -58,6 +58,16 @@ class AuthRoutes {
       return _validationError('Corpo da requisição deve ser um objeto JSON válido.');
     }
 
+    // INV-SEC-09 / OpenAPI additionalProperties: false (A-2)
+    const allowedKeys = {'name', 'email', 'password'};
+    final extraKey = payload.keys.firstWhere(
+      (k) => !allowedKeys.contains(k),
+      orElse: () => '',
+    );
+    if (extraKey.isNotEmpty) {
+      return _validationError('Campo não permitido: $extraKey.', field: extraKey);
+    }
+
     final name = payload['name'];
     final email = payload['email'];
     final password = payload['password'];
@@ -92,6 +102,16 @@ class AuthRoutes {
     final payload = await _readJson(request);
     if (payload == null) {
       return _validationError('Corpo da requisição deve ser um objeto JSON válido.');
+    }
+
+    // OpenAPI additionalProperties: false (A-2)
+    const allowedKeys = {'email', 'password'};
+    final extraKey = payload.keys.firstWhere(
+      (k) => !allowedKeys.contains(k),
+      orElse: () => '',
+    );
+    if (extraKey.isNotEmpty) {
+      return _validationError('Campo não permitido: $extraKey.', field: extraKey);
     }
 
     final email = payload['email'];

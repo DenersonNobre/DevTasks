@@ -94,5 +94,15 @@ abstract final class JsonPayload {
     }
     return parsed;
   }
+
+  /// Garante que o mapa contenha apenas as chaves permitidas (INV-SEC-09 / additionalProperties: false).
+  /// Lança [ApiException.badRequest] (400 ERR_VALIDATION) ao encontrar qualquer chave excedente.
+  static void ensureOnlyAllowedKeys(Map<String, Object?> map, Set<String> allowedKeys) {
+    for (final key in map.keys) {
+      if (!allowedKeys.contains(key)) {
+        throw ApiException.badRequest('Campo não permitido: $key.', field: key);
+      }
+    }
+  }
 }
 

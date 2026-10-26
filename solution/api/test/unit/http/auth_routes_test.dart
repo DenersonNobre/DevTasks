@@ -231,6 +231,27 @@ void main() {
         expect(json['errorCode'], 'ERR_EMAIL_ALREADY_TAKEN');
         expect(json['field'], 'email');
       });
+
+      test('retorna 400 ERR_VALIDATION para campos desconhecidos / mass assignment (A-2 / INV-SEC-09)', () async {
+        final request = makeRequest(
+          'POST',
+          '/auth/signup',
+          body: {
+            'name': 'Ana Silva',
+            'email': 'ana.silva@example.com',
+            'password': 'Password12345',
+            'role': 'owner',
+            'emailVerified': true,
+          },
+        );
+
+        final response = await appHandler(request);
+        expect(response.statusCode, 400);
+
+        final json = jsonDecode(await response.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_VALIDATION');
+        expect(json['field'], 'role');
+      });
     });
 
     group('POST /auth/signin', () {
@@ -260,6 +281,25 @@ void main() {
         final json = jsonDecode(await response.readAsString()) as Map;
         expect(json['sessionToken'], isA<String>());
         expect(json['userId'], isA<String>());
+      });
+
+      test('retorna 400 ERR_VALIDATION para campos desconhecidos no signin (A-2)', () async {
+        final request = makeRequest(
+          'POST',
+          '/auth/signin',
+          body: {
+            'email': 'carlos@example.com',
+            'password': 'Password12345',
+            'extra': 123,
+          },
+        );
+
+        final response = await appHandler(request);
+        expect(response.statusCode, 400);
+
+        final json = jsonDecode(await response.readAsString()) as Map;
+        expect(json['errorCode'], 'ERR_VALIDATION');
+        expect(json['field'], 'extra');
       });
 
       test('retorna 401 ERR_INVALID_CREDENTIALS para senha errada (INV-SEC-04)', () async {

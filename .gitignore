@@ -31,3 +31,7 @@ dist/
 # --- OS ---
 .DS_Store
 Thumbs.db
+
+# --- Tooling / MCP ---
+.playwright-mcp/
+

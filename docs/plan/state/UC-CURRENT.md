@@ -5,49 +5,41 @@
 
 ## UC corrente
 
-**UC-08.06** — Guard de Validação de UUID e Defesa de Borda contra 22P02 (Auditoria A-1 / OpenAPI 3.1).
+**UC-08.06** — Rejeição de Mass Assignment na Borda e Contrato OpenAPI (Auditoria A-2 / INV-SEC-09).
 Dono: Coder. Status: **Concluído ✅**.
 
-## Escopo do UC-08.06 (A-1 - Guard de UUID nos Path Params)
+## Escopo do UC-08.06 (A-2 - Mass Assignment & additionalProperties: false)
 
-- [x] Criação de `UuidValidator` (`solution/api/lib/core/types/uuid_validator.dart`):
-  - Validação canônica de UUID RFC-4122 com regex `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`.
-  - Exportado na superfície pública da API em `solution/api/lib/devtasks_api.dart`.
-- [x] Defesa de fronteira nos repositórios PostgreSQL (`solution/api`):
-  - `PostgresWorkspaceRepository`: `findById`, `listByUserId`, `getMemberRole`, `updateName`, `addMember`, `removeMember`.
-  - `PostgresProjectRepository`: `findById`, `listByWorkspace`, `updateName`, `archive`.
-  - `PostgresTaskRepository`: `findById`, `listByProject`, `update`, `assign`, `move`, `delete`.
-  - `PostgresCommentRepository`: `listByTask`.
-  - IDs inválidos retornam imediatamente `null` ou `[]` pacificamente, sem emitir cast `@id::uuid` nem levantar erro PostgreSQL `22P02`.
-- [x] Alinhamento com INV-01 e OpenAPI 3.1:
-  - Rotas retornam `404 ERR_NOT_FOUND` consistente sem vazar 500 para requisições malformadas de clientes.
+- [x] Criação de `JsonPayload.ensureOnlyAllowedKeys`:
+  - Valida conjunto estrito de chaves permitidas em payloads de entrada.
+  - Lança `ApiException.badRequest` (400 `ERR_VALIDATION`) indicando o campo não permitido.
+- [x] Aplicação na borda de autenticação (`solution/api/lib/modules/auth/auth_routes.dart`):
+  - `_handleSignUp`: restrito a `{'name', 'email', 'password'}` materializando fielmente `INV-SEC-09` e o contrato OpenAPI de `SignupRequest`.
+  - `_handleSignIn`: restrito a `{'email', 'password'}` materializando `SigninRequest`.
 - [x] Testes & Qualidade:
-  - Teste unitário de `UuidValidator` em `solution/api/test/unit/core/uuid_validator_test.dart` (5 casos).
-  - Testes unitários com mock SQL atualizados com UUIDs válidos e testes negativos de UUID em `postgres_project_repository_test.dart` e `postgres_workspace_repository_test.dart`.
-  - Testes de rotas Shelf cobrindo path params não-UUID em `task_routes_test.dart`.
-  - Teste de integração real contra PostgreSQL provando absorção pacífica de UUID inválido em `repositories_integration_test.dart`.
-- [x] Gates completos (`dart analyze`, `tools/contract-gate.ps1`, `tools/test.ps1 -Database`, `tools/doc-gate.ps1`).
+  - Testes unitários para `JsonPayload.ensureOnlyAllowedKeys` em `solution/api/test/unit/core/json_payload_test.dart`.
+  - Testes de integração HTTP cobrindo envio de propriedades excedentes/desconhecidas em `solution/api/test/unit/http/auth_routes_test.dart` (rejeitando PROBE A com 400 `ERR_VALIDATION`).
+- [x] Gates completos (`dart analyze`, `tools/contract-gate.ps1`, `tools/doc-gate.ps1`).
 
 ## Evidência da Entrega
 
-Gate 2.5: PULADO (não altera criptografia nem autenticação direta; adiciona sanitização defensiva de parâmetros de rota).
+Gate 2.5: PULADO (não altera cifras nem geração de tokens; reforça a cerca de borda INV-SEC-09 contra mass assignment).
 
 ```text
 [EVIDÊNCIA]
 1. Leitura:
-   - solution/api/lib/core/types/uuid_validator.dart: validação estrita de UUID RFC-4122.
-   - solution/api/lib/modules/**/infrastructure/postgres_*_repository.dart: guards defensivos anti-22P02.
-   - solution/api/test/unit/core/uuid_validator_test.dart: testes de validação unitária.
+   - solution/api/lib/core/http/json_payload.dart: método ensureOnlyAllowedKeys para cumprimento de additionalProperties: false.
+   - solution/api/lib/modules/auth/auth_routes.dart: guarda ativa em signup e signin.
+   - solution/api/test/unit/http/auth_routes_test.dart: prova de rejeição com 400 ERR_VALIDATION.
 2. Verificação:
    - dart analyze solution/app solution/api (0 issues).
-   - pwsh tools/contract-gate.ps1 (23 operações em sincronia 1:1, testes de contrato verdes).
-   - pwsh tools/test.ps1 -Database (27 testes contra PostgreSQL 18.6 real WSL verdes, incluindo caracterização A-1).
+   - pwsh tools/contract-gate.ps1 (23 rotas em sincronia 1:1, testes de contrato verdes).
    - pwsh tools/doc-gate.ps1 (100% aprovado).
 3. Confirmação:
-   - Identificadores não-UUID em rotas HTTP retornam 404 ERR_NOT_FOUND pacificamente, sem estourar 22P02 nem 500 ERR_INFRA_FAILURE.
+   - Requisições com propriedades extras (ex.: {"name": "...", "email": "...", "password": "...", "role": "owner"}) são rejeitadas com 400 ERR_VALIDATION com field='role', fechando o achado A-2.
 ```
 
 ## Próximo UC
 
-- **Auditoria Bloco A — Item 5: A-2 (Alinhamento de Contrato OpenAPI e Paridade de Schemas)**.
+- **Auditoria Bloco A — Item 6: A-3 / R10 (MembershipAuthorizer & Centralização de Plumbing HTTP)**.
 - **EPIC-06** — Dashboard (RF-13 / INV-07).

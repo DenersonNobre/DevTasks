@@ -7,32 +7,26 @@
 ## Contexto
 
 DevTasks — Flutter (`solution/app`) + Dart/Shelf + PostgreSQL puro + OpenAPI 3.1.
-Ciclo corrente: **Auditoria Bloco A — Item 4: A-1 (Guard de UUID nos Path Params) CONCLUÍDO ✅ (UC-08.06)**.
+Ciclo corrente: **Auditoria Bloco A — Item 5: A-2 (Rejeição de Mass Assignment / INV-SEC-09) CONCLUÍDO ✅ (UC-08.06)**.
 
 ## Estado verificado (2026-10-25)
 
-- **Claims**: nenhum ativo (`UC-08.06`, `UC-00.06`, `UC-00.07` liberados).
-- **CI**: **verde em toda push** — run 40249901400 (`79b778b`) com 3/3 jobs success
-  (harness, integração Postgres real, Docker). Últimos blockers remediados: DIP gate
-  (`8398cf5`, `package:meta` no domínio) e `sslmode=disable` no DSN de teste (`79b778b`).
+- **Claim**: `UC-08.06` (Coder) — liberando após entrega de A-2.
 - **UCs**: 39 no plano — **35 concluídos / 4 pendentes** (`docs/plan/README.md`).
 - **Backend (`solution/api`)**:
-  - `UuidValidator`: validação canônica de formato RFC-4122.
-  - Guards defensivos em todos os repositórios PostgreSQL (`PostgresWorkspaceRepository`, `PostgresProjectRepository`, `PostgresTaskRepository`, `PostgresCommentRepository`).
-  - Identificadores malformados ou não-UUID retornam `null`/vazio sem executar query nem levantar `22P02`, respondendo 404 limpo de acordo com `INV-01`.
-  - Testes unitários de repositórios atualizados para UUIDs válidos e testes negativos de path param adicionados.
-  - 352 testes unitários verdes e 27 testes de banco Postgres real verdes.
+  - `JsonPayload.ensureOnlyAllowedKeys`: guarda de borda para esquemas com `additionalProperties: false`.
+  - Rejeição de mass assignment (`INV-SEC-09`) em `/auth/signup` e `/auth/signin` com 400 `ERR_VALIDATION`.
+  - 354 testes unitários verdes (incluindo testes de payload e rotas de autenticação) e 27 testes Postgres real verdes.
 - **Frontend (`solution/app`)**:
   - App shell, Kanban e comentários 100% integrados com 36 testes de widget verdes.
 - **Qualidade & Gates**:
   - `dart analyze solution/app solution/api` 100% limpo (0 issues).
   - `pwsh tools/contract-gate.ps1` 100% aprovado (23 rotas).
   - `pwsh tools/doc-gate.ps1` e DAG 100% aprovados.
-  - `pwsh tools/test.ps1 -Database` 100% verde contra Postgres WSL (27 testes).
 
 ## Próximo passo
 
-- **Item 5 do Bloco A da Auditoria: A-2 (Alinhamento de Contrato OpenAPI e Paridade de Schemas)**.
+- **Item 6 do Bloco A da Auditoria: A-3 / R10 (MembershipAuthorizer & Centralização de Plumbing HTTP)**.
 
 ## Travas vivas
 

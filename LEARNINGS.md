@@ -412,4 +412,12 @@ Aprendizado transversal a qualquer projeto **não** vai aqui — vive em `~/.age
 - **Fix**: criação do `UuidValidator.isValid` e introdução de guards defensivos no nível de repositório (`PostgresWorkspaceRepository`, `PostgresProjectRepository`, `PostgresTaskRepository`, `PostgresCommentRepository`), retornando `null` ou `[]` pacificamente para IDs inválidos, integrando-se organicamente com a regra de isolamento `INV-01` que responde `404` para recursos ausentes sem tocar o banco.
 - **Prevenção**: nunca permitir que tipos estritos de banco (como `uuid` nativo) recebam strings arbitrárias da camada de transporte sem validação de formato na borda ou guarda no adaptador.
 
+## 2026-10-25 — Defesa contra Mass Assignment e Cumprimento de additionalProperties: false (Achado A-2 / INV-SEC-09)
+
+- **Sintoma**: requisições de autenticação contendo campos excedentes arbitrários (ex.: `role: owner`, `emailVerified: true`) eram aceitas com status 200/201, divergindo da regra OpenAPI que declarava `additionalProperties: false` com rejeição 400.
+- **Causa raiz**: o parser lia apenas os campos de interesse e ignorava chaves excedentes. Embora os DTOs fossem imutáveis e não houvesse vulnerabilidade de execução no MVP, o contrato OpenAPI e a invariante `INV-SEC-09` exigiam rejeição ativa na borda para mitigar risco latente de mass assignment.
+- **Fix**: criação do método `JsonPayload.ensureOnlyAllowedKeys` e aplicação imediata nos handlers de signup (`name`, `email`, `password`) e signin (`email`, `password`), respondendo com 400 `ERR_VALIDATION` e identificando a chave indevida.
+- **Prevenção**: quando o contrato OpenAPI estipular `additionalProperties: false`, a borda HTTP deve validar o conjunto de chaves antes de despachar comandos ao domínio.
+
+
 
